@@ -67,9 +67,9 @@
                 </div>
 
 
-                {{-- Duração (min) --}}
+                {{-- Duração (dias) --}}
                 <div class="col-md-4">
-                    <label for="duracao" class="form-label">Duração (min)</label>
+                    <label for="duracao" class="form-label">Duração (dias)</label>
                     <input id="duracao" name="duracao" type="number" min="0" step="1"
                            value="{{ old('duracao', $evento->duracao) }}"
                            class="form-control @error('duracao') is-invalid @enderror">
