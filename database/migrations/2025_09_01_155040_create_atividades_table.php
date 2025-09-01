@@ -18,6 +18,7 @@ return new class extends Migration
             $table->time('hora_inicio');         
             $table->unsignedInteger('carga_horaria'); 
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
