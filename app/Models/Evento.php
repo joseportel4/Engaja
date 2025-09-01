@@ -38,4 +38,12 @@ class Evento extends Model
     {
         return $this->hasMany(Atividade::class);
     }
+
+    public function inscricoes(){
+        return $this->hasMany(Inscricao::class);
+    }
+
+    public function participantes(){
+        return $this->belongsToMany(Participante::class, 'inscricaos',  'participante_id', 'evento_id')->withTimestamps();
+    }
 }

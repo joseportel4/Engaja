@@ -179,7 +179,7 @@
         <a href="{{ $evento->link }}" target="_blank" class="btn btn-outline-secondary">Acessar link</a>
         @endif
 
-        <a href="#" class="btn btn-engaja">Inscrever-se</a>
+        <a href="{{ route('inscricoes.import', $evento)}}" class="btn btn-engaja">Inscrever participantes</a>
 
         @can('update', $evento)
         <a href="{{ route('eventos.edit', $evento) }}" class="btn btn-outline-secondary">Editar</a>

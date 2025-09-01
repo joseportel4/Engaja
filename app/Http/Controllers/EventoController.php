@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use App\Imports\ParticipantesImport;
+use \Maatwebsite\Excel\Facades\Excel;
 
 class EventoController extends Controller
 {
@@ -121,4 +123,9 @@ class EventoController extends Controller
         $evento->delete();
         return redirect()->route('eventos.index')->with('success','Evento excluído.');
     }
+
+    // public function inscrever_participantes(Request $request, Evento $evento){
+    //     $collection = (new ParticipantesImport)->toCollection(request()->file('your_file'));
+    //     $evento->participantes()->saveMany($collection);
+    // }
 }
