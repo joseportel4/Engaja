@@ -10,10 +10,6 @@
     <a href="{{ route('eventos.atividades.create', $evento) }}" class="btn btn-engaja">+ Nova atividade</a>
   </div>
 
-  @if (session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-  @endif
-
   <div class="table-responsive">
     <table class="table table-hover align-middle">
       <thead class="table-light">

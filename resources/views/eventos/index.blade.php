@@ -6,12 +6,6 @@
         <h1 class="h3 fw-bold text-engaja mb-0">Eventos</h1>
         <a href="{{ route('eventos.create') }}" class="btn btn-engaja">Novo evento</a>
     </div>
-
-    {{-- Flash --}}
-    @if (session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
     {{-- Filtros / busca --}}
     <form method="GET" class="row g-2 mb-3">
         <div class="col-md-4">

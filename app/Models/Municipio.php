@@ -13,4 +13,14 @@ class Municipio extends Model
         'estado_id',
         'nome',
     ];
+    public function estado()
+    {
+        return $this->belongsTo(Estado::class);
+    }
+    
+    public function getNomeComEstadoAttribute(): string
+    {
+        $sigla = $this->estado?->sigla; // << usa 'sigla'
+        return trim($this->nome . ($sigla ? ' - ' . $sigla : ''));
+    }
 }
