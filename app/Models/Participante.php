@@ -21,7 +21,7 @@ class Participante extends Model
         return $this->hasMany(Inscricao::class, 'participante_id');
     }
     public function eventos(){
-        return $this->belongsToMany(Evento::class, 'inscricaos', 'participante_id', 'evento_id')->withTimestamps();
+        return $this->belongsToMany(Evento::class, 'inscricaos')->withTimestamps();
     }
 
 }

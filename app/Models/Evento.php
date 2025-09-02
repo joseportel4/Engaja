@@ -44,6 +44,6 @@ class Evento extends Model
     }
 
     public function participantes(){
-        return $this->belongsToMany(Participante::class, 'inscricaos',  'participante_id', 'evento_id')->withTimestamps();
+        return $this->belongsToMany(Participante::class, 'inscricaos')->withTimestamps();
     }
 }
