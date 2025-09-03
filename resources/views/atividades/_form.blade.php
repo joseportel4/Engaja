@@ -1,4 +1,14 @@
 @csrf
+
+{{-- Momento --}}
+<div class="mb-3">
+  <label for="descricao" class="form-label">Descrição <span class="text-danger">*</span></label>
+  <textarea name="descricao" id="descricao" rows="3"
+            class="form-control @error('descricao') is-invalid @enderror"
+            required>{{ old('descricao', $atividade->descricao ?? '') }}</textarea>
+  @error('descricao') <div class="invalid-feedback">{{ $message }}</div> @enderror
+</div>
+
 <div class="row g-3">
   <div class="col-md-4">
     <label class="form-label">Dia <span class="text-danger">*</span></label>

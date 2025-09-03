@@ -28,6 +28,7 @@ class AtividadeController extends Controller
         $this->authorize('update', $evento);
 
         $dados = $request->validate([
+            'descricao'     => 'required|string',
             'dia'           => 'required|date',
             'hora_inicio'   => 'required|date_format:H:i',
             'carga_horaria' => 'required|integer|min:1',
@@ -54,6 +55,7 @@ class AtividadeController extends Controller
         $this->authorize('update', $evento);
 
         $dados = $request->validate([
+            'descricao'     => 'required|string',
             'dia'           => 'required|date',
             'hora_inicio'   => 'required|date_format:H:i',
             'carga_horaria' => 'required|integer|min:1',

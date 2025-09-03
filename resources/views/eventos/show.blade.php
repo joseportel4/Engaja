@@ -200,7 +200,7 @@
 
   {{-- Chips --}}
   @php
-    $totalInscritos = $evento->participantes()->wherePivotNull('deleted_at')->count();
+  $totalInscritos = $evento->participantes()->wherePivotNull('deleted_at')->count();
   @endphp
   <div class="mb-4">
     <div class="d-flex flex-wrap gap-2">
@@ -223,7 +223,7 @@
   {{-- Descrição / Objetivo --}}
   @if($evento->resumo)
   <div class="mb-4">
-    <h2 class="h5 fw-bold mb-2">Descrição da ação pedagógica</h2>
+    <h2 class="h5 fw-bold mb-2">Descrição</h2>
     <div class="ev-card p-3">
       <p class="mb-0">{{ $evento->resumo }}</p>
     </div>
@@ -232,7 +232,7 @@
 
   @if($evento->objetivo)
   <div class="mb-4">
-    <h2 class="h5 fw-bold mb-2">Objetivos da ação pedagógica</h2>
+    <h2 class="h5 fw-bold mb-2">Objetivos</h2>
     <div class="ev-card p-3">
       <p class="mb-0">{{ $evento->objetivo }}</p>
     </div>
@@ -291,17 +291,17 @@
       @else
       @foreach($dias as $i => $dia)
       @php $lista = $porDia[$dia]; @endphp
-      <div class="tab-pane fade {{ $i===0 ? 'show active' : '' }}" id="pane-{{ $i }}" role="tabpanel" aria-labelledby="tab-{{ $i }}">
+
+      <div class="tab-pane fade {{ $i===0 ? 'show active' : '' }}"
+        id="pane-{{ $i }}" role="tabpanel" aria-labelledby="tab-{{ $i }}">
         <div class="timeline">
           @foreach($lista as $at)
           @php
-          $ini = Carbon::parse($at->hora_inicio)->format('H:i');
-          $fim = !empty($at->hora_fim) ? Carbon::parse($at->hora_fim)->format('H:i') : null;
-          $titulo= $at->titulo ?? 'Momento';
+          $ini = \Carbon\Carbon::parse($at->hora_inicio)->format('H:i');
+          $fim = !empty($at->hora_fim) ? \Carbon\Carbon::parse($at->hora_fim)->format('H:i') : null;
+          $momento = trim($at->descricao ?? '') !== '' ? $at->descricao : 'Momento';
           $local = $at->local ?? null;
           $ch = $at->carga_horaria ?? null;
-          $descr = $at->descricao ?? null;
-          $tipo = $at->tipo ?? null;
           @endphp
 
           <div class="t-item">
@@ -309,17 +309,17 @@
             <div class="program-card">
               <div class="d-flex justify-content-between align-items-start gap-3">
                 <div>
+                  {{-- Hora --}}
                   <div class="program-time">{{ $ini }}{{ $fim ? ' – '.$fim : '' }}</div>
-                  <div class="program-title">{{ $titulo }}</div>
 
+                  {{-- Momento (descricao) como título principal --}}
+                  <div class="program-title">{{ $momento }}</div>
+
+                  {{-- Meta opcional: Local e Carga horária --}}
+                  @if($local || $ch)
                   <div class="program-meta">
-                    @if($local)<span class="chip">📍 {{ $local }}</span>@endif
                     @if($ch)<span class="chip">⏱️ {{ $ch }}h</span>@endif
-                    @if($tipo)<span class="chip">🏷️ {{ $tipo }}</span>@endif
                   </div>
-
-                  @if($descr)
-                  <p class="mt-2 mb-0 text-muted small">{{ $descr }}</p>
                   @endif
                 </div>
 
@@ -331,13 +331,10 @@
                   <form action="{{ route('atividades.destroy', $at) }}" method="POST"
                     onsubmit="return confirm('Excluir momento?');" class="d-inline">
                     @csrf @method('DELETE')
-                    <button class="btn btn-sm btn-outline-danger">
-                      Excluir
-                    </button>
+                    <button class="btn btn-sm btn-outline-danger">Excluir</button>
                   </form>
                 </div>
                 @endcan
-
               </div>
             </div>
           </div>
@@ -345,6 +342,7 @@
         </div>
       </div>
       @endforeach
+ 
       @endif
     </div>
   </div>
