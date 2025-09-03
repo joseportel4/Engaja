@@ -233,7 +233,7 @@
               ->eyeColor(2, 192,12,142,192,12,142)
               ->size(200)
               ->margin(0)
-              ->merge(storage_path('app/public/engaja-qr.png'), 0.3, true)
+              ->merge(public_path('/images/engaja-qr.png'), 0.3, true)
               ->errorCorrection('H')
               ->generate(route('atividades.show', $atividade->id))
       ) !!}" alt="QR Code">
