@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             RegiaoSeeder::class,
             EstadoSeeder::class,
             MunicipioSeeder::class,
+            RolesPermissionsSeeder::class,
         ]);
     }
 }
