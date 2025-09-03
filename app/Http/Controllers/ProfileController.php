@@ -16,23 +16,52 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user()->load(['participante.municipio.estado']);
+
+        // Se preferir carregar na view, pode remover isso:
+        $municipios = \App\Models\Municipio::with('estado')
+            ->orderBy('nome')
+            ->get(['id','nome','estado_id']);
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user'       => $user,
+            'municipios' => $municipios,
         ]);
     }
 
     /**
-     * Update the user's profile information.
+     * Update the user's profile information + participante.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $data = $request->validated();
+
+        $oldEmail = $user->email;
+        $user->fill([
+            'name'  => $data['name'],
+            'email' => $data['email'],
+        ]);
+
+        if ($oldEmail !== $data['email']) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
+
+        $participanteData = [
+            'cpf'            => $data['cpf']            ?? null,
+            'telefone'       => $data['telefone']       ?? null,
+            'municipio_id'   => $data['municipio_id']   ?? null,
+            'escola_unidade' => $data['escola_unidade'] ?? null,
+            // 'data_entrada'   => $data['data_entrada']   ?? null, // já 'Y-m-d' de <input type="date">
+        ];
+
+        $user->participante()->updateOrCreate(
+            ['user_id' => $user->id],
+            $participanteData
+        );
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }

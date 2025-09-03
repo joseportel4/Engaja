@@ -47,7 +47,7 @@
     <table class="table table-sm align-middle table-bordered bg-white">
       <thead class="table-light">
         <tr>
-          <th style="width:70px;">#ID</th>
+          <!-- <th style="width:70px;">#ID</th> -->
           <th>Nome</th>
           <th>Email</th>
           <th style="min-width:120px;">CPF</th>
@@ -62,7 +62,7 @@
       <tbody>
         @forelse($inscritos as $p)
           <tr>
-            <td>{{ $p->id }}</td>
+            <!-- <td>{{ $p->id }}</td> -->
             <td>{{ $p->user->name ?? '-' }}</td>
             <td>{{ $p->user->email ?? '-' }}</td>
             <td>{{ $p->cpf ?? '-' }}</td>

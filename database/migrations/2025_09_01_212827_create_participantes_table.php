@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('participantes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('municipio_id')->constrained()->cascadeOnDelete();
-            $table->string('cpf');
-            $table->string('telefone');
-            $table->string('escola_unidade');
+            $table->foreignId('municipio_id')->nullable()->constrained()->nullOnDelete();
+            $table->string('cpf')->nullable();
+            $table->string('telefone')->nullable();
+            $table->string('escola_unidade')->nullable();
             $table->date('data_entrada')->nullable();
             $table->timestamps();
             $table->softDeletes();

@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container d-flex justify-content-center align-items-center min-vh-100">
-    <div class="row w-100">
+<div class="container py-5">
+    <div class="row">
         <div class="col-md-6 offset-md-3">
             <div class="card shadow-sm">
                 <div class="card-header text-center bg-primary text-white fw-bold">

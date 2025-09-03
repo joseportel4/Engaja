@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Participante;
+
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -45,5 +47,9 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+    public function participante()
+    {
+        return $this->hasOne(Participante::class, 'user_id');
     }
 }
