@@ -12,9 +12,8 @@ class AtividadeController extends Controller
     use AuthorizesRequests;
     public function index(Evento $evento)
     {
-        $this->authorize('update', $evento);
         $atividades = $evento->atividades()->orderBy('dia')->orderBy('hora_inicio')->paginate(12);
-        return view('atividades.index', compact('evento','atividades'));
+        return view('atividades.index', compact('evento', 'atividades'));
     }
 
     public function create(Evento $evento)
@@ -38,7 +37,7 @@ class AtividadeController extends Controller
 
         return redirect()
             ->route('eventos.show', $evento)
-            ->with('success','Atividade adicionada com sucesso!');
+            ->with('success', 'Atividade adicionada com sucesso!');
     }
 
     public function edit(Atividade $atividade)
@@ -46,7 +45,7 @@ class AtividadeController extends Controller
         $evento = $atividade->evento;
         $this->authorize('update', $evento);
 
-        return view('atividades.edit', compact('evento','atividade'));
+        return view('atividades.edit', compact('evento', 'atividade'));
     }
 
     public function update(Request $request, Atividade $atividade)
@@ -65,7 +64,7 @@ class AtividadeController extends Controller
 
         return redirect()
             ->route('eventos.show', $evento)
-            ->with('success','Atividade atualizada com sucesso!');
+            ->with('success', 'Atividade atualizada com sucesso!');
     }
 
     public function destroy(Atividade $atividade)
@@ -75,12 +74,12 @@ class AtividadeController extends Controller
 
         $atividade->delete();
 
-        return back()->with('success','Atividade removida.');
+        return back()->with('success', 'Atividade removida.');
     }
 
     public function show(Atividade $atividade)
     {
-        $atividade->load('evento.participantes.user','presencas.inscricao.participante.user');
+        $atividade->load('evento.participantes.user', 'presencas.inscricao.participante.user');
 
         return view('atividades.show', compact('atividade'));
     }

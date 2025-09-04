@@ -38,12 +38,16 @@ class EventoController extends Controller
 
     public function create()
     {
+        $this->authorize('create', Evento::class);
+
         $eixos = Eixo::orderBy('nome')->get();
         return view('eventos.create', compact('eixos'));
     }
 
     public function store(Request $request)
     {
+        $this->authorize('create', Evento::class);
+
         $request->validate([
             'nome'       => 'required|string|max:255',
             'eixo_id'    => 'required|exists:eixos,id',

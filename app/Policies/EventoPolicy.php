@@ -29,7 +29,7 @@ class EventoPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->can('evento.criar');
     }
 
     /**

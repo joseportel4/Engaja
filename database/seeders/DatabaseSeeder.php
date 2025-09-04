@@ -9,12 +9,6 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::factory()->create([
-            'name'  => 'Admin Engaja',
-            'email' => 'admin@engaja.local',
-            
-        ]);
-
         $this->call([
             EixoSeeder::class,
             RegiaoSeeder::class,
@@ -22,5 +16,12 @@ class DatabaseSeeder extends Seeder
             MunicipioSeeder::class,
             RolesPermissionsSeeder::class,
         ]);
+
+        $administrador = User::factory()->create([
+            'name'  => 'Admin Engaja',
+            'email' => 'admin@engaja.local',
+        ]);
+
+        $administrador->assignRole('administrador');
     }
 }
