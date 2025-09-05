@@ -49,10 +49,17 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
     public function participante()
     {
         return $this->hasOne(Participante::class, 'user_id');
     }
+
+    public function eventos()
+    {
+        return $this->hasMany(Evento::class);
+    }
+
     protected static function booted(): void
     {
         static::created(function (User $user) {
