@@ -56,8 +56,8 @@ class ParticipantesPreviewImport implements ToCollection, WithHeadingRow, SkipsE
             return [
                 'nome'           => (string) ($map['nome'] ?? ''),
                 'email'          => (string) ($map['email'] ?? ''),
-                'cpf'            => preg_replace('/\D+/', '', (string)($r['cpf'] ?? '')) ?: null,
-                'telefone'       => preg_replace('/\D+/', '', (string)($r['telefone'] ?? '')) ?: null,
+                'cpf'            => preg_replace('/\D+/', '', (string)($map['cpf'] ?? '')) ?: null,
+                'telefone'       => preg_replace('/\D+/', '', (string)($map['telefone'] ?? '')) ?: null,
                 'municipio'      => $municipioNome,
                 'municipio_id'   => $municipioId,              // ajuda a montar <select> se quiser
                 'escola_unidade' => (string) ($map['escola_unidade'] ?? ''),
