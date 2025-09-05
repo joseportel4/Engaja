@@ -1,11 +1,11 @@
 # 📌 Engaja — Sistema de Gestão de Participação e Engajamento
 
 O **Engaja** é uma aplicação desenvolvida em **Laravel + Bootstrap** para gerenciar eventos educacionais, inscrições, presenças e relatórios de engajamento.  
-Ele foi projetado para atender instituições que precisam organizar **formações, oficinas, reuniões, lives** e outras atividades, oferecendo:
+Ele foi projetado para atender instituições que precisam organizar **formações, oficinas, reuniões, lives** e outros momento, oferecendo:
 
 - Gestão de **usuários** e papéis (roles)
 - Cadastro de **eventos** vinculados a eixos temáticos
-- **Atividades** associadas aos eventos (programação)
+- **Momento** associados aos eventos (programação)
 - **Inscrições** de participantes via cadastro manual ou importação `.xlsx`
 - Controle de **presenças**
 - Relatórios para acompanhamento de engajamento educacional

@@ -40,7 +40,7 @@ class AtividadeController extends Controller
 
         return redirect()
             ->route('eventos.show', $evento)
-            ->with('success', 'Atividade adicionada com sucesso!');
+            ->with('success', 'Momento adicionado com sucesso!');
     }
 
     public function edit(Atividade $atividade)
@@ -67,7 +67,7 @@ class AtividadeController extends Controller
 
         return redirect()
             ->route('eventos.show', $evento)
-            ->with('success', 'Atividade atualizada com sucesso!');
+            ->with('success', 'Momento atualizado com sucesso!');
     }
 
     public function destroy(Atividade $atividade)
@@ -77,7 +77,7 @@ class AtividadeController extends Controller
 
         $atividade->delete();
 
-        return back()->with('success', 'Atividade removida.');
+        return back()->with('success', 'Momento removida.');
     }
 
     public function show(\App\Models\Atividade $atividade)
@@ -107,14 +107,14 @@ class AtividadeController extends Controller
 
         return back()->with(
             'success',
-            $atividade->presenca_ativa ? 'Presença aberta para esta atividade.' : 'Presença fechada para esta atividade.'
+            $atividade->presenca_ativa ? 'Presença aberta para este momento.' : 'Presença fechada para este momento.'
         );
     }
 
     public function checkin(Atividade $atividade)
     {
         if (! $atividade->presenca_ativa) {
-            return back()->withErrors(['checkin' => 'Presença não está aberta para esta atividade.']);
+            return back()->withErrors(['checkin' => 'Presença não está aberta para este momento.']);
         }
 
         $user = auth()->user();

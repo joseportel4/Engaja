@@ -14,7 +14,7 @@
   <div class="card shadow-sm">
     <div class="card-body">
       <form method="POST" action="{{ route('eventos.atividades.store', $evento) }}">
-        @include('atividades._form', ['evento'=>$evento, 'submitLabel'=>'Salvar atividade'])
+        @include('atividades._form', ['evento'=>$evento, 'submitLabel'=>'Salvar momento'])
       </form>
     </div>
   </div>
