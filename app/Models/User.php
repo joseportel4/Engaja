@@ -2,15 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Participante;
+
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes, hasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -44,5 +48,27 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function participante()
+    {
+        return $this->hasOne(Participante::class, 'user_id');
+    }
+
+    public function eventos()
+    {
+        return $this->hasMany(Evento::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::created(function (User $user) {
+            $user->participante()->firstOrCreate(['user_id' => $user->id], [
+                'cpf'            => null,
+                'telefone'       => null,
+                'municipio_id'   => null,
+                'escola_unidade' => null,
+            ]);
+        });
     }
 }

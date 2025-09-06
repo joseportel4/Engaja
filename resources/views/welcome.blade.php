@@ -12,7 +12,8 @@
             <a href="{{ route('login') }}" class="btn btn-engaja btn-lg me-2">Entrar</a>
             <a href="{{ route('register') }}" class="btn btn-outline-engaja btn-lg">Cadastrar</a>
         @else
-            <a href="{{ url('/dashboard') }}" class="btn btn-engaja btn-lg">Ir para o Painel</a>
+            <a href="{{ url('/dashboard') }}" class="btn btn-engaja btn-lg me-2">Ir para o painel</a>
+            <a href="{{ route('eventos.index') }}" class="btn btn-outline-engaja btn-lg">Ver ações pedagógicas</a>
         @endguest
     </div>
 </div>
@@ -22,8 +23,9 @@
         <div class="card shadow-sm border-0 h-100">
             <div class="card-body text-center">
                 <div class="mb-3 text-engaja fs-1">📅</div>
-                <h5 class="card-title fw-bold">Eventos</h5>
+                <h5 class="card-title fw-bold">Ações pedagógicas</h5>
                 <p class="card-text">Organize e acompanhe inscrições para formações, encontros e reuniões.</p>
+                <a href="{{ route('eventos.index') }}" class="btn btn-sm btn-engaja mt-2">Acessar ações pedagógicas</a>
             </div>
         </div>
     </div>
@@ -43,13 +45,13 @@
             <div class="card-body text-center">
                 <div class="mb-3 text-warning fs-1">📊</div>
                 <h5 class="card-title fw-bold">Relatórios</h5>
-                <p class="card-text">Visualize indicadores de engajamento por evento, município ou região.</p>
+                <p class="card-text">Visualize indicadores de engajamento por ação pedagógica, município ou região.</p>
             </div>
         </div>
     </div>
 </div>
 
-<footer class="text-center text-muted mt-5">
+<!-- <footer class="text-center text-muted mt-5">
     <small>&copy; {{ date('Y') }} Engaja — Desenvolvido com Laravel</small>
-</footer>
+</footer> -->
 @endsection

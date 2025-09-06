@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container d-flex justify-content-center align-items-center min-vh-100">
-    <div class="row w-100">
+<div class="container py-5">
+    <div class="row">
         <div class="col-md-6 offset-md-3">
             <div class="card shadow-sm">
-                <div class="card-header bg-white text-center">
-                    <h5 class="mb-0 fw-bold text-engaja">Esqueci minha senha</h5>
+                <div class="card-header text-center bg-primary">
+                    <h5 class="mb-0 fw-bold text-white">Esqueci minha senha</h5>
                 </div>
 
                 <div class="card-body">

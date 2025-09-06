@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Imports;
+
+use App\Models\Participante;
+use App\Models\User;
+use App\Models\Municipio;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Carbon;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+
+class ParticipantesImport implements ToModel, WithHeadingRow, SkipsEmptyRows
+{
+    public Collection $importados;
+
+    /** @var array<string,int> */
+    protected array $municipiosCache = [];
+
+    public function __construct()
+    {
+        $this->importados = new Collection();
+
+        // Pré-carrega os municípios em memória para evitar query em cada linha
+        $this->municipiosCache = Municipio::query()
+            ->select('id', 'nome')
+            ->get()
+            ->mapWithKeys(fn ($m) => [mb_strtolower(trim($m->nome)) => $m->id])
+            ->all();
+    }
+
+    public function headingRow(): int
+    {
+        return 1;
+    }
+
+    public function model(array $row)
+    {
+        // Resolve municipio_id usando cache
+        $municipioId = null;
+        if (!empty($row['municipio'])) {
+            $key = mb_strtolower(trim((string) $row['municipio']));
+            if (isset($this->municipiosCache[$key])) {
+                $municipioId = $this->municipiosCache[$key];
+            }
+        }
+
+        // Cria ou reaproveita usuário pelo email
+        $email = strtolower(trim((string)($row['email'] ?? '')));
+        $name  = trim((string)($row['nome'] ?? ''));
+
+        $user = User::firstOrCreate(
+            ['email' => $email],
+            [
+                'name'     => $name !== '' ? $name : ($row['cpf'] ?? 'Participante'),
+                'password' => Hash::make(Str::random(12)),
+            ]
+        );
+
+        // Normaliza data de entrada
+        $dataEntrada = null;
+        if (!empty($row['data_entrada'])) {
+            try {
+                $dataEntrada = Carbon::parse($row['data_entrada'])->format('Y-m-d');
+            } catch (\Throwable $e) {
+                $dataEntrada = null;
+            }
+        }
+
+        // Cria ou atualiza participante
+        $participante = Participante::updateOrCreate(
+            [
+                'user_id' => $user->id,
+            ],
+            [
+                'municipio_id'   => $municipioId,
+                'cpf'            => $row['cpf'] ?? null,
+                'telefone'       => $row['telefone'] ?? null,
+                'escola_unidade' => $row['escola_unidade'] ?? null,
+                'data_entrada'   => $dataEntrada,
+            ]
+        );
+
+        $this->importados->push($participante);
+
+        return $participante;
+    }
+}

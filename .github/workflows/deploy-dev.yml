@@ -1,0 +1,25 @@
+name: Deploy Dev
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Executar deploy na VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            cd /home/lmts/engaja/engaja-dev
+            git fetch origin dev
+            git reset --hard origin/dev
+            docker compose exec -T app composer install --no-interaction --prefer-dist --optimize-autoloader
+            docker compose exec -T app php artisan migrate:fresh --seed --no-interaction
