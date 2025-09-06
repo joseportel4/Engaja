@@ -33,7 +33,8 @@ class PresencaController extends Controller
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Usuário não encontrado. Verifique o campo e tente novamente.');
+                ->with('error', 'Usuário não encontrado. Verifique o campo e tente novamente.')
+                ->with('show_register_button', true);
         }
         if ($usuario && !$participante) {
             $participante = Participante::where('user_id', $usuario->id)->first();
@@ -43,7 +44,7 @@ class PresencaController extends Controller
             $evento->participantes()->attach($participante->id);
         }
         $atividade->presencas()->updateOrCreate(
-            ['inscricao_id' => $participante->id],
+            ['inscricao_id' => $participante->inscricoes()->where('evento_id', $atividade->evento->id)->first()->id],
             ['status' => 'presente']
         );
         return redirect()->route('atividades.show', $atividade)->with('success', 'Presença confirmada com sucesso!');

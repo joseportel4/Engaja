@@ -146,8 +146,8 @@
                     </div>
 
                     <div class="card-footer text-center">
-                        <small class="text-muted">
-                            {{ __('Ao criar a conta, você concorda com os termos de uso e a política de privacidade.') }}
+                        <small class="text-danger opacity-75">
+                            {{ __('Ao criar sua conta, você será inscrito automaticamente no evento e sua presença será confirmada.') }}
                         </small>
                     </div>
                 </div>

@@ -59,7 +59,7 @@ Route::resource('eventos.atividades', AtividadeController::class)
 
 Route::get('eventos/{evento}', [EventoController::class, 'show'])->name('eventos.show');
 
-Route::get('/eventos/{evento}/{atividade}/cadastro-e-inscricao', [EventoController::class, 'cadastro_inscricao'])->name('evento.cadastro_inscricao');
+Route::get('/eventos/{evento_id}/{atividade_id}/cadastro-e-inscricao', [EventoController::class, 'cadastro_inscricao'])->name('evento.cadastro_inscricao');
 Route::post('/eventos/cadastro-e-inscricao/store', [EventoController::class, 'store_cadastro_inscricao'])->name('evento.store_cadastro_inscricao');
 
 Route::get('/presenca/{atividade}/confirmar', [PresencaController::class, 'confirmarPresenca'])->name('presenca.confirmar');
