@@ -4,7 +4,7 @@
 <div class="container py-4">
   <h1 class="h5 mb-3">Importar presenças — {{ $evento->nome }}</h1>
   <p class="text-muted mb-3">
-    Atividade: {{ \Carbon\Carbon::parse($atividade->dia)->format('d/m/Y') }}
+    Momento: {{ \Carbon\Carbon::parse($atividade->dia)->format('d/m/Y') }}
     • {{ \Illuminate\Support\Str::of($atividade->hora_inicio)->substr(0,5) }}
     • {{ $atividade->descricao ?? 'Momento' }}
   </p>

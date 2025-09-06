@@ -2,12 +2,6 @@
 
 @section('content')
 
-@session('error')
-<div class="alert alert-danger">
-  {{ session('error') }}
-</div>
-@endsession
-
 <div class="container py-4">
   <div class="row justify-content-center">
     <div class="col-md-8">

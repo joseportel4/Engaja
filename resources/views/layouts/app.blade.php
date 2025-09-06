@@ -5,15 +5,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-
   <title>{{ config('app.name', 'Engaja') }}</title>
 
-  {{-- Fonte Montserrat --}}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
 
-  {{-- Vite: Bootstrap SCSS + JS --}}
   @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+
   <style>
     :root {
       --engaja-purple: #421944;
@@ -52,39 +50,32 @@
   </style>
 </head>
 
-<body>
-  {{-- Navbar Bootstrap (substitui o include antigo do Tailwind) --}}
+<body class="d-flex flex-column min-vh-100">
   @includeWhen(View::exists('layouts.navigation'), 'layouts.navigation')
 
-  {{-- Cabeçalho opcional --}}
   @isset($header)
   <header class="bg-white border-bottom py-3">
-    <div class="container">
-      {{ $header }}
-    </div>
+    <div class="container">{{ $header }}</div>
   </header>
   @endisset
 
-  {{-- Conteúdo --}}
   @if (session('success'))
-    <div class="alert alert-success text-center">{{ session('success') }}</div>
+  <div class="alert alert-success text-center">{{ session('success') }}</div>
+
   @endif
 
   @if (session('error'))
-    <div class="alert alert-danger text-center">{{ session('error') }}</div>
+  <div class="alert alert-danger text-center">{{ session('error') }}</div>
   @endif
-  <main class="py-4">
+
+
+  <main class="flex-grow-1 py-4">
     <div class="container">
-      {{-- Se você usa $slot (Breeze components) --}}
-      @isset($slot)
-      {{ $slot }}
-      @else
-      @yield('content')
-      @endisset
+      @isset($slot) {{ $slot }} @else @yield('content') @endisset
     </div>
   </main>
-  {{-- Footer --}}
-  @include('layouts.footer')
+
+  @include('layouts.footer') {{-- <footer class="bg-primary border-top mt-auto pt-5"> ... --}}
 </body>
 
 </html>

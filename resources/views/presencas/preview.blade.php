@@ -5,7 +5,7 @@
   <h1 class="h5 mb-3">
     Pré-visualização de presenças — {{ $evento->nome }}<br>
     <small class="text-muted">
-      Atividade: {{ \Carbon\Carbon::parse($atividade->dia)->format('d/m/Y') }}
+      Momento: {{ \Carbon\Carbon::parse($atividade->dia)->format('d/m/Y') }}
       • {{ \Illuminate\Support\Str::of($atividade->hora_inicio)->substr(0,5) }}
       • {{ $atividade->descricao ?? 'Momento' }}
     </small>

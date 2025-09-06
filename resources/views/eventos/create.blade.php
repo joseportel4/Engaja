@@ -46,20 +46,20 @@
                     <label for="tipo" class="form-label">Tipo</label>
                     <select id="tipo" name="tipo" class="form-select @error('tipo') is-invalid @enderror">
                         <option value="">Selecione...</option>
-                        <option value="Reunião de Assessoria" @selected(old('tipo')=="Reunião de Assessoria" )>Reunião de Assessoria</option>
-                        <option value="Encontros de Formação" @selected(old('tipo')=="Encontros de Formação" )>Encontros de Formação</option>
-                        <option value="Lives e Webinars" @selected(old('tipo')=="Lives e Webinars" )>Lives e Webinars</option>
-                        <option value="Seminários de Práticas" @selected(old('tipo')=="Seminários de Práticas" )>Seminários de Práticas</option>
-                        <option value="Encontros de Educandos" @selected(old('tipo')=="Encontros de Educandos" )>Encontros de Educandos</option>
-                        <option value="Feira Pedagógica, Artístico-Cultural com Educandos" @selected(old('tipo')=="Feira Pedagógica, Artístico-Cultural com Educandos" )>
-                            Feira Pedagógica, Artístico-Cultural com Educandos
-                        </option>
-                        <option value="Encontros Escuta Territorial" @selected(old('tipo')=="Encontros Escuta Territorial" )>Encontros Escuta Territorial</option>
-                        <option value="Veja as Palavras" @selected(old('tipo')=="Veja as Palavras" )>Veja as Palavras</option>
                         <option value="Cartas para Esperançar" @selected(old('tipo')=="Cartas para Esperançar" )>Cartas para Esperançar</option>
                         <option value="Curso Como Alfabetizar com Paulo Freire" @selected(old('tipo')=="Curso Como Alfabetizar com Paulo Freire" )>
                             Curso Como Alfabetizar com Paulo Freire
                         </option>
+                        <option value="Encontros Escuta Territorial" @selected(old('tipo')=="Encontros Escuta Territorial" )>Encontros Escuta Territorial</option>
+                        <option value="Encontros de Educandos" @selected(old('tipo')=="Encontros de Educandos" )>Encontros de Educandos</option>
+                        <option value="Encontros de Formação" @selected(old('tipo')=="Encontros de Formação" )>Encontros de Formação</option>
+                        <option value="Feira Pedagógica, Artístico-Cultural com Educandos" @selected(old('tipo')=="Feira Pedagógica, Artístico-Cultural com Educandos" )>
+                            Feira Pedagógica, Artístico-Cultural com Educandos
+                        </option>
+                        <option value="Lives e Webinars" @selected(old('tipo')=="Lives e Webinars" )>Lives e Webinars</option>
+                        <option value="Reunião de Assessoria" @selected(old('tipo')=="Reunião de Assessoria" )>Reunião de Assessoria</option>
+                        <option value="Seminários de Práticas" @selected(old('tipo')=="Seminários de Práticas" )>Seminários de Práticas</option>
+                        <option value="Veja as Palavras" @selected(old('tipo')=="Veja as Palavras" )>Veja as Palavras</option>
                     </select>
                     @error('tipo')
                     <div class="invalid-feedback">{{ $message }}</div>
