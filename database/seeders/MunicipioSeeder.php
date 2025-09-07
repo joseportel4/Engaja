@@ -19,6 +19,7 @@ class MunicipioSeeder extends Seeder
         $municipios = [
             //Região Norte
             ['nome' => 'Oiapoque',                 'estado_id' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['nome' => 'Coari',                    'estado_id' => 2, 'created_at' => $now, 'updated_at' => $now],
             ['nome' => 'Carauari',                 'estado_id' => 2, 'created_at' => $now, 'updated_at' => $now],
             ['nome' => 'Belém',                    'estado_id' => 3, 'created_at' => $now, 'updated_at' => $now],
 
@@ -28,7 +29,7 @@ class MunicipioSeeder extends Seeder
             ['nome' => 'Icapuí',                   'estado_id' => 4, 'created_at' => $now, 'updated_at' => $now],
             ['nome' => 'Alto do Rodrigues',        'estado_id' => 5, 'created_at' => $now, 'updated_at' => $now],
             ['nome' => 'Porto do Mangue',          'estado_id' => 5, 'created_at' => $now, 'updated_at' => $now],
-            
+
             //Região Nordeste II
             ['nome' => 'Araçás',                   'estado_id' => 6, 'created_at' => $now, 'updated_at' => $now],
             ['nome' => 'São Francisco do Conde',   'estado_id' => 6, 'created_at' => $now, 'updated_at' => $now],
@@ -36,7 +37,7 @@ class MunicipioSeeder extends Seeder
             ['nome' => 'Ipojuca',                  'estado_id' => 8, 'created_at' => $now, 'updated_at' => $now],
             ['nome' => 'Cabo de Santo Agostinho',  'estado_id' => 8, 'created_at' => $now, 'updated_at' => $now],
             ['nome' => 'Brejo Grande',             'estado_id' => 9, 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 'Santa Luzia de Itanhy',    'estado_id' => 9, 'created_at' => $now, 'updated_at' => $now],
+            ['nome' => 'Santa Luzia do Itanhy',    'estado_id' => 9, 'created_at' => $now, 'updated_at' => $now],
         ];
 
         DB::table('municipios')->insert($municipios);
