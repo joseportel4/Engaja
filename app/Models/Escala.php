@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Escala extends Model
 {
@@ -16,7 +17,7 @@ class Escala extends Model
     ];
 
     // Caso cada questão possa ter uma escala diferente
-    public function questoes()
+    public function questoes(): HasMany
     {
         return $this->hasMany(Questao::class);
     }
