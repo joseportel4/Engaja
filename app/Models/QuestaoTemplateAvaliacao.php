@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class QuestaoTemplateAvaliacao extends Model
 {
@@ -17,5 +18,10 @@ class QuestaoTemplateAvaliacao extends Model
     public function questao(): BelongsTo
     {
         return $this->belongsTo(Questao::class);
+    }
+
+    public function escala(): HasOne
+    {
+        return $this->hasOne(Escala::class);
     }
 }

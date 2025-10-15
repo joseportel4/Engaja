@@ -16,9 +16,4 @@ class Escala extends Model
         'opcao5',
     ];
 
-    // Caso cada questão possa ter uma escala diferente
-    public function questoes(): HasMany
-    {
-        return $this->hasMany(Questao::class);
-    }
 }
