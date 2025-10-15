@@ -12,7 +12,25 @@
 
     <div id="mainNav" class="collapse navbar-collapse">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-
+        @auth
+        @role('administrador')
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            Avaliações
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ route('dimensaos.index') }}">Dimensões</a></li>
+            <li><a class="dropdown-item" href="{{ route('indicadors.index') }}">Indicadores</a></li>
+            <li><a class="dropdown-item" href="{{ route('escalas.index') }}">Escalas</a></li>
+            <li><a class="dropdown-item" href="{{ route('questaos.index') }}">Questões</a></li>
+            <li><a class="dropdown-item" href="{{ route('templates-avaliacao.index') }}">Templates</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ route('avaliacoes.index') }}">Avaliações</a></li>
+          </ul>
+        </li>
+        @endrole
+        @endauth
       </ul>
 
       <ul class="navbar-nav ms-auto">

@@ -13,8 +13,12 @@ return new class extends Migration
     {
         Schema::create('resposta_avaliacaos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('avaliacao_id')->constrained('avaliacaos');
-            $table->foreignId('questao_id')->constrained('questaos');
+            $table->foreignId('avaliacao_id')
+                ->constrained('avaliacaos')
+                ->cascadeOnDelete();
+            $table->foreignId('questao_id')
+                ->constrained('questaos')
+                ->cascadeOnDelete();
             $table->text('resposta')->nullable();
             $table->timestamps();
         });
@@ -25,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('respostas_avaliacaos');
+        Schema::dropIfExists('resposta_avaliacaos');
     }
 };
