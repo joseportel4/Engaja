@@ -12,7 +12,9 @@ class DimensaoController extends Controller
      */
     public function index()
     {
-        $dimensaos = Dimensao::orderBy('descricao')->paginate(15);
+        $dimensaos = Dimensao::withCount('indicadores')
+            ->orderBy('descricao')
+            ->paginate(15);
         return view('dimensaos.index', compact('dimensaos'));
     }
 

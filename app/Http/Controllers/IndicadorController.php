@@ -10,7 +10,10 @@ class IndicadorController extends Controller
 {
     public function index()
     {
-        $indicadors = Indicador::with('dimensao')->orderBy('descricao')->paginate(15);
+        $indicadors = Indicador::with('dimensao')
+            ->withCount('questoes')
+            ->orderBy('descricao')
+            ->paginate(15);
         return view('indicadors.index', compact('indicadors'));
     }
 

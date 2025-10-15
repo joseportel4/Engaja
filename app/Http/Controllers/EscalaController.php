@@ -7,28 +7,20 @@ use Illuminate\Http\Request;
 
 class EscalaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $escalas = Escala::orderBy('descricao')->paginate(15);
+        return view('escalas.index', compact('escalas'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return view('escalas.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        $request->validate([
+        $dados = $request->validate([
             'descricao' => 'required|string|max:255',
             'opcao1'    => 'nullable|string|max:255',
             'opcao2'    => 'nullable|string|max:255',
@@ -37,45 +29,47 @@ class EscalaController extends Controller
             'opcao5'    => 'nullable|string|max:255',
         ]);
 
-        Escala::create($request->only([
-            'descricao',
-            'opcao1', 'opcao2', 'opcao3', 'opcao4', 'opcao5',
-        ]));
+        Escala::create($dados);
 
         return redirect()
             ->route('escalas.index')
             ->with('success', 'Escala criada com sucesso!');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Escala $escala)
     {
-        //
+        return view('escalas.show', compact('escala'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Escala $escala)
     {
-        //
+        return view('escalas.edit', compact('escala'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Escala $escala)
     {
-        //
+        $dados = $request->validate([
+            'descricao' => 'required|string|max:255',
+            'opcao1'    => 'nullable|string|max:255',
+            'opcao2'    => 'nullable|string|max:255',
+            'opcao3'    => 'nullable|string|max:255',
+            'opcao4'    => 'nullable|string|max:255',
+            'opcao5'    => 'nullable|string|max:255',
+        ]);
+
+        $escala->update($dados);
+
+        return redirect()
+            ->route('escalas.index')
+            ->with('success', 'Escala atualizada com sucesso!');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Escala $escala)
     {
-        //
+        $escala->delete();
+
+        return redirect()
+            ->route('escalas.index')
+            ->with('success', 'Escala removida com sucesso!');
     }
 }
