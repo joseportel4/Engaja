@@ -15,6 +15,7 @@
           <th>Indicador</th>
           <th>Tipo</th>
           <th>Escala</th>
+          <th>Modelo</th>
           <th class="text-end">Ações</th>
         </tr>
       </thead>
@@ -25,6 +26,7 @@
           <td>{{ $questao->indicador->descricao ?? '—' }}</td>
           <td>{{ ucfirst($questao->tipo) }}</td>
           <td>{{ $questao->escala->descricao ?? '—' }}</td>
+          <td>{{ $questao->template->nome ?? '—' }}</td>
           <td class="text-end">
             <a href="{{ route('questaos.show', $questao) }}" class="btn btn-sm btn-outline-primary">Ver</a>
             <a href="{{ route('questaos.edit', $questao) }}" class="btn btn-sm btn-outline-secondary">Editar</a>

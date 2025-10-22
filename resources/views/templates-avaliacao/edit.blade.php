@@ -3,104 +3,19 @@
 @section('content')
 <div class="row justify-content-center">
   <div class="col-xl-10">
-    <h1 class="h3 fw-bold text-engaja mb-4">Editar template de avaliação</h1>
+    <h1 class="h3 fw-bold text-engaja mb-4">Editar modelo de avaliação</h1>
 
     <div class="card shadow-sm">
       <div class="card-body">
-        <form method="POST" action="{{ route('templates-avaliacao.update', $template) }}">
-          @csrf
-          @method('PUT')
-
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label for="nome" class="form-label">Nome</label>
-              <input type="text" id="nome" name="nome"
-                class="form-control @error('nome') is-invalid @enderror"
-                value="{{ old('nome', $template->nome) }}" required>
-              @error('nome')
-              <div class="invalid-feedback">{{ $message }}</div>
-              @enderror
-            </div>
-
-            <div class="col-md-6">
-              <label for="descricao" class="form-label">Descrição</label>
-              <input type="text" id="descricao" name="descricao"
-                class="form-control @error('descricao') is-invalid @enderror"
-                value="{{ old('descricao', $template->descricao) }}">
-              @error('descricao')
-              <div class="invalid-feedback">{{ $message }}</div>
-              @enderror
-            </div>
-          </div>
-
-          <div class="mt-4">
-            <h2 class="h6 fw-semibold text-uppercase text-muted">Questões</h2>
-            <p class="text-muted small mb-3">
-              Ajuste as questões selecionadas e a ordem em que devem aparecer para o participante.
-            </p>
-
-            @php
-              $selecionadasVelhas = collect(old('questoes', []))->map(fn($id) => (int)$id)->all();
-              $selecionadas = $selecionadasVelhas ?: $template->questoes->pluck('id')->all();
-              $ordensVelhas = old('ordens', []);
-            @endphp
-
-            <div class="table-responsive border rounded">
-              <table class="table table-sm align-middle mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th style="width: 60px;">Usar?</th>
-                    <th>Questão</th>
-                    <th>Indicador / Dimensão</th>
-                    <th>Tipo</th>
-                    <th style="width: 140px;">Ordem</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @forelse ($questaos as $questao)
-                  @php
-                    $ordemPivot = optional($template->questoes->firstWhere('id', $questao->id)?->pivot)->ordem;
-                  @endphp
-                  <tr>
-                    <td>
-                      <div class="form-check">
-                        <input class="form-check-input" type="checkbox"
-                          name="questoes[]" id="questao{{ $questao->id }}"
-                          value="{{ $questao->id }}" @checked(in_array($questao->id, $selecionadas, true))>
-                      </div>
-                    </td>
-                    <td>
-                      <label for="questao{{ $questao->id }}" class="d-block fw-semibold">
-                        {{ \Illuminate\Support\Str::limit($questao->texto, 100) }}
-                      </label>
-                    </td>
-                    <td>
-                      <span class="d-block">{{ $questao->indicador->descricao ?? '—' }}</span>
-                      <small class="text-muted">{{ $questao->indicador->dimensao->descricao ?? '' }}</small>
-                    </td>
-                    <td>{{ ucfirst($questao->tipo) }}</td>
-                    <td>
-                      <input type="number" name="ordens[{{ $questao->id }}]" min="1" max="999"
-                        class="form-control form-control-sm"
-                        value="{{ $ordensVelhas[$questao->id] ?? $ordemPivot }}"
-                        placeholder="1, 2, 3...">
-                    </td>
-                  </tr>
-                  @empty
-                  <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Cadastre questões antes de montar um template.</td>
-                  </tr>
-                  @endforelse
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="d-flex justify-content-between mt-4">
-            <a href="{{ route('templates-avaliacao.index') }}" class="btn btn-outline-secondary">Cancelar</a>
-            <button type="submit" class="btn btn-engaja">Salvar alterações</button>
-          </div>
-        </form>
+        @include('templates-avaliacao.partials.form', [
+          'action' => route('templates-avaliacao.update', $template),
+          'method' => 'PUT',
+          'submitLabel' => 'Salvar alterações',
+          'template' => $template,
+          'indicadores' => $indicadores,
+          'escalas' => $escalas,
+          'tiposQuestao' => $tiposQuestao,
+        ])
       </div>
     </div>
   </div>

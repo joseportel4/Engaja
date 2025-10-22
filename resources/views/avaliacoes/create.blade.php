@@ -49,7 +49,7 @@
             </div>
 
             <div class="col-md-4">
-              <label for="template_avaliacao_id" class="form-label">Template</label>
+              <label for="template_avaliacao_id" class="form-label">Modelo de avaliação</label>
               <select id="template_avaliacao_id" name="template_avaliacao_id"
                 class="form-select @error('template_avaliacao_id') is-invalid @enderror" required>
                 <option value="">Selecione...</option>

@@ -8,12 +8,15 @@
   @php
     $visivel = $selectedTemplateId === $template->id;
   @endphp
-  <div class="card shadow-sm mb-3 template-questoes {{ $visivel ? '' : 'd-none' }}" data-template-block="{{ $template->id }}">
+    <div class="card shadow-sm mb-3 template-questoes {{ $visivel ? '' : 'd-none' }}" data-template-block="{{ $template->id }}">
+      @php
+        $questoes = $template->questoes;
+      @endphp
     <div class="card-header bg-white">
-      <h2 class="h6 fw-semibold mb-0">Questões do template: {{ $template->nome }}</h2>
+      <h2 class="h6 fw-semibold mb-0">Questões do modelo: {{ $template->nome }}</h2>
     </div>
     <div class="card-body">
-      @forelse ($template->questoes as $questao)
+        @forelse ($questoes as $questao)
       @php
         $campo = "respostas.{$questao->id}";
         $valor = old($campo, $respostasAntigas[$questao->id] ?? null);
@@ -74,7 +77,7 @@
         @endswitch
       </div>
       @empty
-      <p class="text-muted mb-0">Nenhuma questão vinculada a este template.</p>
+      <p class="text-muted mb-0">Nenhuma questão vinculada a este modelo.</p>
       @endforelse
     </div>
   </div>

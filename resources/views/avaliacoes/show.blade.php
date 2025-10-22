@@ -24,7 +24,7 @@
           <dt class="col-md-4 text-muted">Atividade</dt>
           <dd class="col-md-8">{{ $avaliacao->atividade->descricao ?? '—' }}</dd>
 
-          <dt class="col-md-4 text-muted">Template</dt>
+          <dt class="col-md-4 text-muted">Modelo de avaliação</dt>
           <dd class="col-md-8">{{ $avaliacao->templateAvaliacao->nome ?? '—' }}</dd>
         </dl>
       </div>
@@ -51,7 +51,7 @@
             </p>
           </li>
           @empty
-          <li class="list-group-item px-0 text-muted">Nenhuma questão cadastrada para este template.</li>
+          <li class="list-group-item px-0 text-muted">Nenhuma questão cadastrada para este modelo.</li>
           @endforelse
         </ol>
       </div>

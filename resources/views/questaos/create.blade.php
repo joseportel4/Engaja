@@ -10,21 +10,37 @@
         <form method="POST" action="{{ route('questaos.store') }}">
           @csrf
 
-          <div class="mb-3">
-            <label for="indicador_id" class="form-label">Indicador</label>
-            <select id="indicador_id" name="indicador_id"
-              class="form-select @error('indicador_id') is-invalid @enderror" required>
-              <option value="">Selecione...</option>
-              @foreach ($indicadores as $id => $descricao)
-              <option value="{{ $id }}" @selected(old('indicador_id') == $id)>{{ $descricao }}</option>
-              @endforeach
-            </select>
-            @error('indicador_id')
-            <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="template_avaliacao_id" class="form-label">Modelo de avaliação</label>
+              <select id="template_avaliacao_id" name="template_avaliacao_id"
+                class="form-select @error('template_avaliacao_id') is-invalid @enderror" required>
+                <option value="">Selecione...</option>
+                @foreach ($templates as $id => $nome)
+                <option value="{{ $id }}" @selected(old('template_avaliacao_id') == $id)>{{ $nome }}</option>
+                @endforeach
+              </select>
+              @error('template_avaliacao_id')
+              <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+            </div>
+
+            <div class="col-md-6">
+              <label for="indicador_id" class="form-label">Indicador</label>
+              <select id="indicador_id" name="indicador_id"
+                class="form-select @error('indicador_id') is-invalid @enderror" required>
+                <option value="">Selecione...</option>
+                @foreach ($indicadores as $id => $descricao)
+                <option value="{{ $id }}" @selected(old('indicador_id') == $id)>{{ $descricao }}</option>
+                @endforeach
+              </select>
+              @error('indicador_id')
+              <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+            </div>
           </div>
 
-          <div class="mb-3">
+          <div class="mb-3 mt-3">
             <label for="texto" class="form-label">Enunciado</label>
             <textarea id="texto" name="texto"
               class="form-control @error('texto') is-invalid @enderror" rows="4" required>{{ old('texto') }}</textarea>
@@ -46,7 +62,17 @@
               @enderror
             </div>
 
-            <div class="col-md-5">
+            <div class="col-md-4">
+              <label for="ordem" class="form-label">Ordem</label>
+              <input type="number" id="ordem" name="ordem" min="1" max="999"
+                class="form-control @error('ordem') is-invalid @enderror" value="{{ old('ordem') }}"
+                placeholder="1, 2, 3...">
+              @error('ordem')
+              <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+            </div>
+
+            <div class="col-md-4">
               <label for="escala_id" class="form-label">Escala (quando tipo = Escala)</label>
               <select id="escala_id" name="escala_id"
                 class="form-select @error('escala_id') is-invalid @enderror">
@@ -59,8 +85,10 @@
               <div class="invalid-feedback">{{ $message }}</div>
               @enderror
             </div>
+          </div>
 
-            <div class="col-md-3 d-flex align-items-end">
+          <div class="row g-3 mt-1">
+            <div class="col-md-4 d-flex align-items-end">
               <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" id="fixa" name="fixa"
                   value="1" @checked(old('fixa'))>

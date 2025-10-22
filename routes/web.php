@@ -58,7 +58,8 @@ Route::middleware(['auth', 'role:administrador'])->group(function () {
     Route::resource('indicadors', IndicadorController::class);
     Route::resource('escalas', EscalaController::class);
     Route::resource('questaos', QuestaoController::class);
-    Route::resource('templates-avaliacao', TemplateAvaliacaoController::class);
+    Route::resource('templates-avaliacao', TemplateAvaliacaoController::class)
+        ->parameters(['templates-avaliacao' => 'template']);
     Route::resource('avaliacoes', AvaliacaoController::class)
         ->parameters(['avaliacoes' => 'avaliacao']);
 });

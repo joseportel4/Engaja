@@ -35,8 +35,7 @@
             <li><a class="dropdown-item" href="{{ route('dimensaos.index') }}">Dimensões</a></li>
             <li><a class="dropdown-item" href="{{ route('indicadors.index') }}">Indicadores</a></li>
             <li><a class="dropdown-item" href="{{ route('escalas.index') }}">Escalas</a></li>
-            <li><a class="dropdown-item" href="{{ route('questaos.index') }}">Questões</a></li>
-            <li><a class="dropdown-item" href="{{ route('templates-avaliacao.index') }}">Templates</a></li>
+            <li><a class="dropdown-item" href="{{ route('templates-avaliacao.index') }}">Modelos de avaliação</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="{{ route('avaliacoes.index') }}">Avaliações</a></li>
           </ul>

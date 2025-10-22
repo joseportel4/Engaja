@@ -32,7 +32,7 @@
                   @endif
                 </p>
               </div>
-              <span class="badge bg-light text-dark border">Ordem {{ $questao->pivot->ordem ?? '—' }}</span>
+              <span class="badge bg-light text-dark border">Ordem {{ $questao->ordem ?? '—' }}</span>
             </div>
           </li>
           @empty

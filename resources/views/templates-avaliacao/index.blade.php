@@ -2,8 +2,8 @@
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h3 fw-bold text-engaja mb-0">Templates de avaliação</h1>
-  <a href="{{ route('templates-avaliacao.create') }}" class="btn btn-engaja">Novo template</a>
+  <h1 class="h3 fw-bold text-engaja mb-0">Modelos de avaliação</h1>
+  <a href="{{ route('templates-avaliacao.create') }}" class="btn btn-engaja">Novo modelo</a>
 </div>
 
 <div class="card shadow-sm">
@@ -30,13 +30,13 @@
               @csrf
               @method('DELETE')
               <button type="submit" class="btn btn-sm btn-outline-danger"
-                onclick="return confirm('Tem certeza que deseja excluir este template?')">Excluir</button>
+                onclick="return confirm('Tem certeza que deseja excluir este modelo?')">Excluir</button>
             </form>
           </td>
         </tr>
         @empty
         <tr>
-          <td colspan="4" class="text-center text-muted py-4">Nenhum template cadastrado.</td>
+          <td colspan="4" class="text-center text-muted py-4">Nenhum modelo cadastrado.</td>
         </tr>
         @endforelse
       </tbody>

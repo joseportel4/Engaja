@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Eixo;
 use App\Models\Escala;
 use App\Models\Indicador;
 use App\Models\Questao;
+use App\Models\TemplateAvaliacao;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class QuestaoController extends Controller
 {
     public function index()
     {
-        $questaos = Questao::with(['indicador.dimensao', 'escala'])
+        $questaos = Questao::with(['indicador.dimensao', 'escala', 'template'])
             ->orderBy('texto')
             ->paginate(15);
 
@@ -21,23 +22,16 @@ class QuestaoController extends Controller
 
     public function create()
     {
-        $indicadores = Indicador::with('dimensao')
-            ->orderBy('descricao')
-            ->get()
-            ->mapWithKeys(fn ($indicador) => [
-                $indicador->id => $indicador->dimensao
-                    ? "{$indicador->dimensao->descricao} - {$indicador->descricao}"
-                    : $indicador->descricao,
-            ]);
+        [$indicadores, $escalas, $templates] = $this->formSelections();
 
-        $escalas = Escala::orderBy('descricao')->pluck('descricao', 'id');
-
-        return view('questaos.create', compact('indicadores', 'escalas'));
+        return view('questaos.create', compact('indicadores', 'escalas', 'templates'));
     }
 
     public function store(Request $request)
     {
         $dados = $this->validateQuestao($request);
+
+        $dados['ordem'] = $dados['ordem'] ?? $this->proximaOrdem($dados['template_avaliacao_id']);
 
         Questao::create($dados);
 
@@ -48,30 +42,23 @@ class QuestaoController extends Controller
 
     public function show(Questao $questao)
     {
-        $questao->load(['indicador.dimensao', 'escala', 'templates']);
+        $questao->load(['indicador.dimensao', 'escala', 'template']);
 
         return view('questaos.show', compact('questao'));
     }
 
     public function edit(Questao $questao)
     {
-        $indicadores = Indicador::with('dimensao')
-            ->orderBy('descricao')
-            ->get()
-            ->mapWithKeys(fn ($indicador) => [
-                $indicador->id => $indicador->dimensao
-                    ? "{$indicador->dimensao->descricao} - {$indicador->descricao}"
-                    : $indicador->descricao,
-            ]);
+        [$indicadores, $escalas, $templates] = $this->formSelections();
 
-        $escalas = Escala::orderBy('descricao')->pluck('descricao', 'id');
-
-        return view('questaos.edit', compact('questao', 'indicadores', 'escalas'));
+        return view('questaos.edit', compact('questao', 'indicadores', 'escalas', 'templates'));
     }
 
     public function update(Request $request, Questao $questao)
     {
         $dados = $this->validateQuestao($request);
+
+        $dados['ordem'] = $dados['ordem'] ?? $questao->ordem ?? $this->proximaOrdem($dados['template_avaliacao_id']);
 
         $questao->update($dados);
 
@@ -92,11 +79,13 @@ class QuestaoController extends Controller
     private function validateQuestao(Request $request): array
     {
         $dados = $request->validate([
-            'indicador_id' => ['required', Rule::exists('indicadors', 'id')],
-            'escala_id'    => ['nullable', Rule::exists('escalas', 'id')],
-            'texto'        => ['required', 'string', 'max:1000'],
-            'tipo'         => ['required', 'string', Rule::in(['texto', 'escala', 'numero', 'boolean'])],
-            'fixa'         => ['nullable', 'boolean'],
+            'template_avaliacao_id' => ['required', Rule::exists('template_avaliacaos', 'id')],
+            'indicador_id'          => ['required', Rule::exists('indicadors', 'id')],
+            'escala_id'             => ['nullable', Rule::exists('escalas', 'id')],
+            'texto'                 => ['required', 'string', 'max:1000'],
+            'tipo'                  => ['required', 'string', Rule::in(['texto', 'escala', 'numero', 'boolean'])],
+            'ordem'                 => ['nullable', 'integer', 'min:1', 'max:999'],
+            'fixa'                  => ['nullable', 'boolean'],
         ]);
 
         $dados['fixa'] = $request->boolean('fixa');
@@ -112,5 +101,29 @@ class QuestaoController extends Controller
         }
 
         return $dados;
+    }
+
+    private function proximaOrdem(int $templateId): int
+    {
+        $maiorOrdem = Questao::where('template_avaliacao_id', $templateId)->max('ordem');
+
+        return $maiorOrdem ? $maiorOrdem + 1 : 1;
+    }
+
+    private function formSelections(): array
+    {
+        $indicadores = Indicador::with('dimensao')
+            ->orderBy('descricao')
+            ->get()
+            ->mapWithKeys(fn ($indicador) => [
+                $indicador->id => $indicador->dimensao
+                    ? $indicador->dimensao->descricao . ' - ' . $indicador->descricao
+                    : $indicador->descricao,
+            ]);
+
+        $escalas = Escala::orderBy('descricao')->pluck('descricao', 'id');
+        $templates = TemplateAvaliacao::orderBy('nome')->pluck('nome', 'id');
+
+        return [$indicadores, $escalas, $templates];
     }
 }

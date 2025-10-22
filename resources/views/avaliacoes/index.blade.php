@@ -13,7 +13,7 @@
         <tr>
           <th>Participante</th>
           <th>Evento / Atividade</th>
-          <th>Template</th>
+          <th>Modelo</th>
           <th>Registrada em</th>
           <th class="text-end">Ações</th>
         </tr>
