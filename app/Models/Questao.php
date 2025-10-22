@@ -13,6 +13,7 @@ class Questao extends Model
         'indicador_id',
         'escala_id',
         'template_avaliacao_id',
+        'evidencia_id',
         'texto',
         'tipo',
         'fixa',
@@ -32,5 +33,10 @@ class Questao extends Model
     public function template(): BelongsTo
     {
         return $this->belongsTo(TemplateAvaliacao::class, 'template_avaliacao_id');
+    }
+
+    public function evidencia(): BelongsTo
+    {
+        return $this->belongsTo(Evidencia::class);
     }
 }
