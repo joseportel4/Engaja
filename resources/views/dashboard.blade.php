@@ -134,8 +134,10 @@
                                         <table class="table table-sm table-bordered mb-0">
                                             <thead class="table-primary">
                                                 <tr>
-                                                    <th style="width: 55%;">Nome</th>
-                                                    <th style="width: 45%;">E-mail</th>
+                                                    <th style="width: 35%;">Nome</th>
+                                                    <th style="width: 30%;">E-mail</th>
+                                                    <th style="width: 18%;">CPF</th>
+                                                    <th style="width: 17%;">Tag</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -147,7 +149,9 @@
                                                 @endphp
                                                 <tr>
                                                     <td>{{ $user->name ?? 'Participante #'.$part->id }}</td>
-                                                    <td>{{ $user->email ?? '—' }}</td>
+                                                    <td>{{ $user->email ?? '-' }}</td>
+                                                    <td>{{ $part->cpf ?: '-' }}</td>
+                                                    <td>{{ $part->tag ?: '-' }}</td>
                                                 </tr>
                                                 @endforeach
                                             </tbody>
