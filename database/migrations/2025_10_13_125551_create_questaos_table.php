@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('indicador_id')->nullable()->constrained('indicadors');
             $table->foreignId('escala_id')->nullable()->constrained('escalas');
+            $table->foreignId('evidencia_id')->nullable()->constrained('evidencias');
             $table->unsignedBigInteger('template_avaliacao_id')->nullable();
             $table->string('texto');
             $table->string('tipo')->default('texto');
