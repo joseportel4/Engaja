@@ -4,6 +4,7 @@
   $isPrototype = $isPrototype ?? false;
   $questaoId = $questao['id'] ?? null;
   $indicadorErro = ! $isPrototype && $errorsBag->has("questoes.$index.indicador_id");
+  $evidenciaErro = ! $isPrototype && $errorsBag->has("questoes.$index.evidencia_id");
   $textoErro = ! $isPrototype && $errorsBag->has("questoes.$index.texto");
   $tipoErro = ! $isPrototype && $errorsBag->has("questoes.$index.tipo");
   $escalaErro = ! $isPrototype && $errorsBag->has("questoes.$index.escala_id");
@@ -34,6 +35,20 @@
         </select>
         @if ($indicadorErro)
         <div class="invalid-feedback">{{ $errorsBag->first("questoes.$index.indicador_id") }}</div>
+        @endif
+      </div>
+
+      <div class="col-md-6">
+        <label for="questoes-{{ $index }}-evidencia_id" class="form-label">Evidência</label>
+        <select id="questoes-{{ $index }}-evidencia_id" name="questoes[{{ $index }}][evidencia_id]"
+          class="form-select{{ $evidenciaErro ? ' is-invalid' : '' }}">
+          <option value="">Selecione...</option>
+          @foreach (($evidencias ?? []) as $id => $descricao)
+          <option value="{{ $id }}" @selected(($questao['evidencia_id'] ?? '') == $id)>{{ $descricao }}</option>
+          @endforeach
+        </select>
+        @if ($evidenciaErro)
+        <div class="invalid-feedback">{{ $errorsBag->first("questoes.$index.evidencia_id") }}</div>
         @endif
       </div>
 

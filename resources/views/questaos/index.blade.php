@@ -13,6 +13,7 @@
         <tr>
           <th>Texto</th>
           <th>Indicador</th>
+          <th>Evidência</th>
           <th>Tipo</th>
           <th>Escala</th>
           <th>Modelo</th>
@@ -24,6 +25,7 @@
         <tr>
           <td class="fw-semibold">{{ \Illuminate\Support\Str::limit($questao->texto, 80) }}</td>
           <td>{{ $questao->indicador->descricao ?? '—' }}</td>
+          <td>{{ $questao->evidencia->descricao ?? '—' }}</td>
           <td>{{ ucfirst($questao->tipo) }}</td>
           <td>{{ $questao->escala->descricao ?? '—' }}</td>
           <td>{{ $questao->template->nome ?? '—' }}</td>

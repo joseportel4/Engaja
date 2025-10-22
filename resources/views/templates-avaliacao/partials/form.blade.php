@@ -4,10 +4,26 @@
   $submitLabel = $submitLabel ?? 'Salvar modelo';
   $cancelUrl = $cancelUrl ?? route('templates-avaliacao.index');
   $template = $template ?? null;
+  // Build evidencias list if not provided by controller
+  if (!isset($evidencias)) {
+    $evidencias = \App\Models\Evidencia::with('indicador.dimensao')
+      ->orderBy('descricao')
+      ->get()
+      ->mapWithKeys(function ($e) {
+        $prefix = '';
+        if ($e->indicador && $e->indicador->dimensao) {
+          $prefix = $e->indicador->dimensao->descricao . ' - ' . ($e->indicador->descricao ?? '');
+        } elseif ($e->indicador) {
+          $prefix = $e->indicador->descricao ?? '';
+        }
+        return [$e->id => trim($prefix ? ($prefix . ' | ' . $e->descricao) : $e->descricao)];
+      });
+  }
 
   $emptyQuestao = [
     'id' => null,
     'indicador_id' => '',
+    'evidencia_id' => '',
     'escala_id' => '',
     'texto' => '',
     'tipo' => 'texto',
@@ -22,6 +38,7 @@
       ->map(fn ($questao) => [
         'id' => $questao->id,
         'indicador_id' => $questao->indicador_id,
+        'evidencia_id' => $questao->evidencia_id,
         'escala_id' => $questao->escala_id,
         'texto' => $questao->texto,
         'tipo' => $questao->tipo,
@@ -79,7 +96,7 @@
         @include('templates-avaliacao.partials.questao-fields', [
           'index' => $index,
           'questao' => $questao,
-          'indicadores' => $indicadores,
+          'evidencias' => $evidencias,
           'escalas' => $escalas,
           'tiposQuestao' => $tiposQuestao,
         ])
@@ -94,7 +111,7 @@
     @include('templates-avaliacao.partials.questao-fields', [
       'index' => '__INDEX__',
       'questao' => $emptyQuestao,
-      'indicadores' => $indicadores,
+      'evidencias' => $evidencias,
       'escalas' => $escalas,
       'tiposQuestao' => $tiposQuestao,
       'isPrototype' => true,
@@ -257,20 +274,23 @@
       }
     });
 
-    // Toggle indicador select's required attribute based on fixa checkbox.
-    function applyIndicadorRequiredRules() {
+    // Toggle indicadore/evidência required attribute based on fixa checkbox.
+    function applyEvidenciaRequiredRules() {
       const cards = Array.from(container.querySelectorAll('[data-question-card]'))
         .filter((card) => !card.classList.contains('d-none'));
 
       cards.forEach((card) => {
         const fixaCheckbox = card.querySelector('input[type="checkbox"][name$="[fixa]"]');
+        const evidenciaSelect = card.querySelector('select[name$="[evidencia_id]"]');
         const indicadorSelect = card.querySelector('select[name$="[indicador_id]"]');
-        if (!indicadorSelect) return;
+        if (!evidenciaSelect && !indicadorSelect) return;
 
         if (fixaCheckbox && fixaCheckbox.checked) {
-          indicadorSelect.setAttribute('required', 'required');
+          if (evidenciaSelect) evidenciaSelect.setAttribute('required', 'required');
+          if (indicadorSelect) indicadorSelect.setAttribute('required', 'required');
         } else {
-          indicadorSelect.removeAttribute('required');
+          if (evidenciaSelect) evidenciaSelect.removeAttribute('required');
+          if (indicadorSelect) indicadorSelect.removeAttribute('required');
         }
       });
     }
@@ -281,19 +301,22 @@
       if (target.matches('input[type="checkbox"][name$="[fixa]"]')) {
         const card = target.closest('[data-question-card]');
         if (!card) return;
+        const evidenciaSelect = card.querySelector('select[name$="[evidencia_id]"]');
         const indicadorSelect = card.querySelector('select[name$="[indicador_id]"]');
-        if (!indicadorSelect) return;
+        if (!evidenciaSelect && !indicadorSelect) return;
 
         if (target.checked) {
-          indicadorSelect.setAttribute('required', 'required');
+          if (evidenciaSelect) evidenciaSelect.setAttribute('required', 'required');
+          if (indicadorSelect) indicadorSelect.setAttribute('required', 'required');
         } else {
-          indicadorSelect.removeAttribute('required');
+          if (evidenciaSelect) evidenciaSelect.removeAttribute('required');
+          if (indicadorSelect) indicadorSelect.removeAttribute('required');
         }
       }
     });
 
     // Apply rules on initial load
-    applyIndicadorRequiredRules();
+    applyEvidenciaRequiredRules();
     applyEscalaVisibility();
 
     updatePositions();

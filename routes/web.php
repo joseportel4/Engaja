@@ -8,6 +8,7 @@ use App\Http\Controllers\EscalaController;
 use App\Http\Controllers\EventoController;
 use App\Http\Controllers\InscricaoController;
 use App\Http\Controllers\IndicadorController;
+use App\Http\Controllers\EvidenciaController;
 use App\Http\Controllers\PresencaController;
 use App\Http\Controllers\PresencaImportController;
 use App\Http\Controllers\ProfileController;
@@ -56,6 +57,7 @@ Route::middleware(['auth', 'role:administrador'])->group(function () {
 
     Route::resource('dimensaos', DimensaoController::class);
     Route::resource('indicadors', IndicadorController::class);
+    Route::resource('evidencias', EvidenciaController::class);
     Route::resource('escalas', EscalaController::class);
     Route::resource('questaos', QuestaoController::class);
     Route::resource('templates-avaliacao', TemplateAvaliacaoController::class)

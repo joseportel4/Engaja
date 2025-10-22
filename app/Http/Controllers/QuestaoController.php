@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Escala;
 use App\Models\Indicador;
+use App\Models\Evidencia;
 use App\Models\Questao;
 use App\Models\TemplateAvaliacao;
 use Illuminate\Http\Request;
@@ -13,7 +14,7 @@ class QuestaoController extends Controller
 {
     public function index()
     {
-        $questaos = Questao::with(['indicador.dimensao', 'escala', 'template'])
+        $questaos = Questao::with(['indicador.dimensao', 'evidencia.indicador', 'escala', 'template'])
             ->orderBy('texto')
             ->paginate(15);
 
@@ -22,9 +23,9 @@ class QuestaoController extends Controller
 
     public function create()
     {
-        [$indicadores, $escalas, $templates] = $this->formSelections();
+        [$evidencias, $escalas, $templates] = $this->formSelections();
 
-        return view('questaos.create', compact('indicadores', 'escalas', 'templates'));
+        return view('questaos.create', compact('evidencias', 'escalas', 'templates'));
     }
 
     public function store(Request $request)
@@ -42,16 +43,16 @@ class QuestaoController extends Controller
 
     public function show(Questao $questao)
     {
-        $questao->load(['indicador.dimensao', 'escala', 'template']);
+        $questao->load(['indicador.dimensao', 'evidencia.indicador', 'escala', 'template']);
 
         return view('questaos.show', compact('questao'));
     }
 
     public function edit(Questao $questao)
     {
-        [$indicadores, $escalas, $templates] = $this->formSelections();
+        [$evidencias, $escalas, $templates] = $this->formSelections();
 
-        return view('questaos.edit', compact('questao', 'indicadores', 'escalas', 'templates'));
+        return view('questaos.edit', compact('questao', 'evidencias', 'escalas', 'templates'));
     }
 
     public function update(Request $request, Questao $questao)
@@ -80,7 +81,7 @@ class QuestaoController extends Controller
     {
         $dados = $request->validate([
             'template_avaliacao_id' => ['required', Rule::exists('template_avaliacaos', 'id')],
-            'indicador_id'          => ['required', Rule::exists('indicadors', 'id')],
+            'evidencia_id'          => ['required', Rule::exists('evidencias', 'id')],
             'escala_id'             => ['nullable', Rule::exists('escalas', 'id')],
             'texto'                 => ['required', 'string', 'max:1000'],
             'tipo'                  => ['required', 'string', Rule::in(['texto', 'escala', 'numero', 'boolean'])],
@@ -100,6 +101,14 @@ class QuestaoController extends Controller
             $dados['escala_id'] = null;
         }
 
+        // Derive indicador_id from evidencia for consistency/back-compat
+        if (!empty($dados['evidencia_id'])) {
+            $evidencia = Evidencia::find($dados['evidencia_id']);
+            if ($evidencia) {
+                $dados['indicador_id'] = $evidencia->indicador_id;
+            }
+        }
+
         return $dados;
     }
 
@@ -112,18 +121,18 @@ class QuestaoController extends Controller
 
     private function formSelections(): array
     {
-        $indicadores = Indicador::with('dimensao')
+        $evidencias = Evidencia::with('indicador.dimensao')
             ->orderBy('descricao')
             ->get()
-            ->mapWithKeys(fn ($indicador) => [
-                $indicador->id => $indicador->dimensao
-                    ? $indicador->dimensao->descricao . ' - ' . $indicador->descricao
-                    : $indicador->descricao,
+            ->mapWithKeys(fn ($evidencia) => [
+                $evidencia->id => ($evidencia->indicador && $evidencia->indicador->dimensao
+                    ? $evidencia->indicador->dimensao->descricao . ' - '
+                    : '') . ($evidencia->indicador->descricao ?? '') . ' | ' . $evidencia->descricao,
             ]);
 
         $escalas = Escala::orderBy('descricao')->pluck('descricao', 'id');
         $templates = TemplateAvaliacao::orderBy('nome')->pluck('nome', 'id');
 
-        return [$indicadores, $escalas, $templates];
+        return [$evidencias, $escalas, $templates];
     }
 }

@@ -27,15 +27,15 @@
             </div>
 
             <div class="col-md-6">
-              <label for="indicador_id" class="form-label">Indicador</label>
-              <select id="indicador_id" name="indicador_id"
-                class="form-select @error('indicador_id') is-invalid @enderror" required>
+              <label for="evidencia_id" class="form-label">Evidência</label>
+              <select id="evidencia_id" name="evidencia_id"
+                class="form-select @error('evidencia_id') is-invalid @enderror" required>
                 <option value="">Selecione...</option>
-                @foreach ($indicadores as $id => $descricao)
-                <option value="{{ $id }}" @selected(old('indicador_id', $questao->indicador_id) == $id)>{{ $descricao }}</option>
+                @foreach ($evidencias as $id => $descricao)
+                <option value="{{ $id }}" @selected(old('evidencia_id', $questao->evidencia_id) == $id)>{{ $descricao }}</option>
                 @endforeach
               </select>
-              @error('indicador_id')
+              @error('evidencia_id')
               <div class="invalid-feedback">{{ $message }}</div>
               @enderror
             </div>

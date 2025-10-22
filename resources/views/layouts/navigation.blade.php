@@ -34,6 +34,7 @@
           <ul class="dropdown-menu">
             <li><a class="dropdown-item" href="{{ route('dimensaos.index') }}">Dimensões</a></li>
             <li><a class="dropdown-item" href="{{ route('indicadors.index') }}">Indicadores</a></li>
+            <li><a class="dropdown-item" href="{{ route('evidencias.index') }}">Evidências</a></li>
             <li><a class="dropdown-item" href="{{ route('escalas.index') }}">Escalas</a></li>
             <li><a class="dropdown-item" href="{{ route('templates-avaliacao.index') }}">Modelos de avaliação</a></li>
             <li><hr class="dropdown-divider"></li>
