@@ -4,17 +4,41 @@ namespace App\Http\Controllers;
 
 use App\Models\Dimensao;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class DimensaoController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $dimensaos = Dimensao::withCount('indicadores')
-            ->orderBy('descricao')
-            ->paginate(15);
+        $query = Dimensao::query()->withCount('indicadores');
+
+        $searchTerm = trim((string) $request->query('search', ''));
+        if ($searchTerm !== '') {
+            $query->where('descricao', 'like', '%' . $searchTerm . '%');
+        }
+
+        $hasIndicators = $request->query('has_indicators');
+        if ($hasIndicators === 'with') {
+            $query->whereHas('indicadores');
+        } elseif ($hasIndicators === 'without') {
+            $query->whereDoesntHave('indicadores');
+        }
+
+        $sort = $request->query('sort', 'descricao');
+        $directionParam = $request->query('dir', $request->query('direction', 'asc'));
+        $direction = Str::lower((string) $directionParam) === 'desc' ? 'desc' : 'asc';
+
+        if ($sort === 'indicadores') {
+            $query->orderBy('indicadores_count', $direction);
+        } else {
+            $query->orderBy('descricao', $direction);
+        }
+
+        $dimensaos = $query->paginate(15)->appends($request->query());
+
         return view('dimensaos.index', compact('dimensaos'));
     }
 
