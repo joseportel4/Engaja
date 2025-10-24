@@ -13,14 +13,44 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class TemplateAvaliacaoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $templates = TemplateAvaliacao::withCount('questoes')
-            ->orderBy('nome')
-            ->paginate(15);
+        $query = TemplateAvaliacao::query()->withCount('questoes');
+
+        $searchTerm = trim((string) $request->query('search', ''));
+        if ($searchTerm !== '') {
+            $query->where(function ($nested) use ($searchTerm) {
+                $nested->where('nome', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('descricao', 'like', '%' . $searchTerm . '%');
+            });
+        }
+
+        $hasQuestions = $request->query('has_questions');
+        if ($hasQuestions === 'with') {
+            $query->whereHas('questoes');
+        } elseif ($hasQuestions === 'without') {
+            $query->whereDoesntHave('questoes');
+        }
+
+        $sort = $request->query('sort', 'nome');
+        $directionParam = $request->query('dir', $request->query('direction', 'asc'));
+        $direction = Str::lower((string) $directionParam) === 'desc' ? 'desc' : 'asc';
+
+        if ($sort === 'questoes') {
+            $query->orderBy('questoes_count', $direction);
+        } elseif ($sort === 'descricao') {
+            $query->orderByRaw('COALESCE(descricao, \'\') ' . $direction);
+        } elseif ($sort === 'created_at') {
+            $query->orderBy('created_at', $direction);
+        } else {
+            $query->orderBy('nome', $direction);
+        }
+
+        $templates = $query->paginate(15)->appends($request->query());
 
         return view('templates-avaliacao.index', compact('templates'));
     }
