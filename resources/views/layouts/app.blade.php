@@ -76,6 +76,24 @@
   </main>
 
   @include('layouts.footer') {{-- <footer class="bg-primary border-top mt-auto pt-5"> ... --}}
+
+  <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content shadow-lg border-0">
+        <div class="modal-header bg-engaja text-white">
+          <h5 class="modal-title" id="confirmModalLabel">Confirmar ação</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0 js-confirm-message"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-engaja js-confirm-accept">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 
 </html>
