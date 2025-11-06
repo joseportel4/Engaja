@@ -41,7 +41,7 @@
                 <a href="{{ route('atividades.show', $at) }}" class="btn btn-sm btn-outline-primary">Ver</a>
                 <a href="{{ route('atividades.edit', $at) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
                 <form class="d-inline" method="POST" action="{{ route('atividades.destroy', $at) }}"
-                  onsubmit="return confirm('Remover momento?');">
+                  data-confirm="Tem certeza que deseja excluir este momento?">
                   @csrf @method('DELETE')
                   <button class="btn btn-sm btn-outline-danger">Excluir</button>
                 </form>

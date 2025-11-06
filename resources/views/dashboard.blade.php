@@ -88,9 +88,9 @@
                             <th>{!! sort_link('Momento','momento') !!}</th>
                             <th>{!! sort_link('Município','municipio') !!}</th>
                             <th>{!! sort_link('Ação pedagógica','acao') !!}</th>
+                            <th class="text-end" style="min-width:90px;">{!! sort_link('Inscritos','inscritos') !!}</th>
                             <th class="text-end" style="min-width:90px;">{!! sort_link('Presentes','presentes') !!}</th>
-                            <!-- <th class="text-end" style="min-width:90px;">{!! sort_link('Ausentes','ausentes') !!}</th>
-                            <th class="text-end" style="min-width:90px;">{!! sort_link('Total','total') !!}</th> -->
+                            <th class="text-end" style="min-width:90px;">{!! sort_link('Ausentes','ausentes') !!}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -100,6 +100,12 @@
                         $hora = \Illuminate\Support\Str::of($a->hora_inicio)->substr(0,5);
                         $collapseId = 'pres-' . $a->id;
                         $presentes = collect($a->presencas ?? []);
+                        $inscricoes = collect($a->inscricoes ?? []);
+                        $presentesIds = $presentes->pluck('inscricao_id')->filter()->unique();
+                        $ausentes = $inscricoes->filter(fn($insc) => !$presentesIds->contains($insc->id))->values();
+                        $inscritosCount = $inscricoes->count();
+                        $presentesCount = $presentesIds->count();
+                        $ausentesCount = $ausentes->count();
                         @endphp
 
                         <tr>
@@ -107,59 +113,114 @@
                             <td>{{ $hora }}</td>
                             <td>{{ $a->descricao ?? 'Momento' }}</td>
                             <td>{{ $a->municipio?->nome_com_estado ?? '-' }}</td>
-                            <td>{{ $a->evento_nome ?? $a->evento->nome ?? '—' }}</td>
-
+                            <td>{{ $a->evento_nome ?? $a->evento->nome ?? '-' }}</td>
+                            <td class="text-end fw-semibold">{{ $inscritosCount }}</td>
                             {{-- Gatilho do accordion na coluna Presentes --}}
                             <td class="text-end">
                                 <a class="badge bg-success text-decoration-none"
                                     data-bs-toggle="collapse"
                                     href="#{{ $collapseId }}"
                                     role="button"
+                                    data-focus-target="#{{ $collapseId }}-presentes"
                                     aria-expanded="false"
                                     aria-controls="{{ $collapseId }}">
-                                    {{ $a->presentes_count }}
+                                    {{ $presentesCount }}
                                 </a>
                             </td>
-
-                            <!-- <td class="text-end"><span class="badge bg-secondary">{{ $a->ausentes_count }}</span></td>
-                                <td class="text-end fw-semibold">{{ $a->presencas_total }}</td> -->
+                            <td class="text-end">
+                                @if($ausentesCount > 0)
+                                    <a class="badge bg-warning text-dark text-decoration-none"
+                                        data-bs-toggle="collapse"
+                                        href="#{{ $collapseId }}"
+                                        role="button"
+                                        data-focus-target="#{{ $collapseId }}-ausentes"
+                                        aria-expanded="false"
+                                        aria-controls="{{ $collapseId }}">
+                                        {{ $ausentesCount }}
+                                    </a>
+                                @else
+                                    <span class="text-muted">0</span>
+                                @endif
+                            </td>
                         </tr>
-
                         {{-- Linha de detalhes: agora o .collapse fica dentro do TD --}}
                         <tr>
                             <td colspan="8" class="bg-light p-0">
                                 <div id="{{ $collapseId }}" class="collapse presentes-collapse">
-                                    @if($presentes->isEmpty())
-                                    <div class="text-muted small p-3">Nenhuma presença registrada.</div>
-                                    @else
-                                    <div class="table-responsive p-2">
-                                        <table class="table table-sm table-bordered mb-0">
-                                            <thead class="table-primary">
-                                                <tr>
-                                                    <th style="width: 35%;">Nome</th>
-                                                    <th style="width: 30%;">E-mail</th>
-                                                    <th style="width: 18%;">CPF</th>
-                                                    <th style="width: 17%;">Tag</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach($presentes as $p)
-                                                @php
-                                                $insc = optional($p->inscricao);
-                                                $part = optional($insc->participante);
-                                                $user = optional($part->user);
-                                                @endphp
-                                                <tr>
-                                                    <td>{{ $user->name ?? 'Participante #'.$part->id }}</td>
-                                                    <td>{{ $user->email ?? '-' }}</td>
-                                                    <td>{{ $part->cpf ?: '-' }}</td>
-                                                    <td>{{ $part->tag ?: '-' }}</td>
-                                                </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
+                                    <div class="px-3 py-2 border-bottom small text-muted">
+                                        Inscritos: <strong>{{ $inscritosCount }}</strong> |
+                                        Presentes: <strong>{{ $presentesCount }}</strong> |
+                                        Ausentes: <strong>{{ $ausentesCount }}</strong>
                                     </div>
-                                    @endif
+
+                                    <div id="{{ $collapseId }}-presentes" class="p-2">
+                                        <div class="section-title fw-bold">Presentes</div>
+                                        @if($presentes->isEmpty())
+                                            <div class="text-muted small p-3">Nenhuma presença registrada.</div>
+                                        @else
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered mb-0">
+                                                    <thead class="table-primary">
+                                                        <tr>
+                                                            <th style="width: 35%;">Nome</th>
+                                                            <th style="width: 30%;">E-mail</th>
+                                                            <th style="width: 18%;">CPF</th>
+                                                            <th style="width: 17%;">Tag</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach($presentes as $p)
+                                                            @php
+                                                                $insc = optional($p->inscricao);
+                                                                $part = optional($insc->participante);
+                                                                $user = optional($part->user);
+                                                            @endphp
+                                                            <tr>
+                                                                <td>{{ $user->name ?? 'Participante #'.$part->id }}</td>
+                                                                <td>{{ $user->email ?? '-' }}</td>
+                                                                <td>{{ $part->cpf ?: '-' }}</td>
+                                                                <td>{{ $part->tag ?: '-' }}</td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <div id="{{ $collapseId }}-ausentes" class="p-2">
+                                        <div class="section-title fw-bold">Ausentes</div>
+                                        @if($ausentes->isEmpty())
+                                            <div class="text-muted small p-3">Nenhum ausente registrado.</div>
+                                        @else
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered mb-0">
+                                                    <thead class="table-secondary">
+                                                        <tr>
+                                                            <th style="width: 35%;">Nome</th>
+                                                            <th style="width: 30%;">E-mail</th>
+                                                            <th style="width: 18%;">CPF</th>
+                                                            <th style="width: 17%;">Tag</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach($ausentes as $insc)
+                                                            @php
+                                                                $part = optional($insc->participante);
+                                                                $user = optional($part->user);
+                                                            @endphp
+                                                            <tr>
+                                                                <td>{{ $user->name ?? 'Participante #'.$part->id }}</td>
+                                                                <td>{{ $user->email ?? '-' }}</td>
+                                                                <td>{{ $part->cpf ?: '-' }}</td>
+                                                                <td>{{ $part->tag ?: '-' }}</td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        @endif
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -187,6 +248,7 @@
 
 {{-- Script para expandir/recolher todos --}}
 <script>
+
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('.js-toggle-all');
         if (!btn) return;
@@ -194,7 +256,6 @@
         const action = btn.dataset.action; // 'show' | 'hide'
         const items = document.querySelectorAll('.presentes-collapse');
 
-        // Se Bootstrap estiver disponível, use a API. Senão, faça fallback na classe 'show'.
         const hasBootstrap = window.bootstrap && bootstrap.Collapse;
 
         items.forEach(function(el) {
@@ -210,5 +271,51 @@
             }
         });
     });
+
+
+    document.addEventListener('click', function(e) {
+        const focusLink = e.target.closest('[data-focus-target]');
+        if (!focusLink) return;
+
+        const collapseSelector = focusLink.getAttribute('href');
+        if (!collapseSelector || !collapseSelector.startsWith('#')) {
+            return;
+        }
+
+        const collapseEl = document.querySelector(collapseSelector);
+        if (!collapseEl) {
+            return;
+        }
+
+        collapseEl.dataset.focusTarget = focusLink.dataset.focusTarget || '';
+
+        if (!window.bootstrap || !bootstrap.Collapse) {
+            setTimeout(function () {
+                if (!collapseEl.classList.contains('show')) {
+                    return;
+                }
+                const focusSel = collapseEl.dataset.focusTarget;
+                if (!focusSel) return;
+                const focusEl = collapseEl.querySelector(focusSel);
+                if (focusEl) {
+                    focusEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 200);
+        }
+    });
+
+    if (window.bootstrap && bootstrap.Collapse) {
+        document.addEventListener('shown.bs.collapse', function (event) {
+            const collapseEl = event.target;
+            const focusSel = collapseEl.dataset.focusTarget;
+            if (!focusSel) return;
+            const focusEl = collapseEl.querySelector(focusSel);
+            if (focusEl) {
+                focusEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            delete collapseEl.dataset.focusTarget;
+        });
+    }
 </script>
+
 @endsection

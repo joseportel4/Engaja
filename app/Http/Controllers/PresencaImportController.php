@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Imports\PresencasPreviewImport;
 use App\Models\Atividade;
+use App\Models\Inscricao;
 use App\Models\User;
 use App\Models\Participante;
 use App\Models\Municipio;
@@ -201,38 +202,42 @@ class PresencaImportController extends Controller
                     'data_entrada'   => $row['data_entrada'] ?? null,
                 ])->save();
 
-                // 3) Inscrição no evento
-                $inscricao = DB::table('inscricaos')
-                    ->where('evento_id', $evento->id)
+                // 3) Inscrição no momento
+                $inscricao = Inscricao::withTrashed()
                     ->where('participante_id', $participante->id)
+                    ->where('atividade_id', $atividade->id)
                     ->first();
 
                 if (!$inscricao) {
-                    DB::table('inscricaos')->insert([
-                        'evento_id'       => $evento->id,
-                        'participante_id' => $participante->id,
-                        'created_at'      => now(),
-                        'updated_at'      => now(),
-                    ]);
-                    $inscricaoId = DB::table('inscricaos')
-                        ->where('evento_id', $evento->id)
+                    $inscricao = Inscricao::withTrashed()
                         ->where('participante_id', $participante->id)
-                        ->value('id');
-                } else {
-                    if ($inscricao->deleted_at !== null) {
-                        DB::table('inscricaos')->where('id', $inscricao->id)
-                            ->update(['deleted_at' => null, 'updated_at' => now()]);
-                    }
-                    $inscricaoId = $inscricao->id;
+                        ->where('evento_id', $evento->id)
+                        ->whereNull('atividade_id')
+                        ->first();
                 }
 
-                // 4) Presença
+                if ($inscricao) {
+                    $inscricao->fill([
+                        'evento_id'       => $evento->id,
+                        'atividade_id'    => $atividade->id,
+                        'participante_id' => $participante->id,
+                    ]);
+                    $inscricao->deleted_at = null;
+                    $inscricao->save();
+                } else {
+                    $inscricao = Inscricao::create([
+                        'evento_id'       => $evento->id,
+                        'atividade_id'    => $atividade->id,
+                        'participante_id' => $participante->id,
+                    ]);
+                }
+                // 4) Presenca
                 $status = $row['status'] ?? null;
                 $just   = $row['justificativa'] ?? null;
 
                 Presenca::updateOrCreate(
-                    ['inscricao_id' => $inscricaoId, 'atividade_id' => $atividade->id],
-                    ['status_participacao' => $status, 'justificativa' => $just]
+                    ['inscricao_id' => $inscricao->id, 'atividade_id' => $atividade->id],
+                    ['status' => $status, 'justificativa' => $just]
                 );
             }
         });

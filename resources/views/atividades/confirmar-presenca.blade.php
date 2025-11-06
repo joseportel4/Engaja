@@ -24,7 +24,7 @@
               </div>
 
               {{-- @if (session('show_register_button') && session('error'))
-                  <a class="btn btn-outline-primary float-end"
+                  <a class="btn btn-outline-primary float-end my-1"
                     href="{{ route('evento.cadastro_inscricao', ['evento_id' => $atividade->evento->id, 'atividade_id' => $atividade->id]) }}">
                     Cadastre-se
                   </a>

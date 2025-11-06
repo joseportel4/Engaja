@@ -40,7 +40,9 @@ class Participante extends Model
 
     public function eventos()
     {
-        return $this->belongsToMany(Evento::class, 'inscricaos')->withTimestamps();
+        return $this->belongsToMany(Evento::class, 'inscricaos')
+            ->withPivot(['atividade_id'])
+            ->withTimestamps();
     }
 
     public function getCpfValidoAttribute()

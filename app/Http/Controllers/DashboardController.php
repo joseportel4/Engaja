@@ -29,6 +29,7 @@ class DashboardController extends Controller
             'momento'   => 'atividades.descricao',
             'acao'      => 'eventos.nome',
             'municipio' => 'municipios.nome',
+            'inscritos' => 'inscritos_count',
             'presentes' => 'presentes_count',
             'ausentes'  => 'ausentes_count',
             'total'     => 'presencas_total',
@@ -56,11 +57,36 @@ class DashboardController extends Controller
                     ->where('status', 'presente')
                     ->with('inscricao.participante.user'),
             ])
+            ->with([
+                'inscricoes' => fn($q) => $q
+                    ->whereNull('deleted_at')
+                    ->with('participante.user'),
+            ])
             ->withCount([
                 'presencas as presencas_total',
                 'presencas as presentes_count' => fn($q) => $q->where('status', 'presente'),
-                'presencas as ausentes_count'  => fn($q) => $q->where('status', 'ausente'),
-            ]);
+            ])
+            ->selectRaw('(
+                SELECT COUNT(*)
+                FROM inscricaos
+                WHERE inscricaos.atividade_id = atividades.id
+                  AND inscricaos.deleted_at IS NULL
+            ) as inscritos_count')
+            ->selectRaw('(
+                SELECT COUNT(*)
+                FROM inscricaos
+                WHERE inscricaos.atividade_id = atividades.id
+                  AND inscricaos.deleted_at IS NULL
+            ) - (
+                SELECT COUNT(*)
+                FROM presencas
+                WHERE presencas.atividade_id = atividades.id
+                  AND presencas.status = \'presente\'
+                  AND presencas.deleted_at IS NULL
+            ) as ausentes_count');
+
+        $query->whereNull('atividades.deleted_at')
+              ->whereHas('evento');
 
         $query->when($eventoId, fn($q) => $q->where('atividades.evento_id', $eventoId));
         $query->when($de && $ate, fn($q) => $q->whereBetween('atividades.dia', [$de, $ate]));
@@ -78,6 +104,17 @@ class DashboardController extends Controller
         $query->orderBy($orderByCol, $dir)->orderBy('atividades.id', 'desc');
 
         $atividades = $query->paginate($perPage)->appends($request->query());
+        $atividades->getCollection()->transform(function ($atividade) {
+            $inscricoes = collect($atividade->inscricoes ?? []);
+            $presentes = collect($atividade->presencas ?? []);
+            $presentesIds = $presentes->pluck('inscricao_id')->filter()->unique();
+
+            $atividade->inscritos_count = $inscricoes->count();
+            $atividade->presentes_count = $presentesIds->count();
+            $atividade->ausentes_count = max($atividade->inscritos_count - $atividade->presentes_count, 0);
+
+            return $atividade;
+        });
 
         $eventos = Evento::query()->orderBy('nome')->pluck('nome', 'id');
 
@@ -100,6 +137,7 @@ class DashboardController extends Controller
             'momento'   => 'atividades.descricao',
             'acao'      => 'eventos.nome',
             'municipio' => 'municipios.nome',
+            'inscritos' => 'inscritos_count',
             'presentes' => 'presentes_count',
             'ausentes'  => 'ausentes_count',
             'total'     => 'presencas_total',
@@ -128,11 +166,35 @@ class DashboardController extends Controller
                     ->where('status', 'presente')
                     ->with('inscricao.participante.user'),
             ])
+            ->with([
+                'inscricoes' => fn($q) => $q
+                    ->whereNull('deleted_at')
+                    ->with('participante.user'),
+            ])
             ->withCount([
                 'presencas as presencas_total',
                 'presencas as presentes_count' => fn($q) => $q->where('status', 'presente'),
-                'presencas as ausentes_count'  => fn($q) => $q->where('status', 'ausente'),
             ])
+            ->selectRaw('(
+                SELECT COUNT(*)
+                FROM inscricaos
+                WHERE inscricaos.atividade_id = atividades.id
+                  AND inscricaos.deleted_at IS NULL
+            ) as inscritos_count')
+            ->selectRaw('(
+                SELECT COUNT(*)
+                FROM inscricaos
+                WHERE inscricaos.atividade_id = atividades.id
+                  AND inscricaos.deleted_at IS NULL
+            ) - (
+                SELECT COUNT(*)
+                FROM presencas
+                WHERE presencas.atividade_id = atividades.id
+                  AND presencas.status = \'presente\'
+                  AND presencas.deleted_at IS NULL
+            ) as ausentes_count')
+            ->whereNull('atividades.deleted_at')
+            ->whereHas('evento')
             ->when($eventoId, fn($q) => $q->where('atividades.evento_id', $eventoId))
             ->when($de && $ate, fn($q) => $q->whereBetween('atividades.dia', [$de, $ate]))
             ->when($de && !$ate, fn($q) => $q->where('atividades.dia', '>=', $de))
@@ -147,6 +209,18 @@ class DashboardController extends Controller
             ->orderBy($orderByCol, $dir)
             ->orderBy('atividades.id', 'desc')
             ->get();
+
+        $atividades->transform(function ($atividade) {
+            $inscricoes = collect($atividade->inscricoes ?? []);
+            $presentes = collect($atividade->presencas ?? []);
+            $presentesIds = $presentes->pluck('inscricao_id')->filter()->unique();
+
+            $atividade->inscritos_count = $inscricoes->count();
+            $atividade->presentes_count = $presentesIds->count();
+            $atividade->ausentes_count = max($atividade->inscritos_count - $atividade->presentes_count, 0);
+
+            return $atividade;
+        });
 
         $pdf = PDF::loadView('dashboard_pdf', [
             'atividades' => $atividades,
