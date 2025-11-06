@@ -40,13 +40,18 @@ class DashboardController extends Controller
             ->select([
                 'atividades.id',
                 'atividades.evento_id',
+                'atividades.municipio_id',
                 'atividades.descricao',
                 'atividades.dia',
                 'atividades.hora_inicio',
                 'eventos.nome as evento_nome',
             ])
             ->leftJoin('eventos', 'eventos.id', '=', 'atividades.evento_id')
-            ->with(['evento:id,nome'])
+            ->leftJoin('municipios', 'municipios.id', '=', 'atividades.municipio_id')
+            ->with([
+                'evento:id,nome',
+                'municipio.estado:id,nome,sigla',
+            ])
             ->with([
                 'presencas' => fn ($q) => $q
                     ->where('status', 'presente')
@@ -144,13 +149,18 @@ class DashboardController extends Controller
             ->select([
                 'atividades.id',
                 'atividades.evento_id',
+                'atividades.municipio_id',
                 'atividades.descricao',
                 'atividades.dia',
                 'atividades.hora_inicio',
                 'eventos.nome as evento_nome',
             ])
             ->leftJoin('eventos', 'eventos.id', '=', 'atividades.evento_id')
-            ->with(['evento:id,nome'])
+            ->leftJoin('municipios', 'municipios.id', '=', 'atividades.municipio_id')
+            ->with([
+                'evento:id,nome',
+                'municipio.estado:id,nome,sigla',
+            ])
             ->with([
                 'presencas' => fn($q) => $q
                     ->where('status', 'presente')

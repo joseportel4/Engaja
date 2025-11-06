@@ -354,6 +354,7 @@
 
               $momento = trim($at->descricao ?? '') !== '' ? $at->descricao : 'Momento';
               $local = $at->local ?? null;
+              $municipio = optional($at->municipio)->nome_com_estado;
               @endphp
 
               <div class="t-item">
@@ -364,8 +365,9 @@
                       <div class="program-time">{{ $iniStr }}{{ $fimStr ? ' – ' . $fimStr : '' }}</div>
                       <div class="program-title">{{ $momento }}</div>
 
-                      @if($local || $chLabel)
+                      @if($local || $municipio || $chLabel)
                       <div class="program-meta">
+                        @if($municipio) <span class="chip">🏙️ {{ $municipio }}</span> @endif
                         @if($local) <span class="chip">📍 {{ $local }}</span> @endif
                         @if($chLabel) <span class="chip">⏱️ {{ $chLabel }}</span> @endif
                       </div>
