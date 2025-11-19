@@ -78,7 +78,7 @@
   </main>
 
   @include('layouts.footer') {{-- <footer class="bg-primary border-top mt-auto pt-5"> ... --}}
-  {{-- @stack('scripts') --}}
+  @stack('scripts')
 
   <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
     <div class="modal-dialog">

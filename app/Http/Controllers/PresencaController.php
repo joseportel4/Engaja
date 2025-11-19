@@ -77,6 +77,16 @@ class PresencaController extends Controller
         $dia = \Carbon\Carbon::parse($atividade->dia)
             ->locale('pt_BR')
             ->translatedFormat('l, d \\d\\e F \\d\\e Y');
-        return redirect()->route('presenca.confirmar', $atividade->id)->with('success', "Presença confirmada com sucesso na ação pedagógica ".$evento->nome.", no momento ".$atividade->descricao." (".$dia.")!");
+
+        return redirect()
+            ->route('presenca.confirmar', $atividade->id)
+            ->with([
+                'usuario_nome' => $usuario->name,
+                'evento_nome' => $evento->nome,
+                'atividade_nome' => $atividade->descricao,
+                'dia' => $dia,
+                'success' => 'Presença confirmada com sucesso!',
+                'avaliacao_token' => encrypt($inscricao->id),
+            ]);
     }
 }

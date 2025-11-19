@@ -2,6 +2,7 @@ import './bootstrap';
 
 // import bundle com Popper e exporta classes Bootstrap
 import * as bootstrap from 'bootstrap';
+window.bootstrap = bootstrap;
 
 let confirmModalInstance;
 let confirmMessageEl;
