@@ -55,9 +55,9 @@
           <div class="text-center pt-2 pb-3">
             <p class="mb-0 mt-2">
               Parabéns, <strong>{{ session('usuario_nome') }}</strong>!<br>
-              Você confirmou sua presença no momento<br>
+              Você confirmou sua presença no momento
               <strong>{{ session('atividade_nome') }}</strong>, ação pedagógica
-              <strong>{{ session('evento_nome') }}</strong>,<br>
+              <strong>{{ session('evento_nome') }}</strong>,
               realizada na <strong>{{ session('dia') }}</strong>.
             </p>
           </div>
@@ -65,8 +65,7 @@
           @php $avaliacaoDisponivel = session('avaliacao_token') && session('avaliacao_disponivel', true); @endphp
           @if(isset($avaliacao) && $avaliacaoDisponivel)
             <div class="text-center py-1">
-              <p class="mb-0 mt-2">Para acessar e responder o formulário de avaliação do momento
-                <strong>{{ session('atividade_nome') }}</strong>, clique no botão abaixo.
+              <p class="mb-0 mt-2">Para acessar e responder o formulário de avaliação, clique no botão abaixo.
               </p>
             </div>
           @endif
