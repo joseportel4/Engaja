@@ -78,7 +78,7 @@
 
                             <div class="card shadow-sm mb-3">
                                 <div class="card-header bg-white">
-                                    <strong>Dados do participante</strong> <span class="text-muted">(opcionais)</span>
+                                    <strong>Dados do participante</strong> {{-- <span class="text-muted">(opcionais)</span> --}}
                                 </div>
                                 <div class="card-body">
                                     <div class="row g-3">
@@ -166,11 +166,11 @@
                         </form>
                     </div>
 
-                    <div class="card-footer text-center">
+                    {{-- <div class="card-footer text-center">
                         <small class="text-danger opacity-75">
                             {{ __('Ao criar sua conta, você será inscrito automaticamente no evento e sua presença será confirmada.') }}
                         </small>
-                    </div>
+                    </div> --}}
                 </div>
             </div>
         </div>

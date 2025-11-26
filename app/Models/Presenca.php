@@ -9,7 +9,7 @@ class Presenca extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['inscricao_id', 'atividade_id', 'status', 'justificativa'];
+    protected $fillable = ['inscricao_id', 'atividade_id', 'status', 'justificativa', 'avaliacao_respondida'];
 
     public function inscricao()
     {
