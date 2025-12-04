@@ -48,9 +48,12 @@
                               return out;
                             };
 
+                            const hasLettersOrAt = (value) => /[A-Za-z@]/.test(value);
+
                             const maybeMask = (value) => {
+                              // se tem letras ou @, assume e-mail e não mexe
+                              if (hasLettersOrAt(value)) return value;
                               const digits = onlyDigits(value);
-                              // Só aplica máscara se estiver digitando algo que pareça CPF (até 11 dígitos)
                               if (digits.length === 0) return value;
                               return maskCPF(digits);
                             };

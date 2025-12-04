@@ -62,7 +62,7 @@
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                             <div class="form-text">
-                                                {{ __('Min. 8 caracteres. Use letras, números e símbolos.') }}
+                                                {{ __('Min. 8 caracteres. Use letras, números e/ou símbolos.') }}
                                             </div>
                                         </div>
 

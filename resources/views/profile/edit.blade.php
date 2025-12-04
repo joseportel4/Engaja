@@ -231,7 +231,7 @@
                             @error('password')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            <div class="form-text">Mínimo 8 caracteres. Use letras, números e símbolos.</div>
+                            <div class="form-text">Mínimo 8 caracteres. Use letras, números e/ou símbolos.</div>
                         </div>
 
                         <div class="mb-4">
