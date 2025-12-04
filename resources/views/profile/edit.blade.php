@@ -95,7 +95,7 @@
 
                 <div class="card shadow-sm">
                     <div class="card-header bg-white">
-                        <strong>Dados do participante</strong> <span class="text-muted">(opcionais)</span>
+                        <strong>Dados do participante</strong> {{-- <span class="text-muted">(opcionais)</span> --}}
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
