@@ -14,6 +14,7 @@ use App\Http\Controllers\PresencaImportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuestaoController;
 use App\Http\Controllers\TemplateAvaliacaoController;
+use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -70,6 +71,15 @@ Route::middleware(['auth', 'role:administrador'])->group(function () {
     Route::resource('avaliacoes', AvaliacaoController::class)
         ->parameters(['avaliacoes' => 'avaliacao']);
 });
+
+Route::middleware(['auth', 'role:administrador|gestor'])
+    ->prefix('usuarios')
+    ->name('usuarios.')
+    ->group(function () {
+        Route::get('/', [UserManagementController::class, 'index'])->name('index');
+        Route::get('{managedUser}/editar', [UserManagementController::class, 'edit'])->name('edit');
+        Route::put('{managedUser}', [UserManagementController::class, 'update'])->name('update');
+    });
 
 Route::middleware(['auth', 'role:administrador|participante'])->group(function () {
     Route::resource('eventos', EventoController::class);

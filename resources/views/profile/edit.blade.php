@@ -104,7 +104,7 @@
                                 <label for="cpf" class="form-label">CPF</label>
                                 <input id="cpf" type="text" name="cpf"
                                     inputmode="numeric" autocomplete="off"
-                                    maxlength="14" {{-- 000.000.000-00 --}}
+                                    maxlength="14" required {{-- 000.000.000-00 --}}
                                     value="{{ old('cpf', $participante->cpf ?? '') }}"
                                     class="form-control @error('cpf') is-invalid @enderror"
                                     placeholder="000.000.000-00">
@@ -132,7 +132,7 @@
                             </div> -->
 
                             <div class="col-md-6">
-                                <label for="tipo_organizacao" class="form-label">Tipo de Organização</label>
+                                <label for="tipo_organizacao" class="form-label">Tipo de instituição</label>
 
                                 @php
                                 $currentTipoOrg = old('tipo_organizacao', $participante->tipo_organizacao ?? '');
@@ -153,7 +153,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <label for="escola_unidade" class="form-label">Organização</label>
+                                <label for="escola_unidade" class="form-label">Instituição</label>
                                 <input id="escola_unidade" type="text" name="escola_unidade"
                                     value="{{ old('escola_unidade', $participante->escola_unidade ?? '') }}"
                                     class="form-control @error('escola_unidade') is-invalid @enderror">
@@ -162,7 +162,7 @@
                                 @enderror
                             </div>
                             <div class="col-md-6">
-                                <label for="tag" class="form-label">Tag</label>
+                                <label for="tag" class="form-label">Vinculo no projeto</label>
                                 <select id="tag" name="tag"
                                     class="form-select @error('tag') is-invalid @enderror">
                                     <option value="">Selecione...</option>
