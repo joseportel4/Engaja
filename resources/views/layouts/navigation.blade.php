@@ -48,6 +48,11 @@
             Gerenciar Usuarios
           </a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link text-white ms-lg-2" href="{{ route('certificados.modelos.index') }}">
+            Certificados
+          </a>
+        </li>
         @endhasanyrole
         @endauth
       </ul>
