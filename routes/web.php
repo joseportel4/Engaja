@@ -119,5 +119,6 @@ Route::middleware(['auth'])->group(function () {
 
 Route::get( '/formulario-avaliacao/{avaliacao}', [AvaliacaoController::class, 'formularioAvaliacao'])->name('avaliacao.formulario');
 Route::post('/formulario-avaliacao/{avaliacao}', [AvaliacaoController::class, 'responderFormulario'])->name('avaliacao.formulario.responder');
+Route::get('/validacao/{codigo}', [CertificadoController::class, 'validar'])->name('certificados.validacao');
 
 require __DIR__ . '/auth.php';

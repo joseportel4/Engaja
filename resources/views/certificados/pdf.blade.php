@@ -41,6 +41,30 @@
     $layoutVerso  = $modelo->layout_verso ?? [];
     $textoFrente = trim($certificado->texto_frente ?? '');
     $textoVerso  = trim($certificado->texto_verso ?? '');
+    $qrLink = $certificado->codigo_validacao ? route('certificados.validacao', $certificado->codigo_validacao) : null;
+    $qrBase64 = null;
+    $qrColorHex = $layoutVerso['qr_color'] ?? '#811283';
+    $qrColorHex = ltrim($qrColorHex, '#');
+    $qrColorHex = preg_match('/^[0-9a-fA-F]{6}$/', $qrColorHex) ? $qrColorHex : '811283';
+    $qrRGB = [
+        hexdec(substr($qrColorHex, 0, 2)),
+        hexdec(substr($qrColorHex, 2, 2)),
+        hexdec(substr($qrColorHex, 4, 2)),
+    ];
+    if ($qrLink && class_exists(\SimpleSoftwareIO\QrCode\Facades\QrCode::class)) {
+        $qrPng = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
+            ->style('round')
+            ->eye('circle')
+            ->eyeColor(0, $qrRGB[0], $qrRGB[1], $qrRGB[2], $qrRGB[0], $qrRGB[1], $qrRGB[2])
+            ->eyeColor(1, $qrRGB[0], $qrRGB[1], $qrRGB[2], $qrRGB[0], $qrRGB[1], $qrRGB[2])
+            ->eyeColor(2, $qrRGB[0], $qrRGB[1], $qrRGB[2], $qrRGB[0], $qrRGB[1], $qrRGB[2])
+            ->color($qrRGB[0], $qrRGB[1], $qrRGB[2])
+            ->margin(0)
+            ->size(280)
+            ->errorCorrection('H')
+            ->generate($qrLink);
+        $qrBase64 = 'data:image/png;base64,'.base64_encode($qrPng);
+    }
     $frenteInfo = ($frenteFile && file_exists($frenteFile)) ? @getimagesize($frenteFile) : null;
     $versoInfo  = ($versoFile && file_exists($versoFile)) ? @getimagesize($versoFile) : null;
 
@@ -172,9 +196,15 @@
       ];
       if ($w > 0) $styleBack[] = "width:{$w}px";
       if ($h > 0) $styleBack[] = "height:{$h}px";
+      $qrX = $offsetX + (($layoutVerso['qr_x'] ?? null) !== null ? $layoutVerso['qr_x'] * $scaleX : 0);
+      $qrY = $offsetY + (($layoutVerso['qr_y'] ?? null) !== null ? $layoutVerso['qr_y'] * $scaleY : 0);
+      $qrS = ($layoutVerso['qr_size'] ?? 0) * min($scaleX, $scaleY);
     @endphp
     @if($versoUrl)
       <img src="{{ $versoUrl }}" class="bg" alt="Verso" style="width:{{ $renderW }}px; height:{{ $renderH }}px; left:{{ $offsetX }}px; top:{{ $offsetY }}px;">
+    @endif
+    @if($qrBase64 && ($layoutVerso['qr_size'] ?? null))
+      <img src="{{ $qrBase64 }}" alt="QR" style="position:absolute; left:{{ $qrX }}px; top:{{ $qrY }}px; width:{{ $qrS }}px; height:{{ $qrS }}px; object-fit:contain;">
     @endif
     <div class="text-layer" style="{{ implode(';', $styleBack) }}">
       {!! nl2br(e($textoVerso)) !!}

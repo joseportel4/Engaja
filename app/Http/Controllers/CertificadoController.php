@@ -194,6 +194,15 @@ class CertificadoController extends Controller
         return view('certificados.show', compact('certificado'));
     }
 
+    public function validar(string $codigo)
+    {
+        $certificado = Certificado::with('modelo', 'participante.user')
+            ->where('codigo_validacao', $codigo)
+            ->firstOrFail();
+
+        return view('certificados.validacao', compact('certificado'));
+    }
+
     public function download(Certificado $certificado)
     {
         $user = auth()->user();
