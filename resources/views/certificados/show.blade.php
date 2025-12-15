@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <title>Certificado</title>
   <style>
-    :root {
-      --page-width: 1120px;
-    }
+    :root { --page-width: 1120px; }
     body {
       margin: 0;
       font-family: Arial, sans-serif;
@@ -62,16 +60,22 @@
       text-decoration: none;
       font-weight: 600;
     }
-    .btn-outline {
-      background: #fff;
-      color: #6c2a6a;
+    .btn-outline { background: #fff; color: #6c2a6a; }
+
+    @media print {
+      body { background: #fff; }
+      .wrapper { margin: 0; padding: 0; max-width: 100%; }
+      .actions { display: none !important; }
+      .card { border: none; box-shadow: none; padding: 0; }
+      @page { size: A4 landscape; margin: 10mm; }
+      .cert-page { page-break-after: always; border: none; border-radius: 0; margin: 0 0 10mm 0; }
     }
   </style>
 </head>
 <body>
   <div class="wrapper">
     <div class="actions">
-      <a href="javascript:window.print()" class="btn">Imprimir / Salvar PDF</a>
+      <a href="{{ route('certificados.download', $certificado) }}" class="btn">Baixar PDF</a>
       <a href="{{ url()->previous() }}" class="btn btn-outline">Voltar</a>
     </div>
 
@@ -89,12 +93,14 @@
         <div class="cert-text">{!! nl2br(e($certificado->texto_frente)) !!}</div>
       </div>
 
+      @if($versoUrl || $certificado->texto_verso)
       <div class="cert-page">
         @if($versoUrl)
           <img src="{{ $versoUrl }}" alt="Verso" class="cert-bg">
         @endif
         <div class="cert-text">{!! nl2br(e($certificado->texto_verso)) !!}</div>
       </div>
+      @endif
     </div>
   </div>
 </body>

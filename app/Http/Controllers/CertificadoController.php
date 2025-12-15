@@ -193,4 +193,27 @@ class CertificadoController extends Controller
 
         return view('certificados.show', compact('certificado'));
     }
+
+    public function download(Certificado $certificado)
+    {
+        $user = auth()->user();
+        if ($certificado->participante_id !== $user->participante?->id) {
+            abort(403);
+        }
+
+        $certificado->load('modelo');
+        $pdf = app('dompdf.wrapper');
+        // Reduz DPI para gerar arquivo menor (objetivo ~1MB) e permite imagens remotas
+        $pdf->setOptions([
+            'isRemoteEnabled' => true,
+            'isHtml5ParserEnabled' => true,
+            'dpi' => 72,
+            'defaultMediaType' => 'print',
+        ]);
+        $pdf->setPaper('a4', 'landscape');
+        $pdf->loadView('certificados.pdf', ['certificado' => $certificado]);
+        $fileName = 'certificado-'.$certificado->id.'.pdf';
+
+        return $pdf->download($fileName);
+    }
 }
