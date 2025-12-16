@@ -26,7 +26,10 @@
       color: #111;
       font-size: 20px;
       line-height: 1.4;
-      white-space: pre-wrap;
+      white-space: pre-line;
+      text-align: justify;
+      text-align-last: left;
+      text-justify: inter-word;
       margin: 0;
       padding: 0;
     }
@@ -142,6 +145,8 @@
       $fw = $layoutFrente['font_weight'] ?? 'normal';
       $fst = $layoutFrente['font_style'] ?? 'normal';
       $align = $layoutFrente['align'] ?? 'left';
+      $boxW = $w > 0 ? $w : $renderW;
+      $boxH = $h > 0 ? $h : null;
       $styleFront = [
         "left:{$x}px",
         "top:{$y}px",
@@ -151,13 +156,11 @@
         "font-style:{$fst}",
         "text-align:{$align}",
       ];
-      if ($w > 0) $styleFront[] = "width:{$w}px";
-      if ($h > 0) $styleFront[] = "height:{$h}px";
+      if ($boxW) $styleFront[] = "width:{$boxW}px";
+      if ($boxH) $styleFront[] = "height:{$boxH}px";
     @endphp
     <img src="{{ $frenteUrl }}" class="bg" alt="Frente" style="width:{{ $renderW }}px; height:{{ $renderH }}px; left:{{ $offsetX }}px; top:{{ $offsetY }}px;">
-    <div class="text-layer" style="{{ implode(';', $styleFront) }}">
-      {!! nl2br(e($textoFrente)) !!}
-    </div>
+    <div class="text-layer" style="{{ implode(';', $styleFront) }}">{!! nl2br(e($textoFrente)) !!}</div>
   </div>
 
   @if($versoUrl || $textoVerso)
@@ -185,6 +188,8 @@
       $fw = $layoutVerso['font_weight'] ?? 'normal';
       $fst = $layoutVerso['font_style'] ?? 'normal';
       $align = $layoutVerso['align'] ?? 'left';
+      $boxW = $w > 0 ? $w : $renderW;
+      $boxH = $h > 0 ? $h : null;
       $styleBack = [
         "left:{$x}px",
         "top:{$y}px",
@@ -194,8 +199,8 @@
         "font-style:{$fst}",
         "text-align:{$align}",
       ];
-      if ($w > 0) $styleBack[] = "width:{$w}px";
-      if ($h > 0) $styleBack[] = "height:{$h}px";
+      if ($boxW) $styleBack[] = "width:{$boxW}px";
+      if ($boxH) $styleBack[] = "height:{$boxH}px";
       $qrX = $offsetX + (($layoutVerso['qr_x'] ?? null) !== null ? $layoutVerso['qr_x'] * $scaleX : 0);
       $qrY = $offsetY + (($layoutVerso['qr_y'] ?? null) !== null ? $layoutVerso['qr_y'] * $scaleY : 0);
       $qrS = ($layoutVerso['qr_size'] ?? 0) * min($scaleX, $scaleY);
@@ -206,9 +211,7 @@
     @if($qrBase64 && ($layoutVerso['qr_size'] ?? null))
       <img src="{{ $qrBase64 }}" alt="QR" style="position:absolute; left:{{ $qrX }}px; top:{{ $qrY }}px; width:{{ $qrS }}px; height:{{ $qrS }}px; object-fit:contain;">
     @endif
-    <div class="text-layer" style="{{ implode(';', $styleBack) }}">
-      {!! nl2br(e($textoVerso)) !!}
-    </div>
+    <div class="text-layer" style="{{ implode(';', $styleBack) }}">{!! nl2br(e($textoVerso)) !!}</div>
   </div>
   @endif
 </body>

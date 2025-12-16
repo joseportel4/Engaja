@@ -36,7 +36,7 @@
       height: auto;
       display: block;
     }
-    .cert-text { position: absolute; color: #111; line-height: 1.4; white-space: pre-wrap; }
+    .cert-text { position: absolute; color: #111; line-height: 1.4; white-space: pre-line; text-align: justify; text-align-last: left; text-justify: inter-word; }
     .actions {
       display: flex;
       gap: 10px;
@@ -137,7 +137,7 @@
         layer.style.fontWeight = fw;
         layer.style.fontStyle = fst;
         layer.style.textAlign = align;
-        layer.style.width = w > 0 ? `${w}px` : 'auto';
+        layer.style.width = w > 0 ? `${w}px` : `${img?.clientWidth || cw}px`;
         layer.style.height = h > 0 ? `${h}px` : 'auto';
       };
       if (img) {
