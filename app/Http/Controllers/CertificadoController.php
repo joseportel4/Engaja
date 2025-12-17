@@ -108,12 +108,15 @@ class CertificadoController extends Controller
 
     private function notificarLote(array $paraNotificar): void
     {
-        // Limitamos a 100 e-mails/minuto: criamos blocos de 100 e aplicamos delay incremental de 60s por bloco.
+        // Limitamos a ~2 e-mails/segundo (100 e-mails em ~50s) e aguardamos completar 60s antes do próximo bloco.
         $chunks = collect($paraNotificar)->chunk(100);
-        foreach ($chunks as $idx => $chunk) {
-            $delay = Carbon::now()->addSeconds($idx * 60);
-            foreach ($chunk as [$email, $nome, $acao, $certId]) {
-                Mail::to($email)->later($delay, new CertificadoEmitidoMail($nome, $acao, $certId));
+        foreach ($chunks as $chunkIndex => $chunk) {
+            $base = Carbon::now()->addSeconds($chunkIndex * 60);
+            foreach ($chunk->values() as $i => [$email, $nome, $acao, $certId]) {
+                // Dois e-mails por segundo: delay incremental a cada par.
+                $pairDelay = intdiv($i, 2); // 0,0,1,1,2,2...
+                $scheduleAt = $base->copy()->addSeconds($pairDelay);
+                Mail::to($email)->later($scheduleAt, new CertificadoEmitidoMail($nome, $acao, $certId));
             }
         }
     }
