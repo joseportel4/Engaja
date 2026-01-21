@@ -81,6 +81,10 @@ Route::middleware(['auth', 'role:administrador|gestor'])
         Route::put('{managedUser}', [UserManagementController::class, 'update'])->name('update');
     });
 
+Route::middleware(['auth', 'role:administrador|formador'])
+    ->get('/eventos/{evento}/relatorios', [EventoController::class, 'relatorios'])
+    ->name('eventos.relatorios');
+
 Route::middleware(['auth', 'role:administrador|participante'])->group(function () {
     Route::resource('eventos', EventoController::class);
 });
