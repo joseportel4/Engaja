@@ -221,6 +221,7 @@
         @endauth -->
 
         @hasanyrole('administrador|formador')
+        <div class="actions d-flex gap-2 flex-shrink-0 align-items-center">
         <a href="{{ route('inscricoes.selecionar', $evento)}}" class="btn btn-engaja">Selecionar participantes</a>
         <a href="{{ route('inscricoes.import', $evento)}}" class="btn btn-outline-primary">Importar planilha</a>
         <a href="{{ route('inscricoes.inscritos', $evento) }}" class="btn btn-outline-primary">
@@ -232,10 +233,11 @@
         <a href="{{ route('eventos.edit', $evento) }}" class="btn btn-outline-secondary">Editar</a>
 
         <form action="{{ route('eventos.destroy', $evento) }}" method="POST"
-          class="d-inline" data-confirm="Tem certeza que deseja excluir esta ação pedagógica?">
+          class="d-flex m-0 p-0" data-confirm="Tem certeza que deseja excluir esta ação pedagógica?">
           @csrf @method('DELETE')
           <button class="btn btn-outline-danger">Excluir</button>
         </form>
+        </div>
         @endcan
       </div>
     </div>
