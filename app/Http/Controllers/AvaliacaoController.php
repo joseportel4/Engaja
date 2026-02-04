@@ -950,6 +950,43 @@ class AvaliacaoController extends Controller
 
         return $presenca;
     }
-}
 
+    public function respostas(Avaliacao $avaliacao)
+    {
+        abort_if($avaliacao->anonima, 404);
+
+        $avaliacao->load(['atividade.evento', 'templateAvaliacao']);
+
+        $submissoes = SubmissaoAvaliacao::with([
+            'presenca.inscricao.participante.user',
+            'respostas.avaliacaoQuestao',
+        ])
+            ->where('avaliacao_id', $avaliacao->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('avaliacoes.respostas', compact('avaliacao', 'submissoes'));
+    }
+
+    public function respostasMostrar(Avaliacao $avaliacao, SubmissaoAvaliacao $submissao)
+    {
+        abort_if($avaliacao->anonima, 404);
+        abort_unless($submissao->avaliacao_id === $avaliacao->id, 404);
+
+        $submissao->load([
+            'presenca.inscricao.participante.user',
+            'respostas.avaliacaoQuestao',
+        ]);
+
+        $avaliacao->load(['avaliacaoQuestoes']);
+
+        $respostasPorQuestao = $submissao->respostas->keyBy('avaliacao_questao_id');
+
+        return view('avaliacoes.resposta_detalhe', [
+            'avaliacao' => $avaliacao,
+            'submissao' => $submissao,
+            'respostasPorQuestao' => $respostasPorQuestao,
+        ]);
+    }
+}
 
