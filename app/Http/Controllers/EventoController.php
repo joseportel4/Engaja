@@ -41,7 +41,7 @@ class EventoController extends Controller
                 $qq->where(function ($w) use ($search) {
                     $w->whereRaw('LOWER(nome) LIKE ?', ['%' . $search . '%'])
                         ->orWhereRaw('LOWER(tipo) LIKE ?', ['%' . $search . '%'])
-                        ->orWhereRaw('LOWER(objetivo) LIKE ?', ['%' . $search . '%']);
+                        ->orWhereRaw('LOWER(objetivos_gerais) LIKE ?', ['%' . $search . '%']);
                 });
             })
             ->when($r->eixo, fn($qq) => $qq->where('eixo_id', $r->eixo))
@@ -96,8 +96,6 @@ class EventoController extends Controller
             'data_fim',
             'modalidade',
             'link',
-            'objetivo',
-            'resumo',
             'local',
             'objetivos_gerais',
             'objetivos_especificos',
@@ -199,8 +197,6 @@ class EventoController extends Controller
             'data_fim',
             'modalidade',
             'link',
-            'objetivo',
-            'resumo',
             'local',
             'objetivos_gerais',
             'objetivos_especificos',

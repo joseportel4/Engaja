@@ -266,20 +266,20 @@
   </div>
 
   {{-- Descrição / Objetivo --}}
-  @if($evento->resumo)
+  @if($evento->objetivos_especificos)
   <div class="mb-4">
-    <h2 class="h5 fw-bold mb-2">Descrição</h2>
+    <h2 class="h5 fw-bold mb-2">Objetivos Específicos</h2>
     <div class="ev-card p-3">
-      <p class="mb-0">{{ $evento->resumo }}</p>
+      <p class="mb-0">{{ $evento->objetivos_especificos }}</p>
     </div>
   </div>
   @endif
 
-  @if($evento->objetivo)
+  @if($evento->objetivos_gerais)
   <div class="mb-4">
-    <h2 class="h5 fw-bold mb-2">Objetivos</h2>
+    <h2 class="h5 fw-bold mb-2">Objetivos Gerais</h2>
     <div class="ev-card p-3">
-      <p class="mb-0">{{ $evento->objetivo }}</p>
+      <p class="mb-0">{{ $evento->objetivos_gerais }}</p>
     </div>
   </div>
   @endif

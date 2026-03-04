@@ -26,8 +26,8 @@ class EventoFactory extends Factory
             'data_inicio' => $inicio->format('Y-m-d'),
             'data_fim'    => $fim->format('Y-m-d'),
             'modalidade' => $this->faker->randomElement(['Presencial', 'Online', 'H??brido']),
-            'objetivo'   => $this->faker->sentence(8),
-            'resumo'     => $this->faker->paragraph(),
+            'objetivos_gerais' => $this->faker->sentence(8),
+            'objetivos_especificos' => $this->faker->paragraph(),
         ];
     }
 }
