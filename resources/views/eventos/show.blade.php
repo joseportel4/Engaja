@@ -278,20 +278,20 @@
   </div>
 
   {{-- Descrição / Objetivo --}}
-  @if($evento->resumo)
+  @if($evento->objetivos_especificos)
   <div class="mb-4">
-    <h2 class="h5 fw-bold mb-2">Descrição</h2>
+    <h2 class="h5 fw-bold mb-2">Objetivos Específicos</h2>
     <div class="ev-card p-3">
-      <p class="mb-0">{{ $evento->resumo }}</p>
+      <p class="mb-0">{{ $evento->objetivos_especificos }}</p>
     </div>
   </div>
   @endif
 
-  @if($evento->objetivo)
+  @if($evento->objetivos_gerais)
   <div class="mb-4">
-    <h2 class="h5 fw-bold mb-2">Objetivos</h2>
+    <h2 class="h5 fw-bold mb-2">Objetivos Gerais</h2>
     <div class="ev-card p-3">
-      <p class="mb-0">{{ $evento->objetivo }}</p>
+      <p class="mb-0">{{ $evento->objetivos_gerais }}</p>
     </div>
   </div>
   @endif
@@ -397,7 +397,7 @@
                   <div class="d-flex justify-content-between align-items-start gap-3">
                     <div>
                       <div class="program-time">{{ $iniStr }}{{ $fimStr ? ' – ' . $fimStr : '' }}</div>
-                      
+
                       <div class="program-title d-flex align-items-center flex-wrap gap-2">
                         <span>{{ $momento }}</span>
                         @if($at->checklists_incompletos)
@@ -422,7 +422,8 @@
                       </div>
                       @endif
                     </div>
-                    @can('atividade.ver')
+
+                    @hasanyrole('administrador|gerente')
                     <div class="d-flex align-items-center gap-4 flex-shrink-0">
 
                       {{-- Avaliação para o participante (se tem presença neste momento) --}}
@@ -458,6 +459,9 @@
                       @endhasanyrole
 
                     <div class="actions d-flex gap-2 flex-shrink-0 align-items-center">
+                    @endhasanyrole
+
+                    @can('atividade.ver')
                       <a href="{{ route('atividades.show', $at) }}" class="btn btn-sm btn-outline-primary">
                           Ver
                       </a>
@@ -493,8 +497,7 @@
   </div>
 
 </div>
-
-@hasanyrole('administrador|gerente')
+@hasanyrole('administrador|gerente|eq_pedagogica|articulador')
 <div class="modal fade" id="modalRelatoriosEvento" tabindex="-1" aria-labelledby="modalRelatoriosEventoLabel"
   aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -586,26 +589,26 @@
 @push('scripts')
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-      
+
       // Lógica 1: Criação de novo Momento
       const btnConfirmarPreAcao = document.querySelector('.js-checklist-confirm[data-modal="modalChecklistPreAcao"]');
-      
+
       if (btnConfirmarPreAcao) {
           btnConfirmarPreAcao.addEventListener('click', function () {
               const marcados = [];
               document.querySelectorAll('#modalChecklistPreAcao .js-checklist-item:checked').forEach(cb => {
                   marcados.push(cb.dataset.index);
               });
-              
+
               const url = new URL("{{ route('eventos.atividades.create', $evento) }}");
-              
+
               if (marcados.length > 0) {
                   url.searchParams.append('marcados', marcados.join(','));
               }
 
               const modalEl = document.getElementById('modalChecklistPreAcao');
               bootstrap.Modal.getInstance(modalEl)?.hide();
-              
+
               window.location.href = url.toString();
           });
       }
@@ -683,9 +686,9 @@
 
           const salvar = (tipo, itens) => fetch(`/atividades/${atividadeIdAtual}/checklist`, {
               method: 'POST',
-              headers: { 
-                  'Content-Type': 'application/json', 
-                  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content 
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
               },
               body: JSON.stringify({ tipo, itens })
           });

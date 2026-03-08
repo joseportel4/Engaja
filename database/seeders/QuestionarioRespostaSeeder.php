@@ -148,6 +148,51 @@ class QuestionarioRespostaSeeder extends Seeder
                 'tag'        => Participante::TAG_REDE_ENSINO,
                 'organizacao'=> 'Rede municipal',
             ],
+            [
+                'nome'       => 'Felipe Costa',
+                'email'      => 'felipe.costa@engaja.local',
+                'cpf'        => '66677788899',
+                'telefone'   => '(62) 93333-0006',
+                'escola'     => 'Colegio Horizonte Azul',
+                'tag'        => Participante::TAG_MOVIMENTO_SOCIAL,
+                'organizacao'=> 'Coletivo cultural',
+            ],
+            [
+                'nome'       => 'Gabriela Nunes',
+                'email'      => 'gabriela.nunes@engaja.local',
+                'cpf'        => '77788899900',
+                'telefone'   => '(71) 92222-0007',
+                'escola'     => 'Escola Caminhos do Saber',
+                'tag'        => Participante::TAG_REDE_ENSINO,
+                'organizacao'=> 'Rede estadual',
+            ],
+            [
+                'nome'       => 'Henrique Prado',
+                'email'      => 'henrique.prado@engaja.local',
+                'cpf'        => '88899900011',
+                'telefone'   => '(85) 91111-0008',
+                'escola'     => 'Instituto Futuro',
+                'tag'        => Participante::TAG_REDE_ENSINO,
+                'organizacao'=> 'Rede municipal',
+            ],
+            [
+                'nome'       => 'Isabela Lima',
+                'email'      => 'isabela.lima@engaja.local',
+                'cpf'        => '99900011122',
+                'telefone'   => '(48) 90000-0009',
+                'escola'     => 'Centro Educacional Aurora',
+                'tag'        => Participante::TAG_MOVIMENTO_SOCIAL,
+                'organizacao'=> 'Associação local',
+            ],
+            [
+                'nome'       => 'Joao Pedro',
+                'email'      => 'joao.pedro@engaja.local',
+                'cpf'        => '00011122233',
+                'telefone'   => '(19) 98888-0010',
+                'escola'     => 'Espaco Aprender',
+                'tag'        => Participante::TAG_REDE_ENSINO,
+                'organizacao'=> 'Rede estadual',
+            ],
         ];
 
         return collect($pessoas)->map(function (array $dados, int $index) use ($municipios) {
@@ -180,9 +225,13 @@ class QuestionarioRespostaSeeder extends Seeder
         $inscricoes = collect();
 
         foreach ($atividades as $index => $atividade) {
-            $inscritos = $participantes->slice($index, 4);
+            $inscritos = $participantes->slice($index, 8);
+            if ($inscritos->count() < 8) {
+                $faltantes = 8 - $inscritos->count();
+                $inscritos = $inscritos->concat($participantes->take($faltantes));
+            }
             if ($inscritos->isEmpty()) {
-                $inscritos = $participantes;
+                $inscritos = $participantes->take(8);
             }
 
             foreach ($inscritos as $participante) {
@@ -319,6 +368,11 @@ class QuestionarioRespostaSeeder extends Seeder
             'Gostaria de mais momentos de troca.',
             'A equipe facilitou muito o processo.',
             'Foi util para planejar proximas acoes.',
+            'As dinamicas foram leves e participativas.',
+            'Senti falta de mais exemplos concretos.',
+            'Os materiais de apoio foram claros.',
+            'O tempo de perguntas foi suficiente.',
+            'Voltaria a participar de novas edicoes.',
         ];
 
         return $comentarios[$offset % count($comentarios)];

@@ -153,8 +153,9 @@ class EventoController extends Controller
     public function relatorios(Request $request, Evento $evento)
     {
         $user = $request->user();
-        if (!$user || (!$user->hasRole('administrador') && !$user->hasRole('gerente'))) {
-            abort(403);
+
+        if (!$user || !$user->hasAnyRole(['administrador', 'gerente', 'eq_pedagogica', 'articulador'])) {
+            abort(403, 'Ação não autorizada.');
         }
 
         $tipo = $request->get('tipo', 'geral');
