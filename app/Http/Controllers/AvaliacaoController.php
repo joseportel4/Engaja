@@ -149,11 +149,7 @@ class AvaliacaoController extends Controller
             $questoesAdicionaisInput = [];
         }
 
-        $evidenciasOptions = $evidencias->mapWithKeys(fn ($evidencia) => [
-            $evidencia->id => ($evidencia->indicador && $evidencia->indicador->dimensao
-                    ? $evidencia->indicador->dimensao->descricao . ' - '
-                    : '') . ($evidencia->indicador->descricao ?? '') . ' | ' . $evidencia->descricao,
-        ])->toArray();
+        $evidenciasOptions = $this->buildEvidenciasOptions($evidencias);
 
         $escalasOptions = $escalas->pluck('descricao', 'id')->toArray();
 
@@ -312,11 +308,7 @@ class AvaliacaoController extends Controller
             $questoesAdicionaisInput = $questoesAdicionais;
         }
 
-        $evidenciasOptions = $evidencias->mapWithKeys(fn ($evidencia) => [
-            $evidencia->id => ($evidencia->indicador && $evidencia->indicador->dimensao
-                ? $evidencia->indicador->dimensao->descricao . ' - '
-                : '') . ($evidencia->indicador->descricao ?? '') . ' | ' . $evidencia->descricao,
-        ])->toArray();
+        $evidenciasOptions = $this->buildEvidenciasOptions($evidencias);
 
         $escalasOptions = $escalas->pluck('descricao', 'id')->toArray();
 
@@ -806,6 +798,18 @@ class AvaliacaoController extends Controller
         ];
     }
 
+    private function buildEvidenciasOptions(Collection $evidencias): array
+    {
+        return $evidencias
+            ->mapWithKeys(fn ($evidencia) => [
+                $evidencia->id => ($evidencia->indicador && $evidencia->indicador->dimensao
+                        ? $evidencia->indicador->dimensao->descricao . ' - '
+                        : '') . ($evidencia->indicador->descricao ?? '') . ' | ' . $evidencia->descricao,
+            ])
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            ->toArray();
+    }
+
     public function formularioAvaliacao(Request $request, Avaliacao $avaliacao)
     {
         $atividade = Atividade::find($avaliacao->atividade_id);
@@ -989,4 +993,3 @@ class AvaliacaoController extends Controller
         ]);
     }
 }
-
