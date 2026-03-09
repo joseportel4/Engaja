@@ -122,8 +122,7 @@ class AvaliacaoController extends Controller
     public function create(Request $request)
     {
         $atividades = Atividade::with('evento')
-            ->orderBy('dia')
-            ->orderBy('hora_inicio')
+            ->orderByDesc('created_at')
             ->get();
 
         $templates = TemplateAvaliacao::with(['questoes.escala', 'questoes.indicador.dimensao', 'questoes.evidencia.indicador'])
@@ -257,8 +256,7 @@ class AvaliacaoController extends Controller
         ]);
 
         $atividades = Atividade::with('evento')
-            ->orderBy('dia')
-            ->orderBy('hora_inicio')
+            ->orderByDesc('created_at')
             ->get();
 
         $templates = TemplateAvaliacao::with(['questoes.escala', 'questoes.indicador.dimensao', 'questoes.evidencia.indicador'])
