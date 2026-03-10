@@ -143,15 +143,17 @@ class EventoController extends Controller
         }
 
         $tipo = $request->get('tipo', 'geral');
+        $semOuvintes = $request->boolean('sem_ouvintes');
         $slug = Str::slug($evento->nome ?? 'acao-pedagogica');
+        $sufixo = $semOuvintes ? '-sem-ouvintes' : '';
 
         if ($tipo === 'momentos') {
-            $nomeArquivo = $slug.'-participantes-por-momento.xlsx';
-            return Excel::download(new EventoParticipantesPorMomentoExport($evento), $nomeArquivo);
+            $nomeArquivo = $slug.'-participantes-por-momento'.$sufixo.'.xlsx';
+            return Excel::download(new EventoParticipantesPorMomentoExport($evento, $semOuvintes), $nomeArquivo);
         }
 
-        $nomeArquivo = $slug.'-participantes-geral.xlsx';
-        return Excel::download(new EventoParticipantesGeralExport($evento), $nomeArquivo);
+        $nomeArquivo = $slug.'-participantes-geral'.$sufixo.'.xlsx';
+        return Excel::download(new EventoParticipantesGeralExport($evento, $semOuvintes), $nomeArquivo);
     }
 
     public function edit(Evento $evento)
