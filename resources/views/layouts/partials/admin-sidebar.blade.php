@@ -21,7 +21,7 @@
 
   <div class="admin-sidebar__section">
     <p class="admin-sidebar__label">Principal</p>
-    @hasanyrole('administrador|gestor')
+    @hasanyrole('administrador|gerente')
       <a class="admin-nav-link {{ request()->routeIs('eventos.*') ? 'active' : '' }}" href="{{ route('eventos.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
@@ -97,7 +97,37 @@
     </div>
   @endrole
 
-  @hasanyrole('administrador|gestor')
+  @role('administrador')
+    <div class="admin-sidebar__section">
+      <p class="admin-sidebar__label">Gerenciamento</p>
+      <a class="admin-nav-link {{ request()->routeIs('regioes.*') ? 'active' : '' }}" href="{{ route('regioes.index') }}">
+        <span class="admin-nav-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M2 3a1 1 0 0 1 1-1h4v4H2zm0 5h5v6H3a1 1 0 0 1-1-1zm6 6V8h6v5a1 1 0 0 1-1 1zm6-7H8V2h5a1 1 0 0 1 1 1z"/>
+          </svg>
+        </span>
+        <span class="admin-nav-text">Regioes</span>
+      </a>
+      <a class="admin-nav-link {{ request()->routeIs('estados.*') ? 'active' : '' }}" href="{{ route('estados.index') }}">
+        <span class="admin-nav-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h11A1.5 1.5 0 0 1 15 2.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 13.5zm4 2a.5.5 0 0 0-.5.5v6a.5.5 0 0 0 1 0V8h5v3a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5z"/>
+          </svg>
+        </span>
+        <span class="admin-nav-text">Estados</span>
+      </a>
+      <a class="admin-nav-link {{ request()->routeIs('municipios.*') ? 'active' : '' }}" href="{{ route('municipios.index') }}">
+        <span class="admin-nav-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1m0 1a6 6 0 1 1 0 12A6 6 0 0 1 8 2m-2 4a1 1 0 1 0 0 2 1 1 0 0 0 0-2m4 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2m-4 3a1 1 0 1 0 0 2 1 1 0 0 0 0-2m4 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2"/>
+          </svg>
+        </span>
+        <span class="admin-nav-text">Municipios</span>
+      </a>
+    </div>
+  @endrole
+
+  @hasanyrole('administrador|gerente')
     <div class="admin-sidebar__section">
       <p class="admin-sidebar__label">Pessoas</p>
       <a class="admin-nav-link {{ request()->routeIs('usuarios.*') ? 'active' : '' }}" href="{{ route('usuarios.index') }}">
@@ -111,7 +141,7 @@
     </div>
   @endhasanyrole
 
-  @hasanyrole('administrador|gestor|participante')
+  @hasanyrole('administrador|gerente|participante')
     <div class="admin-sidebar__section">
       <p class="admin-sidebar__label">Certificados</p>
       <a class="admin-nav-link {{ request()->routeIs('profile.certificados') ? 'active' : '' }}" href="{{ route('profile.certificados') }}">
@@ -122,7 +152,7 @@
         </span>
         <span class="admin-nav-text">Meus certificados</span>
       </a>
-      @hasanyrole('administrador|gestor')
+      @hasanyrole('administrador|gerente')
         <a class="admin-nav-link {{ request()->routeIs('certificados.modelos.*') ? 'active' : '' }}" href="{{ route('certificados.modelos.index') }}">
           <span class="admin-nav-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
