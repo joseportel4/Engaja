@@ -65,6 +65,9 @@ $dia = \Carbon\Carbon::parse($atividade->dia)
           {{ $atividade->presenca_ativa ? 'Fechar presença' : 'Abrir presença' }}
         </button>
       </form>
+      <a href="{{ route('atividades.lista-presenca.pdf', $atividade) }}" class="btn btn-engaja btn-sm">
+          Baixar Lista de Presença
+      </a>
       @endcan
 
       @auth
@@ -154,7 +157,7 @@ $dia = \Carbon\Carbon::parse($atividade->dia)
           $m = $p?->municipio;
           $uf = $m?->estado?->sigla;
           $munLabel = $m ? ($m->nome . ($uf ? " - $uf" : "")) : '—';
-          $status = $pr->status_participacao ?? $pr->status ?? null;
+          $status = ($pr->inscricao?->ouvinte ?? false) ? 'ouvinte' : ($pr->status_participacao ?? $pr->status ?? null);
           @endphp
           <tr>
             <td>{{ $u->name ?? '—' }}</td>
@@ -162,6 +165,7 @@ $dia = \Carbon\Carbon::parse($atividade->dia)
             <td>{{ $munLabel }}</td>
             <td>
               @switch($status)
+              @case('ouvinte') <span class="badge bg-info">Ouvinte</span> @break
               @case('presente') <span class="badge bg-success">Presente</span> @break
               @case('ausente') <span class="badge bg-secondary">Ausente</span> @break
               @case('justificado') <span class="badge bg-warning text-dark">Justificado</span> @break

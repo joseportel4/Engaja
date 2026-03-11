@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -23,7 +24,28 @@ class Atividade extends Model
         'publico_esperado',
         'carga_horaria',
         'presenca_ativa',
+        'checklist_planejamento',
+        'checklist_encerramento',
     ];
+
+    protected $casts = [
+        'checklist_planejamento' => 'array',
+        'checklist_encerramento' => 'array',
+    ];
+
+    public function getChecklistsIncompletosAttribute(): bool
+    {
+        $totalPlanejamento = 13; 
+        $totalEncerramento = 3;
+
+        $pl = $this->checklist_planejamento ?? [];
+        $en = $this->checklist_encerramento ?? [];
+
+        $plIncompleto = count($pl) < $totalPlanejamento;
+        $enIncompleto = count($en) < $totalEncerramento;
+
+        return $plIncompleto || $enIncompleto;
+    }
 
     public function evento()
     {
@@ -61,5 +83,10 @@ class Atividade extends Model
         return $this->belongsToMany(Participante::class, 'inscricaos')
             ->withPivot(['evento_id'])
             ->withTimestamps();
+    }
+
+    public function avaliacaoAtividade(): HasOne
+    {
+        return $this->hasOne(AvaliacaoAtividade::class);
     }
 }

@@ -13,19 +13,23 @@
     <div id="mainNav" class="collapse navbar-collapse">
       <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
         @auth
-        @hasanyrole('administrador|gestor')
+        @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
         <li class="nav-item">
           <a class="nav-link text-white" href="{{ route('eventos.index') }}">
             Ações Pedagógicas
           </a>
         </li>
         @endhasanyrole
-        @role('administrador')
+
+        @hasanyrole('administrador|gerente')
         <li class="nav-item">
           <a class="nav-link text-white" href="{{ route('dashboard') }}">
             Dashboards
           </a>
         </li>
+        @endhasanyrole
+
+        @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle text-white nav-dropdown-fallback" href="javascript:void(0)" role="button" data-bs-toggle="dropdown"
             aria-expanded="false">
@@ -38,12 +42,15 @@
             <li><a class="dropdown-item" href="{{ route('escalas.index') }}">Escalas</a></li>
             <li><a class="dropdown-item" href="{{ route('templates-avaliacao.index') }}">Modelos de avaliação</a></li>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="{{ route('avaliacoes.index') }}">Avaliações</a></li>
+            <li><a class="dropdown-item" href="{{ route('avaliacoes.index') }}">Avaliações dos Participantes</a></li>
+            @hasanyrole('administrador|gerente')
+            <li><a class="dropdown-item" href="{{ route('avaliacao-atividade.index') }}">Relatórios de Avaliação da Ação</a></li>
+            @endhasanyrole
           </ul>
         </li>
-        @endrole
+        @endhasanyrole
 
-        @hasanyrole('administrador|gestor')
+        @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle text-white nav-dropdown-fallback" href="javascript:void(0)" role="button" data-bs-toggle="dropdown"
             aria-expanded="false">
@@ -51,14 +58,15 @@
           </a>
           <ul class="dropdown-menu">
             <li><a class="dropdown-item" href="{{ route('usuarios.index') }}">Usuários</a></li>
+            @role('administrador')
             <li><a class="dropdown-item" href="{{ route('regioes.index') }}">Regiões</a></li>
             <li><a class="dropdown-item" href="{{ route('estados.index') }}">Estados</a></li>
             <li><a class="dropdown-item" href="{{ route('municipios.index') }}">Municípios</a></li>
+            @endrole
           </ul>
         </li>
         @endhasanyrole
 
-        @hasanyrole('administrador|gestor|participante')
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle text-white nav-dropdown-fallback" href="javascript:void(0)" role="button" data-bs-toggle="dropdown"
             aria-expanded="false">
@@ -66,13 +74,13 @@
           </a>
           <ul class="dropdown-menu">
             <li><a class="dropdown-item" href="{{ route('profile.certificados') }}">Meus certificados</a></li>
-            @hasanyrole('administrador|gestor')
+            @hasanyrole('administrador|gerente')
               <li><a class="dropdown-item" href="{{ route('certificados.modelos.index') }}">Modelos de certificados</a></li>
               <li><a class="dropdown-item" href="{{ route('certificados.emitidos') }}">Certificados emitidos</a></li>
             @endhasanyrole
           </ul>
         </li>
-        @endhasanyrole
+
         @role('participante')
           <li class="nav-item">
             <a class="nav-link text-white" href="{{ route('profile.presencas') }}">

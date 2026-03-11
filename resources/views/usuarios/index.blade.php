@@ -3,8 +3,8 @@
 @section('content')
 <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
   <div>
-    <p class="text-uppercase text-muted small mb-1">Administracao</p>
-    <h1 class="h4 fw-bold text-engaja mb-0">Gerenciar usuarios</h1>
+    <p class="text-uppercase text-muted small mb-1">Administração</p>
+    <h1 class="h4 fw-bold text-engaja mb-0">Gerenciar Usuários</h1>
     {{-- <div class="text-muted small">Disponivel apenas para administradores e gestores.</div> --}}
   </div>
   <form method="GET" action="{{ route('usuarios.index') }}" class="d-flex gap-2">
@@ -38,7 +38,7 @@
                 <th>E-mail</th>
                 <th>CPF</th>
                 <th>Telefone</th>
-                <th class="text-end pe-4">Acao</th>
+                <th class="text-end pe-4">Ação</th>
               </tr>
             </thead>
             <tbody>
@@ -78,13 +78,18 @@
       </div>
     </div>
 
+
     <div class="mt-3 text-end d-flex flex-wrap justify-content-end gap-2">
-      <a href="{{ route('usuarios.export') }}" class="btn btn-success">
+    @can('user.ver')
+      <a href="{{ route('usuarios.export') }}" class="btn btn-engaja">
         Exportar planilha de usuários
       </a>
+    @endcan
+    @hasanyrole('administrador|gerente')
       <button type="button" class="btn btn-outline-secondary" id="btn-select-all-page">Selecionar todos da página</button>
       <button type="button" class="btn btn-outline-secondary" id="btn-select-all-global">Selecionar todos (todas as páginas)</button>
       <button type="button" class="btn btn-engaja" id="btn-open-modal">Emitir certificados</button>
+    @endhasanyrole
     </div>
   </form>
 

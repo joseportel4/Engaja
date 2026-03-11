@@ -11,6 +11,8 @@ use App\Models\Municipio;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use App\Pdf\ListaPresencaPdf;
+use Illuminate\Support\Str;
 
 class AtividadeController extends Controller
 {
@@ -27,7 +29,7 @@ class AtividadeController extends Controller
 
     public function create(Evento $evento)
     {
-        $this->authorize('update', $evento);
+        $this->authorize('atividade.criar');
         $municipios = Municipio::with(['estado.regiao'])
             ->get(['id', 'nome', 'estado_id'])
             ->sortBy(function ($m) {
@@ -48,9 +50,24 @@ class AtividadeController extends Controller
         return view('atividades.create', compact('evento', 'municipios', 'atividadesCopiaveis'));
     }
 
+    public function saveChecklist(Request $request, Atividade $atividade)
+    {
+        $request->validate([
+            'tipo'   => 'required|in:planejamento,encerramento',
+            'itens'  => 'nullable|array',
+            'itens.*'=> 'integer|min:0',
+        ]);
+
+        $campo = 'checklist_' . $request->tipo;
+        $atividade->$campo = $request->input('itens', []);
+        $atividade->save();
+
+        return response()->json(['status' => 'ok', 'saved' => $atividade->$campo]);
+    }
+
     public function store(Request $request, Evento $evento)
     {
-        $this->authorize('update', $evento);
+        $this->authorize('atividade.criar');
 
         $dados = $request->validate([
             'municipios'          => 'nullable|array',
@@ -62,6 +79,10 @@ class AtividadeController extends Controller
             'publico_esperado'    => 'nullable|integer|min:0',
             'carga_horaria'       => 'nullable|integer|min:0',
             'copiar_inscritos_de' => 'nullable|exists:atividades,id',
+            'checklist_planejamento'      => 'nullable|array',
+            'checklist_planejamento.*'    => 'integer|min:0',
+            'checklist_encerramento'      => 'nullable|array',
+            'checklist_encerramento.*'    => 'integer|min:0',
         ]);
 
         $copiarDe = $dados['copiar_inscritos_de'] ?? null;
@@ -78,14 +99,14 @@ class AtividadeController extends Controller
         $copiados = $this->copiarInscritos($copiarDe, $atividade);
 
         return redirect()
-            ->route('eventos.show', $evento)
-            ->with('success', $this->mensagemSucesso('Momento adicionado com sucesso!', $copiados));
+        ->route('eventos.show', $evento)
+        ->with('success', 'Momento criado com sucesso!');
     }
 
     public function edit(Atividade $atividade)
     {
         $evento = $atividade->evento;
-        $this->authorize('update', $evento);
+        $this->authorize('atividade.editar');
 
         $atividade->load('municipios');
 
@@ -112,7 +133,7 @@ class AtividadeController extends Controller
     public function update(Request $request, Atividade $atividade)
     {
         $evento = $atividade->evento;
-        $this->authorize('update', $evento);
+        $this->authorize('atividade.editar');
 
         $dados = $request->validate([
             'municipios'          => 'nullable|array',
@@ -124,6 +145,10 @@ class AtividadeController extends Controller
             'publico_esperado'    => 'nullable|integer|min:0',
             'carga_horaria'       => 'nullable|integer|min:0',
             'copiar_inscritos_de' => 'nullable|exists:atividades,id',
+            'checklist_planejamento'      => 'nullable|array',
+            'checklist_planejamento.*'    => 'integer|min:0',
+            'checklist_encerramento'      => 'nullable|array',
+            'checklist_encerramento.*'    => 'integer|min:0',
         ]);
 
         $copiarDe = $dados['copiar_inscritos_de'] ?? null;
@@ -145,8 +170,7 @@ class AtividadeController extends Controller
 
     public function destroy(Atividade $atividade)
     {
-        $evento = $atividade->evento;
-        $this->authorize('delete', $evento);
+        $this->authorize('atividade.excluir');
 
         $atividade->delete();
 
@@ -215,6 +239,7 @@ class AtividadeController extends Controller
                 'evento_id'       => $evento->id,
                 'atividade_id'    => $atividade->id,
                 'participante_id' => $participante->id,
+                'ouvinte'         => $inscricao->atividade_id === $atividade->id ? $inscricao->ouvinte : true,
             ]);
             $inscricao->deleted_at = null;
             $inscricao->save();
@@ -223,6 +248,7 @@ class AtividadeController extends Controller
                 'evento_id'       => $evento->id,
                 'atividade_id'    => $atividade->id,
                 'participante_id' => $participante->id,
+                'ouvinte'         => true,
             ]);
         }
 
@@ -270,6 +296,7 @@ class AtividadeController extends Controller
 
             if ($existente) {
                 $existente->evento_id = $destino->evento_id;
+                $existente->ouvinte = false;
                 if ($existente->trashed()) {
                     $existente->restore();
                     $copiados++;
@@ -282,6 +309,7 @@ class AtividadeController extends Controller
                 'evento_id'       => $destino->evento_id,
                 'atividade_id'    => $destino->id,
                 'participante_id' => $inscricao->participante_id,
+                'ouvinte'         => false,
             ]);
             $copiados++;
         }
@@ -297,5 +325,77 @@ class AtividadeController extends Controller
 
         $sufixo = $copiados === 1 ? ' 1 inscrito copiado.' : " {$copiados} inscritos copiados.";
         return $mensagem . $sufixo;
+    }
+
+    public function downloadListaPresencaPdf(Atividade $atividade)
+    {
+        $this->authorize('presenca.abrir');
+
+        //aqui os nomes dos inscritos ficam em ordem alfabetica legal
+        $inscricoes = $atividade->inscricoes()->with([
+            'participante.user',
+            'participante.municipio.estado'
+        ])->get()->sortBy(function ($inscricao) {
+            //previne nomes nulos e joga para minusculo
+            $nome = mb_strtolower($inscricao->participante->user->name ?? '');
+
+            return Str::ascii($nome);
+        })->values();
+
+        $templatePath = storage_path('app/templates/base_lista_presenca.pdf');
+
+        if (!file_exists($templatePath)) {
+            return back()->with('error', 'O template base em PDF não foi encontrado.');
+        }
+
+        $pdf = new ListaPresencaPdf();
+        $pdf->setBaseTemplate($templatePath);
+
+        //formatacao dos campos do cabecalho
+        $municipioAtividade = $atividade->municipio;
+        $pdf->municipioLabel = $municipioAtividade ? ($municipioAtividade->nome . ' / ' . ($municipioAtividade->estado->sigla ?? '')) : '—';
+
+        $ini = \Carbon\Carbon::parse($atividade->hora_inicio)->format('H:i');
+        $fim = \Carbon\Carbon::parse($atividade->hora_fim)->format('H:i');
+        $pdf->periodoLabel = "{$ini} às {$fim}";
+
+        $pdf->dataLabel = \Carbon\Carbon::parse($atividade->dia)->format('d/m/Y');
+
+        $pdf->temaLabel = $atividade->descricao;
+
+        //configuracao das margens
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(true, 30);
+
+        $pdf->AddPage();
+
+        $pdf->SetFont('Helvetica', 'B', 9);
+
+        $contador = 1;
+
+        if ($inscricoes->isEmpty()) {
+            $pdf->Cell(190, 8, utf8_decode('Nenhum participante inscrito neste momento.'), 1, 1, 'C');
+        } else {
+            foreach ($inscricoes as $inscricao) {
+                $user = $inscricao->participante->user;
+
+                //pega o nome do inscrito para preencher na tabela
+                $nome = utf8_decode(substr($user->name ?? '—', 0, 35));
+
+                //os campos vazios para prenchimento manual
+                $pdf->Cell(8, 8, $contador++, 1, 0, 'C'); //nº
+                $pdf->Cell(80, 8, $nome, 1, 0, 'L');      //nome do Participante
+                $pdf->Cell(65, 8, '', 1, 0, 'C');     //instituição (em branco)
+                $pdf->Cell(45, 8, '', 1, 0, 'C');     //CPF (em branco)
+                $pdf->Cell(45, 8, '', 1, 0, 'C');     //e-mail ou telefone (em branco)
+                $pdf->Cell(35, 8, '', 1, 1, 'C');     //assinatura (em branco)
+            }
+        }
+
+        $fileName = 'Lista_Presenca_' . Str::slug($atividade->descricao) . '.pdf';
+
+        return response($pdf->Output('S'), 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
     }
 }
