@@ -426,7 +426,8 @@
                     <div class="d-flex flex-column align-items-end gap-2 flex-shrink-0">
                       @hasanyrole('administrador|gerente')
                       <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-                        {{-- Avaliação para o participante (se tem presença neste momento) --}}
+                        {{--
+                        Avaliação para o participante (se tem presença neste momento)
                         @if($minhaPresenca && $primeiraAvaliacao)
                           @if($minhaPresenca->avaliacao_respondida)
                             <span class="badge bg-success py-2 px-3" style="font-size:.8rem;">✅ Avaliado</span>
@@ -437,6 +438,7 @@
                             </a>
                           @endif
                         @endif
+                        --}}
 
                         {{-- Admin / Gestor: Relatório Pós-Ação --}}
                         <a href="{{ $at->avaliacaoAtividade
@@ -448,6 +450,7 @@
                       </div>
                       @endhasanyrole
 
+                      {{--
                       @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
                         @if($primeiraAvaliacao)
                         <div class="d-flex justify-content-end w-100">
@@ -458,6 +461,7 @@
                         </div>
                         @endif
                       @endhasanyrole
+                      --}}
 
                       <div class="actions d-flex gap-2 flex-wrap justify-content-end">
                         @can('atividade.ver')
