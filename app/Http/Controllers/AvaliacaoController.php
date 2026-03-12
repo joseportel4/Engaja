@@ -29,8 +29,11 @@ class AvaliacaoController extends Controller
         $avaliacaoTable = (new Avaliacao())->getTable();
 
         $query = Avaliacao::query()->with([
+            'inscricao.participante.user',
+            'inscricao.evento',
             'atividade.evento',
             'templateAvaliacao',
+            'respostas.submissaoAvaliacao',
         ]);
 
         $searchTerm = trim((string) $request->query('search', ''));
@@ -44,6 +47,9 @@ class AvaliacaoController extends Controller
                 })
                     ->orWhereHas('templateAvaliacao', function ($template) use ($searchTerm) {
                         $template->where('nome', 'like', '%' . $searchTerm . '%');
+                    })
+                    ->orWhereHas('inscricao.participante.user', function ($usuario) use ($searchTerm) {
+                        $usuario->where('name', 'like', '%' . $searchTerm . '%');
                     })
                     ->orWhereHas('inscricao.evento', function ($evento) use ($searchTerm) {
                         $evento->where('nome', 'like', '%' . $searchTerm . '%');
@@ -221,8 +227,11 @@ class AvaliacaoController extends Controller
     public function show(Avaliacao $avaliacao)
     {
         $avaliacao->load([
+            'inscricao.participante.user',
+            'inscricao.evento',
             'atividade.evento',
             'templateAvaliacao',
+            'respostas.avaliacaoQuestao',
             'avaliacaoQuestoes.indicador.dimensao',
             'avaliacaoQuestoes.evidencia',
             'avaliacaoQuestoes.escala',
@@ -944,7 +953,45 @@ class AvaliacaoController extends Controller
         return $presenca;
     }
 
-    /**
+    public function respostas(Avaliacao $avaliacao)
+    {
+        abort_if($avaliacao->anonima, 404);
+
+        $avaliacao->load(['atividade.evento', 'templateAvaliacao']);
+
+        $submissoes = SubmissaoAvaliacao::with([
+            'presenca.inscricao.participante.user',
+            'respostas.avaliacaoQuestao',
+        ])
+            ->where('avaliacao_id', $avaliacao->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('avaliacoes.respostas', compact('avaliacao', 'submissoes'));
+    }
+
+    public function respostasMostrar(Avaliacao $avaliacao, SubmissaoAvaliacao $submissao)
+    {
+        abort_if($avaliacao->anonima, 404);
+        abort_unless($submissao->avaliacao_id === $avaliacao->id, 404);
+
+        $submissao->load([
+            'presenca.inscricao.participante.user',
+            'respostas.avaliacaoQuestao',
+        ]);
+
+        $avaliacao->load(['avaliacaoQuestoes']);
+
+        $respostasPorQuestao = $submissao->respostas->keyBy('avaliacao_questao_id');
+
+        return view('avaliacoes.resposta_detalhe', [
+            'avaliacao' => $avaliacao,
+            'submissao' => $submissao,
+            'respostasPorQuestao' => $respostasPorQuestao,
+        ]);
+    }
+
+     /**
      * Listagem anónima das respostas de participantes para um Momento (Atividade).
      * Nunca expõe nome, e-mail ou qualquer dado identificador do participante.
      */
@@ -971,37 +1018,5 @@ class AvaliacaoController extends Controller
             ->get();
 
         return view('avaliacoes.resultados_atividade', compact('atividade', 'avaliacao', 'submissoes'));
-    }
-
-    public function respostas(Avaliacao $avaliacao)
-    {
-        abort_if($avaliacao->anonima, 404);
-
-        $avaliacao->load(['atividade.evento', 'templateAvaliacao']);
-
-        $submissoes = SubmissaoAvaliacao::with(['respostas.avaliacaoQuestao'])
-            ->where('avaliacao_id', $avaliacao->id)
-            ->orderByDesc('created_at')
-            ->get();
-
-        return view('avaliacoes.respostas', compact('avaliacao', 'submissoes'));
-    }
-
-    public function respostasMostrar(Avaliacao $avaliacao, SubmissaoAvaliacao $submissao)
-    {
-        abort_if($avaliacao->anonima, 404);
-        abort_unless($submissao->avaliacao_id === $avaliacao->id, 404);
-
-        $submissao->load(['respostas.avaliacaoQuestao']);
-
-        $avaliacao->load(['avaliacaoQuestoes']);
-
-        $respostasPorQuestao = $submissao->respostas->keyBy('avaliacao_questao_id');
-
-        return view('avaliacoes.resposta_detalhe', [
-            'avaliacao' => $avaliacao,
-            'submissao' => $submissao,
-            'respostasPorQuestao' => $respostasPorQuestao,
-        ]);
     }
 }
