@@ -423,7 +423,7 @@
                       @endif
                     </div>
 
-                    @hasanyrole('administrador|gerente')
+                    @auth
                     <div class="d-flex align-items-center gap-4 flex-shrink-0">
 
                       {{-- Avaliação para o participante (se tem presença neste momento) --}}
@@ -448,18 +448,16 @@
                         @endif
                       @endhasanyrole
 
-                      {{-- Admin / Gestor: Relatório Pós-Ação --}}
-                      @hasanyrole('administrador|gerente')
-                        <a href="{{ $at->avaliacaoAtividade
-                              ? route('avaliacao-atividade.edit',   $at)
-                              : route('avaliacao-atividade.create', $at) }}"
-                           class="btn btn-sm {{ $at->avaliacaoAtividade ? 'btn-warning' : 'btn-outline-warning' }}">
-                          📋 {{ $at->avaliacaoAtividade ? 'Avaliação' : 'Avaliar' }}
-                        </a>
-                      @endhasanyrole
+                      @php $minhaAvaliacaoAtividade = $at->minha_avaliacao_atividade; @endphp
+                      <a href="{{ $minhaAvaliacaoAtividade
+                            ? route('avaliacao-atividade.edit', $at)
+                            : route('avaliacao-atividade.create', $at) }}"
+                         class="btn btn-sm {{ $minhaAvaliacaoAtividade ? 'btn-warning' : 'btn-outline-warning' }}">
+                        📋 {{ $minhaAvaliacaoAtividade ? 'Minha avaliação' : 'Avaliar' }}
+                      </a>
 
                     <div class="actions d-flex gap-2 flex-shrink-0 align-items-center">
-                    @endhasanyrole
+                    @endauth
 
                     @can('atividade.ver')
                       <a href="{{ route('atividades.show', $at) }}" class="btn btn-sm btn-outline-primary">
@@ -652,8 +650,8 @@
       document.querySelectorAll('.btn-checklist-reabrir').forEach(btn => {
           btn.addEventListener('click', function () {
               atividadeIdAtual = this.dataset.atividadeId;
-              const marcadosPl = JSON.parse(this.dataset.checklistPl || '[]');
-              const marcadosEn = JSON.parse(this.dataset.checklistEn || '[]');
+            const marcadosPl = normalizeMarkedIndexes(ITENS_PLANEJAMENTO, JSON.parse(this.dataset.checklistPl || '[]'));
+            const marcadosEn = normalizeMarkedIndexes(ITENS_ENCERRAMENTO, JSON.parse(this.dataset.checklistEn || '[]'));
 
               const body = document.getElementById('reopen-checklist-body');
               body.innerHTML = renderChecklist('planejamento', ITENS_PLANEJAMENTO, marcadosPl)
@@ -662,6 +660,34 @@
               new bootstrap.Modal(document.getElementById('modalReopenChecklist')).show();
           });
       });
+
+        function normalizeMarkedIndexes(itens, marcados) {
+          if (!Array.isArray(marcados)) {
+            return [];
+          }
+
+          const normalizedTextToIndex = new Map(
+            itens.map((item, index) => [String(item).trim().toLowerCase(), index])
+          );
+
+          return [...new Set(
+            marcados
+              .map((valor) => {
+                if (Number.isInteger(valor)) {
+                  return valor;
+                }
+
+                const asNumber = Number(valor);
+                if (Number.isInteger(asNumber)) {
+                  return asNumber;
+                }
+
+                const textKey = String(valor).trim().toLowerCase();
+                return normalizedTextToIndex.has(textKey) ? normalizedTextToIndex.get(textKey) : null;
+              })
+              .filter((index) => Number.isInteger(index) && index >= 0 && index < itens.length)
+          )];
+        }
 
       function renderChecklist(tipo, itens, marcados) {
           let html = `<h6 class="fw-bold mt-2" style="color: #421944;">${tipo === 'planejamento' ? '📋 Planejamento' : '✅ Encerramento'}</h6><div class="vstack gap-2 mb-4">`;

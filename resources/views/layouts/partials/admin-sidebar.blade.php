@@ -8,7 +8,7 @@
   </div>
 
   <div class="admin-sidebar__section">
-    <p class="admin-sidebar__label">Navegacao</p>
+    <p class="admin-sidebar__label">Navegação</p>
     <a class="admin-nav-link {{ request()->is('/') ? 'active' : '' }}" href="{{ url('/') }}">
       <span class="admin-nav-icon" aria-hidden="true">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
@@ -28,7 +28,7 @@
             <path d="M2 2h12v2H2zM2 6h9v2H2zM2 10h6v2H2z"/>
           </svg>
         </span>
-        <span class="admin-nav-text">Acoes pedagogicas</span>
+        <span class="admin-nav-text">Ações pedagógicas</span>
       </a>
     @endhasanyrole
     @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
@@ -45,14 +45,14 @@
 
   @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
     <div class="admin-sidebar__section">
-      <p class="admin-sidebar__label">Avaliacoes</p>
+      <p class="admin-sidebar__label">Avaliações</p>
       <a class="admin-nav-link {{ request()->routeIs('dimensaos.*') ? 'active' : '' }}" href="{{ route('dimensaos.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
             <path d="M7.293 1.5a1 1 0 0 1 1.414 0l5.793 5.793a1 1 0 0 1 .293.707V14a1 1 0 0 1-1 1h-4a.5.5 0 0 1-.5-.5V11a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v3.5a.5.5 0 0 1-.5.5h-4a1 1 0 0 1-1-1V8c0-.266.105-.52.293-.707z"/>
           </svg>
         </span>
-        <span class="admin-nav-text">Dimensoes</span>
+        <span class="admin-nav-text">Dimensões</span>
       </a>
       <a class="admin-nav-link {{ request()->routeIs('indicadors.*') ? 'active' : '' }}" href="{{ route('indicadors.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">
@@ -68,7 +68,7 @@
             <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.32-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.63.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187z"/>
           </svg>
         </span>
-        <span class="admin-nav-text">Evidencias</span>
+        <span class="admin-nav-text">Evidências</span>
       </a>
       <a class="admin-nav-link {{ request()->routeIs('escalas.*') ? 'active' : '' }}" href="{{ route('escalas.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">
@@ -84,7 +84,7 @@
             <path d="M5.5 2A1.5 1.5 0 0 1 7 3.5v9A1.5 1.5 0 0 1 5.5 14h-3A1.5 1.5 0 0 1 1 12.5v-9A1.5 1.5 0 0 1 2.5 2zM15 4.5a1.5 1.5 0 0 0-1.5-1.5H9v10h4.5A1.5 1.5 0 0 0 15 11.5z"/>
           </svg>
         </span>
-        <span class="admin-nav-text">Modelos de avaliacao</span>
+        <span class="admin-nav-text">Modelos de avaliação</span>
       </a>
       <a class="admin-nav-link {{ request()->routeIs('avaliacoes.*') ? 'active' : '' }}" href="{{ route('avaliacoes.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">
@@ -92,8 +92,18 @@
             <path d="M3 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6.414a1 1 0 0 0-.293-.707l-3.414-3.414A1 1 0 0 0 9.586 2H3zm6-1.5v3a.5.5 0 0 0 .5.5h3z"/>
           </svg>
         </span>
-        <span class="admin-nav-text">Avaliacoes</span>
+        <span class="admin-nav-text">Avaliações</span>
       </a>
+      @hasanyrole('administrador|gerente')
+        <a class="admin-nav-link {{ request()->routeIs('avaliacao-atividade.*') ? 'active' : '' }}" href="{{ route('avaliacao-atividade.index') }}">
+          <span class="admin-nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M3 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6.5L8.5 2zM8 3.5V7a1 1 0 0 0 1 1h3.5"/>
+            </svg>
+          </span>
+          <span class="admin-nav-text">Avaliação da ação</span>
+        </a>
+      @endhasanyrole
     </div>
   @endhasanyrole
 
@@ -106,7 +116,7 @@
             <path d="M2 3a1 1 0 0 1 1-1h4v4H2zm0 5h5v6H3a1 1 0 0 1-1-1zm6 6V8h6v5a1 1 0 0 1-1 1zm6-7H8V2h5a1 1 0 0 1 1 1z"/>
           </svg>
         </span>
-        <span class="admin-nav-text">Regioes</span>
+        <span class="admin-nav-text">Regiões</span>
       </a>
       <a class="admin-nav-link {{ request()->routeIs('estados.*') ? 'active' : '' }}" href="{{ route('estados.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">
@@ -122,7 +132,7 @@
             <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1m0 1a6 6 0 1 1 0 12A6 6 0 0 1 8 2m-2 4a1 1 0 1 0 0 2 1 1 0 0 0 0-2m4 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2m-4 3a1 1 0 1 0 0 2 1 1 0 0 0 0-2m4 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2"/>
           </svg>
         </span>
-        <span class="admin-nav-text">Municipios</span>
+        <span class="admin-nav-text">Municípios</span>
       </a>
     </div>
   @endrole
@@ -136,7 +146,7 @@
             <path d="M8 9a3 3 0 1 0-3-3 3 3 0 0 0 3 3m4.5 5a.5.5 0 0 0 .5-.5c0-1.657-2.239-3-5-3s-5 1.343-5 3a.5.5 0 0 0 .5.5z"/>
           </svg>
         </span>
-        <span class="admin-nav-text">Gerenciar usuarios</span>
+        <span class="admin-nav-text">Gerenciar usuários</span>
       </a>
     </div>
   @endhasanyrole
