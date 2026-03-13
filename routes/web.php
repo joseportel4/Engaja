@@ -152,6 +152,9 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'role:administrador|gerente'])->group(function () {
     Route::get('/relatorios-avaliacao', [AvaliacaoAtividadeController::class, 'index'])
         ->name('avaliacao-atividade.index');
+
+    Route::get('/relatorios-avaliacao/{relatorio}', [AvaliacaoAtividadeController::class, 'show'])
+        ->name('avaliacao-atividade.show');
 });
 
 Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {

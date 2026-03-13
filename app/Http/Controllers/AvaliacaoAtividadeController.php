@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Atividade;
 use App\Models\AvaliacaoAtividade;
+use App\Models\Participante;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 
@@ -58,12 +59,24 @@ class AvaliacaoAtividadeController extends Controller
 
     private function calcularResumoPublico(Atividade $atividade, AvaliacaoAtividade $avaliacao): array
     {
+        $inscricoesQuery = $atividade->inscricoes()->whereNull('deleted_at');
+
         return [
             'prevista'   => $atividade->publico_esperado ?? 0,
-            'inscritos'  => $atividade->inscricoes()->whereNull('deleted_at')->count(),
-            'presentes'  => $atividade->presencas()->where('status', 'presente')->count(),
-            'movimentos' => $avaliacao->qtd_participantes_movimentos_sociais ?? 0,
-            'prefeitura' => $avaliacao->qtd_participantes_prefeitura ?? 0,
+            'inscritos'  => (clone $inscricoesQuery)->distinct('participante_id')->count('participante_id'),
+            'presentes'  => $atividade->presencas()
+                ->where('status', 'presente')
+                ->whereNull('deleted_at')
+                ->distinct('inscricao_id')
+                ->count('inscricao_id'),
+            'movimentos' => (clone $inscricoesQuery)
+                ->whereHas('participante', fn($q) => $q->where('tag', Participante::TAG_MOVIMENTO_SOCIAL))
+                ->distinct('participante_id')
+                ->count('participante_id'),
+            'prefeitura' => (clone $inscricoesQuery)
+                ->whereHas('participante', fn($q) => $q->where('tag', Participante::TAG_REDE_ENSINO))
+                ->distinct('participante_id')
+                ->count('participante_id'),
         ];
     }
 
@@ -152,5 +165,44 @@ class AvaliacaoAtividadeController extends Controller
         return redirect()
             ->route('eventos.show', $atividade->evento_id)
             ->with('success', 'Relatório de avaliação atualizado com sucesso!');
+    }
+
+    public function show(AvaliacaoAtividade $relatorio)
+    {
+        abort_unless(
+            auth()->user()?->hasAnyRole(['administrador', 'gerente']) || $relatorio->user_id === auth()->id(),
+            403,
+            'Sem permissão para ver este relatório.'
+        );
+
+        $relatorio->load('user');
+
+        if ($relatorio->atividade) {
+            $relatorio->load(['atividade.evento', 'atividade.municipios']);
+        } elseif ($relatorio->atividade_id) {
+            // Fallback para exibir dados mesmo se o momento tiver sido removido (soft delete).
+            $atividade = Atividade::withTrashed()
+                ->with(['evento', 'municipios'])
+                ->find($relatorio->atividade_id);
+
+            if ($atividade) {
+                $relatorio->setRelation('atividade', $atividade);
+            }
+        }
+
+        $atividade = $relatorio->atividade;
+        $resumoPublico = [
+            'prevista'   => $atividade->publico_esperado ?? 0,
+            'inscritos'  => $atividade->inscricoes()->whereNull('deleted_at')->count(),
+            'presentes'  => $atividade->presencas()->where('status', 'presente')->count(),
+            'movimentos' => $avaliacao->qtd_participantes_movimentos_sociais ?? 0,
+            'prefeitura' => $avaliacao->qtd_participantes_prefeitura ?? 0,
+        ];
+
+        if ($atividade) {
+            $resumoPublico = $this->calcularResumoPublico($atividade, $relatorio);
+        }
+
+        return view('avaliacao-atividade.show', compact('relatorio', 'resumoPublico'));
     }
 }

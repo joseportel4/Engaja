@@ -42,11 +42,10 @@
                         <th>Momento</th>
                         <th>Ação Pedagógica</th>
                         <th>Município(s)</th>
-                        @if(auth()->user()?->hasAnyRole(['administrador', 'gerente']))
-                        @endif
+                        <th>Educador(a)</th>
                         <th>Data do Momento</th>
                         <th>Última atualização</th>
-                        <th class="text-end">Ações</th>
+                        <th class="text-center" style="width: 120px;">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -57,17 +56,18 @@
                         $totalCheck = 4;
                         $marcados = count($checklistSalvo);
                         $checkCompleto = $marcados >= $totalCheck;
+                        $educador = $relatorio->nome_educador ?: ($relatorio->user->name ?? 'Não informado');
                     @endphp
                     <tr>
                         <td>
-                            @if($at->hora_inicio || $at->hora_fim)
+                            @if($at?->hora_inicio || $at?->hora_fim)
                                 <div class="text-muted small">
-                                    {{ $at->hora_inicio ? \Carbon\Carbon::parse($at->hora_inicio)->format('H:i') : '?' }}
+                                    {{ $at?->hora_inicio ? \Carbon\Carbon::parse($at->hora_inicio)->format('H:i') : '?' }}
                                     –
-                                    {{ $at->hora_fim ? \Carbon\Carbon::parse($at->hora_fim)->format('H:i') : '?' }}
+                                    {{ $at?->hora_fim ? \Carbon\Carbon::parse($at->hora_fim)->format('H:i') : '?' }}
                                 </div>
                             @endif
-                            <div class="fw-semibold">{{ $at->descricao ?? '—' }}</div>
+                            <div class="fw-semibold">{{ $at?->descricao ?? '—' }}</div>
                             @if(!$checkCompleto)
                                 <span class="badge bg-warning text-dark fw-normal" style="font-size:.72rem;">
                                     ⚠️ Checklist {{ $marcados }}/{{ $totalCheck }}
@@ -76,18 +76,19 @@
                                 <span class="badge bg-success fw-normal" style="font-size:.72rem;">✅ Checklist completo</span>
                             @endif
                         </td>
-                        <td>{{ $at->evento->nome ?? '—' }}</td>
+                        <td>{{ $at?->evento?->nome ?? '—' }}</td>
                         <td>
-                            {{ $at->municipios?->map(fn($m) => $m->nome_com_estado ?? $m->nome)->join(', ') ?: '—' }}
+                            {{ $at?->municipios?->map(fn($m) => $m->nome_com_estado ?? $m->nome)->join(', ') ?: '—' }}
                         </td>
+                        <td>{{ $educador }}</td>
                         <td>
-                            {{ $at->dia ? \Carbon\Carbon::parse($at->dia)->format('d/m/Y') : '—' }}
+                            {{ $at?->dia ? \Carbon\Carbon::parse($at->dia)->format('d/m/Y') : '—' }}
                         </td>
                         <td class="text-muted small">
                             {{ $relatorio->updated_at ? $relatorio->updated_at->format('d/m/Y H:i') : '—' }}
                         </td>
-                        <td class="text-end">
-                            <a href="{{ route('avaliacao-atividade.edit', $at) }}" class="btn btn-sm btn-outline-primary">Ver / Editar</a>
+                        <td class="text-center">
+                            <a href="{{ route('avaliacao-atividade.show', $relatorio) }}" class="btn btn-sm btn-outline-primary">Ver</a>
                         </td>
 
                     </tr>
