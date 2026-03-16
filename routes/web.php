@@ -64,6 +64,9 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
 
     Route::get('/atividades/{atividade}/lista-presenca-pdf', [AtividadeController::class, 'downloadListaPresencaPdf'])
         ->name('atividades.lista-presenca.pdf');
+
+    Route::get('/atividades/{atividade}/lista-autorizacao-pdf', [AtividadeController::class, 'downloadListaAutorizacaoImagemPdf'])
+        ->name('atividades.lista-autorizacao.pdf');
 });
 
 Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica'])->group(function () {
@@ -71,7 +74,6 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica'])->group(f
     Route::post('/eventos/{evento}/inscricoes/import', [InscricaoController::class, 'cadastro'])->name('inscricoes.cadastro');
     Route::get('/eventos/{evento}/inscricoes/preview', [InscricaoController::class, 'preview'])->name('inscricoes.preview');
     Route::post('/eventos/{evento}/inscricoes/preview/save', [InscricaoController::class, 'savePage'])->name('inscricoes.preview.save');
-    Route::get('/eventos/{evento}/inscricoes/confirmacao', [InscricaoController::class, 'confirmacao'])->name('inscricoes.confirmacao');
     Route::post('/eventos/{evento}/inscricoes/confirmar', [InscricaoController::class, 'confirmar'])->name('inscricoes.confirmar');
     Route::get('/eventos/{evento}/inscricoes/selecionar', [InscricaoController::class, 'selecionar'])->name('inscricoes.selecionar');
     Route::post('/eventos/{evento}/inscricoes/selecionar', [InscricaoController::class, 'selecionarStore'])->name('inscricoes.selecionar.store');
@@ -123,6 +125,9 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
     ->name('usuarios.')
     ->group(function () {
         Route::get('/', [UserManagementController::class, 'index'])->name('index');
+        Route::get('verificar', [UserManagementController::class, 'verificarIndex'])->name('verificar.index');
+        Route::post('verificar', [UserManagementController::class, 'verificarProcessar'])->name('verificar.processar');
+        Route::get('verificar/exportar/{format}', [UserManagementController::class, 'verificarExportar'])->name('verificar.exportar');
         Route::get('{managedUser}/editar', [UserManagementController::class, 'edit'])->name('edit');
         Route::put('{managedUser}', [UserManagementController::class, 'update'])->name('update');
         Route::post('certificados/emitir', [CertificadoController::class, 'emitirPorParticipantes'])->name('certificados.emitir');
