@@ -332,16 +332,25 @@ class AtividadeController extends Controller
     {
         $this->authorize('presenca.abrir');
 
-        //aqui os nomes dos inscritos ficam em ordem alfabetica legal
-        $inscricoes = $atividade->inscricoes()->with([
+        //logica do codigo alterada para puxar de inscrição e presença
+        $inscritos = $atividade->inscricoes()->with([
             'participante.user',
             'participante.municipio.estado'
-        ])->get()->sortBy(function ($inscricao) {
-            //previne nomes nulos e joga para minusculo
-            $nome = mb_strtolower($inscricao->participante->user->name ?? '');
+        ])->get()->pluck('participante');
 
-            return Str::ascii($nome);
-        })->values();
+        $presentes = $atividade->presencas()->with([
+            'inscricao.participante.user',
+            'inscricao.participante.municipio.estado'
+        ])->get()->pluck('inscricao.participante');
+
+        //unifica e ordena as incrições e presenças, tirando duplicações por id
+        $participantes = $inscritos->concat($presentes)
+            ->filter()
+            ->unique('id')
+            ->sortBy(function ($participante) {
+                $nome = mb_strtolower($participante->user->name ?? '');
+                return \Illuminate\Support\Str::ascii($nome);
+            })->values();
 
         $templatePath = storage_path('app/templates/base_lista_presenca.pdf');
 
@@ -374,11 +383,11 @@ class AtividadeController extends Controller
 
         $contador = 1;
 
-        if ($inscricoes->isEmpty()) {
+        if ($participantes->isEmpty()) {
             $pdf->Cell(190, 8, utf8_decode('Nenhum participante inscrito neste momento.'), 1, 1, 'C');
         } else {
-            foreach ($inscricoes as $inscricao) {
-                $user = $inscricao->participante->user;
+            foreach ($participantes as $participante) {
+                $user = $participante->user;
 
                 //pega o nome do inscrito para preencher na tabela
                 $nome = utf8_decode(substr($user->name ?? '—', 0, 50));
@@ -407,13 +416,25 @@ class AtividadeController extends Controller
     {
         $this->authorize('presenca.abrir');
 
-        $inscricoes = $atividade->inscricoes()->with([
+        //logica do codigo alterada para puxar de inscrição e presença
+        $inscritos = $atividade->inscricoes()->with([
             'participante.user',
             'participante.municipio.estado'
-        ])->get()->sortBy(function ($inscricao) {
-            $nome = mb_strtolower($inscricao->participante->user->name ?? '');
-            return \Illuminate\Support\Str::ascii($nome);
-        })->values();
+        ])->get()->pluck('participante');
+
+        $presentes = $atividade->presencas()->with([
+            'inscricao.participante.user',
+            'inscricao.participante.municipio.estado'
+        ])->get()->pluck('inscricao.participante');
+
+        //unifica e ordena as incrições e presenças, tirando duplicações por id
+        $participantes = $inscritos->concat($presentes)
+            ->filter()
+            ->unique('id')
+            ->sortBy(function ($participante) {
+                $nome = mb_strtolower($participante->user->name ?? '');
+                return \Illuminate\Support\Str::ascii($nome);
+            })->values();
 
         $templatePath = storage_path('app/templates/base_lista_autorizacao.pdf');
 
@@ -433,11 +454,11 @@ class AtividadeController extends Controller
 
         $contador = 1;
 
-        if ($inscricoes->isEmpty()) {
+        if ($participantes->isEmpty()) {
             $pdf->Cell(190, 8, utf8_decode('Nenhum participante inscrito neste momento.'), 1, 1, 'C');
         } else {
-            foreach ($inscricoes as $inscricao) {
-                $user = $inscricao->participante->user;
+            foreach ($participantes as $participante) {
+                $user = $participante->user;
 
                 $nome = utf8_decode(substr($user->name ?? '—', 0, 50));
                 while ($pdf->GetStringWidth($nome) > 89) {
