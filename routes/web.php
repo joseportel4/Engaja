@@ -64,6 +64,9 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
 
     Route::get('/atividades/{atividade}/lista-presenca-pdf', [AtividadeController::class, 'downloadListaPresencaPdf'])
         ->name('atividades.lista-presenca.pdf');
+
+    Route::get('/atividades/{atividade}/lista-autorizacao-pdf', [AtividadeController::class, 'downloadListaAutorizacaoImagemPdf'])
+        ->name('atividades.lista-autorizacao.pdf');
 });
 
 Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica'])->group(function () {

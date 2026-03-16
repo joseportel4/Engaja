@@ -68,6 +68,9 @@ $dia = \Carbon\Carbon::parse($atividade->dia)
       <a href="{{ route('atividades.lista-presenca.pdf', $atividade) }}" class="btn btn-engaja btn-sm">
           Baixar Lista de Presença
       </a>
+      <a href="{{ route('atividades.lista-autorizacao.pdf', $atividade) }}" class="btn btn-engaja btn-sm">
+          Baixar Autorização de Imagem
+      </a>
       @endcan
 
       @auth
