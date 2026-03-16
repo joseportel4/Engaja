@@ -185,11 +185,18 @@
   <div class="admin-sidebar__section">
     <p class="admin-sidebar__label">Minha conta</p>
     <a class="admin-nav-link {{ request()->routeIs('profile.edit') ? 'active' : '' }}" href="{{ route('profile.edit') }}">
-      <span class="admin-nav-icon" aria-hidden="true">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M8 8a3 3 0 1 0-3-3 3 3 0 0 0 3 3m4 5.5a5 5 0 1 0-8 0z"/>
-        </svg>
-      </span>
+      @if (auth()->user()?->profile_photo_url)
+        <img src="{{ auth()->user()->profile_photo_url }}"
+             alt="Foto de perfil de {{ auth()->user()->name }}"
+             class="admin-nav-icon rounded-circle border border-white border-opacity-25"
+             style="object-fit: cover;">
+      @else
+        <span class="admin-nav-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8 8a3 3 0 1 0-3-3 3 3 0 0 0 3 3m4 5.5a5 5 0 1 0-8 0z"/>
+          </svg>
+        </span>
+      @endif
       <span class="admin-nav-text">Meu perfil</span>
     </a>
     <form method="POST" action="{{ route('logout') }}">
