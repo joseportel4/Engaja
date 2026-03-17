@@ -87,7 +87,7 @@ class RegisteredUserController extends Controller
 
         $data = $validator->validate();
 
-        $user = DB::transaction(function () use ($data) {
+        $user = DB::transaction(function () use ($data, $request) {
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
