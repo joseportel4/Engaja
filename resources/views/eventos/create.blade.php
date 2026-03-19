@@ -245,7 +245,7 @@
                 @if(isset($situacoes) && $situacoes->isNotEmpty())
                 <div class="col-12">
                     <hr class="my-1">
-                    <h5 class="fw-semibold text-muted mb-2">Situações Desafiadoras da EJA</h5>
+                    <h5 class="fw-semibold text-muted mb-2">Situações Desafiadoras da EJA a serem enfrentadas</h5>
                     <div class="form-text mb-2">(Selecione as situações desafiadoras que esta ação pedagógica pretende enfrentar)</div>
                     @foreach($situacoes as $categoria => $itens)
                         <p class="fw-semibold text-uppercase small text-secondary mb-1 mt-3">{{ $categoria }}</p>
