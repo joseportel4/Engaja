@@ -125,6 +125,8 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
     ->name('usuarios.')
     ->group(function () {
         Route::get('/', [UserManagementController::class, 'index'])->name('index');
+        Route::get('cadastrar', [UserManagementController::class, 'create'])->name('create');
+        Route::post('/', [UserManagementController::class, 'store'])->name('store');
         Route::get('verificar', [UserManagementController::class, 'verificarIndex'])->name('verificar.index');
         Route::post('verificar', [UserManagementController::class, 'verificarProcessar'])->name('verificar.processar');
         Route::get('verificar/exportar/{format}', [UserManagementController::class, 'verificarExportar'])->name('verificar.exportar');
