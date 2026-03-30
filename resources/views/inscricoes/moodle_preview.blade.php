@@ -72,6 +72,17 @@
     background: #f3f4f6;
     color: #4b5563;
   }
+
+  .new-users-modal .modal-body {
+    max-height: 58vh;
+    overflow-y: auto;
+  }
+
+  .new-users-list {
+    max-height: 40vh;
+    overflow-y: auto;
+    padding-right: 0.35rem;
+  }
 </style>
 
 <div class="container py-4">
@@ -293,7 +304,7 @@
 
 @if($newUsers->isNotEmpty() && $errorsList->isEmpty())
 <div class="modal fade" id="newUsersWarningModal" tabindex="-1" aria-labelledby="newUsersWarningModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable new-users-modal">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="newUsersWarningModalLabel">Atenção: novos usuários serão cadastrados</h5>
@@ -304,7 +315,7 @@
           <strong>{{ $newUsers->count() }}</strong> usuário(s) da planilha não existem no Engaja e serão cadastrados agora.
         </p>
         <p class="mb-2">Nomes:</p>
-        <ul class="mb-0">
+        <ul class="mb-0 new-users-list">
           @foreach($newUsers as $newUser)
           <li>{{ $newUser['nome'] }} ({{ $newUser['email'] }})</li>
           @endforeach
@@ -312,7 +323,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Revisar</button>
-        <button type="button" class="btn btn-primary" id="new-users-confirm-proceed">Continuar e confirmar</button>
+        <button type="button" class="btn btn-primary btn-sm" id="new-users-confirm-proceed">Salvar</button>
       </div>
     </div>
   </div>
