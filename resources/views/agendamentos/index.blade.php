@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -18,6 +18,7 @@
           <th>Público participante</th>
           <th>Local da ação</th>
           <th>Cadastro por</th>
+          <th>Participantes</th>
           <th class="text-end">Ações</th>
         </tr>
       </thead>
@@ -31,8 +32,10 @@
             <td>{{ $agendamento->publico_participante }}</td>
             <td>{{ $agendamento->local_acao }}</td>
             <td>{{ $agendamento->user?->name ?? '—' }}</td>
+            <td>{{ $agendamento->participantes_clonados_count ?? 0 }}</td>
             <td class="text-end">
               <a href="{{ route('agendamentos.show', $agendamento) }}" class="btn btn-sm btn-outline-primary">Ver</a>
+              <a href="{{ route('agendamentos.participantes.index', $agendamento) }}" class="btn btn-sm btn-outline-dark">Participantes</a>
               <a href="{{ route('agendamentos.edit', $agendamento) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
               <form action="{{ route('agendamentos.destroy', $agendamento) }}" method="POST" class="d-inline">
                 @csrf
@@ -44,7 +47,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="8" class="text-center text-muted py-4">Nenhum agendamento cadastrado.</td>
+            <td colspan="9" class="text-center text-muted py-4">Nenhum agendamento cadastrado.</td>
           </tr>
         @endforelse
       </tbody>
@@ -56,4 +59,3 @@
   {{ $agendamentos->links() }}
 </div>
 @endsection
-

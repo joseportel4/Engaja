@@ -1,11 +1,14 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('content')
 <div class="row justify-content-center">
   <div class="col-lg-8 col-xl-7">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1 class="h3 fw-bold text-engaja mb-0">Agendamento</h1>
-      <a href="{{ route('agendamentos.edit', $agendamento) }}" class="btn btn-outline-secondary">Editar</a>
+      <div class="d-flex gap-2">
+        <a href="{{ route('agendamentos.participantes.index', $agendamento) }}" class="btn btn-outline-dark">Participantes</a>
+        <a href="{{ route('agendamentos.edit', $agendamento) }}" class="btn btn-outline-secondary">Editar</a>
+      </div>
     </div>
 
     <div class="card shadow-sm">
@@ -32,6 +35,9 @@
           <dt class="col-sm-4">Registrado por</dt>
           <dd class="col-sm-8">{{ $agendamento->user?->name ?? '—' }}</dd>
 
+          <dt class="col-sm-4">Participantes cadastrados</dt>
+          <dd class="col-sm-8">{{ $agendamento->participantes_clonados_count ?? 0 }}</dd>
+
           <dt class="col-sm-4">Detalhe da atividade/ação</dt>
           <dd class="col-sm-8">{{ $agendamento->atividadeAcao?->detalhe ?: '—' }}</dd>
         </dl>
@@ -42,4 +48,3 @@
   </div>
 </div>
 @endsection
-

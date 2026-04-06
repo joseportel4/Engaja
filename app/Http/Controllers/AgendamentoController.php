@@ -14,6 +14,7 @@ class AgendamentoController extends Controller
     {
         $agendamentos = Agendamento::query()
             ->with(['atividadeAcao', 'municipio.estado', 'user'])
+            ->withCount('participantesClonados')
             ->orderBy('data_horario')
             ->paginate(15);
 
@@ -54,7 +55,8 @@ class AgendamentoController extends Controller
 
     public function show(Agendamento $agendamento)
     {
-        $agendamento->load(['atividadeAcao', 'municipio.estado', 'user']);
+        $agendamento->load(['atividadeAcao', 'municipio.estado', 'user'])
+            ->loadCount('participantesClonados');
 
         return view('agendamentos.show', compact('agendamento'));
     }
