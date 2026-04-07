@@ -276,6 +276,18 @@
 
     .admin-shell.is-collapsed .admin-sidebar {
       width: 86px;
+      min-width: 0;
+      max-width: 86px;
+      flex: 0 0 86px;
+      box-sizing: border-box;
+      align-items: center;
+      padding-left: 0.45rem;
+      padding-right: 0.45rem;
+      overflow-x: hidden;
+    }
+
+    .admin-shell.is-collapsed .admin-sidebar__section {
+      justify-items: center;
     }
 
     .admin-shell.is-collapsed .admin-nav-text,
@@ -286,14 +298,6 @@
 
     .admin-shell.is-collapsed .admin-sidebar__logo {
       height: 34px;
-    }
-
-    .admin-shell.is-collapsed .admin-nav-link {
-      justify-content: center;
-    }
-
-    .admin-shell.is-collapsed .admin-nav-icon {
-      margin: 0;
     }
 
     .admin-shell.is-collapsed .admin-topbar {
@@ -319,11 +323,24 @@
     }
 
     .admin-shell.is-collapsed .admin-nav-link {
-      padding: .55rem;
+      padding: .55rem .35rem;
       justify-content: center;
+      width: auto;
+      max-width: 100%;
+    }
+
+    .admin-shell.is-collapsed .admin-sidebar form {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .admin-shell.is-collapsed .admin-nav-link.btn.w-100 {
+      width: auto !important;
     }
 
     .admin-shell.is-collapsed .admin-nav-icon {
+      margin: 0;
       width: 38px;
       height: 38px;
     }
