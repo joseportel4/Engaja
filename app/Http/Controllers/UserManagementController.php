@@ -27,9 +27,8 @@ use Maatwebsite\Excel\Facades\Excel;
 class UserManagementController extends Controller
 {
     private const PROTECTED_ROLES = ['administrador'];
-
     private const LEGACY_ROLES = ['gestor', 'formador'];
-    private const CREATOR_ROLES = ['administrador', 'gerente', 'articulador'];
+    private const CREATOR_ROLES = ['administrador', 'gerente', 'articulador', 'SME'];
     private const EMAIL_SIMILARITY_THRESHOLD = 0.85;
 
     public function index(Request $request): View
@@ -245,7 +244,7 @@ class UserManagementController extends Controller
 
     private function assignableRoles()
     {
-        $rolesToExclude = array_merge(self::PROTECTED_ROLES, self::LEGACY_ROLES);
+        $rolesToExclude = self::LEGACY_ROLES;
 
         return Role::whereNotIn('name', $rolesToExclude)
             ->orderBy('name')

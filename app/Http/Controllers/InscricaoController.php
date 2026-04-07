@@ -250,24 +250,29 @@ class InscricaoController extends Controller
 
             $usersByEmail = $this->fetchUsersByEmailInsensitive($emails);
 
-            $usuariosCriados = 0;
+            // Coletar usuários não encontrados no Engaja (não cria mais)
+            $usuariosNaoEncontrados = [];
             foreach ($participants as $row) {
                 $email = strtolower(trim((string) ($row['email'] ?? '')));
                 $nome = trim((string) ($row['nome'] ?? ''));
-                if ($email === '' || $nome === '' || $usersByEmail->has($email)) {
+                $linha = $row['line'] ?? null;
+
+                if ($email === '') {
+                    $usuariosNaoEncontrados[] = [
+                        'linha' => $linha,
+                        'nome'  => $nome !== '' ? $nome : '(sem nome)',
+                        'email' => '(sem email)',
+                    ];
                     continue;
                 }
 
-                $nomeFormatado = $this->formatMoodleUserName($nome);
-                $senhaPadrao = $this->buildMoodleDefaultPassword($nomeFormatado);
-
-                $user = User::create([
-                    'name' => $nomeFormatado,
-                    'email' => $email,
-                    'password' => Hash::make($senhaPadrao),
-                ]);
-                $usersByEmail->put($email, $user);
-                $usuariosCriados++;
+                if (!$usersByEmail->has($email)) {
+                    $usuariosNaoEncontrados[] = [
+                        'linha' => $linha,
+                        'nome'  => $nome !== '' ? $nome : '(sem nome)',
+                        'email' => $email,
+                    ];
+                }
             }
 
             $participantesByUser = Participante::whereIn('user_id', $usersByEmail->pluck('id')->values())
@@ -337,25 +342,33 @@ class InscricaoController extends Controller
             }
 
             return [
-                'usuarios_criados' => $usuariosCriados,
                 'momentos_criados' => $momentoCriado,
                 'momentos_atualizados' => $momentoAtualizado,
                 'inscricoes_criadas' => $inscricoesCriadas,
                 'presencas_atualizadas' => $presencasAtualizadas,
+                'usuarios_nao_encontrados' => $usuariosNaoEncontrados,
             ];
         });
 
         session()->forget($sessionKey);
 
+        $usuariosNaoEncontrados = $stats['usuarios_nao_encontrados'] ?? [];
+
+        $successMessage = sprintf(
+            'Importação Moodle concluída. Momentos criados: %d. Cargas atualizadas: %d. Inscrições criadas: %d. Status atualizados: %d.',
+            $stats['momentos_criados'],
+            $stats['momentos_atualizados'],
+            $stats['inscricoes_criadas'],
+            $stats['presencas_atualizadas']
+        );
+
+        if (count($usuariosNaoEncontrados) > 0) {
+            $successMessage .= ' Porém ' . count($usuariosNaoEncontrados) . ' pessoa(s) não foram inseridas pois não possuem cadastro no Engaja.';
+        }
+
         return redirect()->route('eventos.show', $evento)
-            ->with('success', sprintf(
-                'Importação Moodle concluída. Usuários criados: %d. Momentos criados: %d. Cargas atualizadas: %d. Inscrições criadas: %d. Status atualizados: %d.',
-                $stats['usuarios_criados'],
-                $stats['momentos_criados'],
-                $stats['momentos_atualizados'],
-                $stats['inscricoes_criadas'],
-                $stats['presencas_atualizadas']
-            ));
+            ->with('success', $successMessage)
+            ->with('usuarios_nao_encontrados', $usuariosNaoEncontrados);
     }
 
     private function parseMoodleFiles(UploadedFile $participantsFile, UploadedFile $workloadsFile): array
@@ -449,7 +462,7 @@ class InscricaoController extends Controller
         $headersRaw = array_map(fn ($v) => trim((string) $v), $sheet[0] ?? []);
         $headersNorm = array_map(fn ($v) => $this->normalizeMoodleHeader($v), $headersRaw);
 
-        $acceptedNome = ['nome', 'name', 'nome_completo'];
+        $acceptedNome = ['nome', 'name', 'nome_completo', 'primeiro_nome', 'first_name'];
         $acceptedEmail = [
             'email',
             'mail',
@@ -463,11 +476,19 @@ class InscricaoController extends Controller
             ...$acceptedEmail,
         ]);
 
-        if ($idxNome === null || $idxEmail === null) {
+        if ($idxNome === null && $idxEmail !== null) {
+            if ($idxEmail > 0) {
+                $idxNome = 0;
+            } elseif (count($headersNorm) > 1) {
+                $idxNome = 1;
+            }
+        }
+
+        if ($idxEmail === null) {
             throw new \RuntimeException(
-                'A planilha de participantes precisa conter as colunas nome e email. '
-                . 'Aceitos para nome: [' . implode(', ', $acceptedNome) . ']. '
+                'A planilha de participantes precisa conter ao menos a coluna de email. '
                 . 'Aceitos para email: [' . implode(', ', $acceptedEmail) . ']. '
+                . ($idxNome === null ? 'Coluna de nome não encontrada (aceitos: ' . implode(', ', $acceptedNome) . '). ' : '')
                 . 'Colunas encontradas: ' . $this->formatMoodleHeadersForError($headersRaw)
             );
         }
@@ -475,12 +496,15 @@ class InscricaoController extends Controller
         $naoMomentos = [
             'nome', 'name', 'email', 'mail', 'e_mail', 'cpf', 'telefone', 'municipio', 'tag',
             'tipo_organizacao', 'tipo_de_organizacao', 'organizacao', 'escola_unidade',
-            'nome_completo', 'endereco_de_e_mail', 'endereco_de_email',
+            'nome_completo', 'primeiro_nome', 'first_name', 'endereco_de_e_mail', 'endereco_de_email',
             'concluido', 'concluida', 'nao_concluido', 'nao_concluida', 'status',
         ];
 
         $momentColumns = [];
         foreach ($headersNorm as $i => $hNorm) {
+            if ($i === $idxNome || $i === $idxEmail) {
+                continue;
+            }
             $raw = trim((string) ($headersRaw[$i] ?? ''));
             if ($raw === '' || in_array($hNorm, $naoMomentos, true)) {
                 continue;
@@ -497,15 +521,22 @@ class InscricaoController extends Controller
             $line = $i + 1;
             $row = $sheet[$i] ?? [];
 
-            $nome = trim((string) ($row[$idxNome] ?? ''));
+            $nome = $idxNome !== null ? trim((string) ($row[$idxNome] ?? '')) : '';
             $email = strtolower(trim((string) ($row[$idxEmail] ?? '')));
 
+            // Se não tem nome e não tem email, pular linha vazia
             if ($nome === '' && $email === '') {
                 continue;
             }
 
-            if ($nome === '' || $email === '') {
-                $errors[] = "Linha {$line}: nome e email são obrigatórios.";
+            // Se coluna de nome existe mas está vazia, ou se email está vazio, reportar erro
+            if ($email === '') {
+                $errors[] = "Linha {$line}: email é obrigatório.";
+            }
+
+            // Se não tem coluna de nome, derivar do email
+            if ($nome === '' && $email !== '') {
+                $nome = Str::before($email, '@');
             }
 
             if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {

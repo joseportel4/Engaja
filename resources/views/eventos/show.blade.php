@@ -591,11 +591,61 @@
   </div>
 </div>
 
+{{-- Modal de pessoas não encontradas após importação Moodle --}}
+@if(session('usuarios_nao_encontrados') && count(session('usuarios_nao_encontrados')) > 0)
+<div class="modal fade" id="modalUsuariosNaoEncontrados" tabindex="-1" aria-labelledby="modalUsuariosNaoEncontradosLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-warning-subtle">
+        <h5 class="modal-title text-warning-emphasis" id="modalUsuariosNaoEncontradosLabel">⚠️ Pessoas não inseridas na importação</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+        <div class="alert alert-danger mb-3">
+          <strong>{{ count(session('usuarios_nao_encontrados')) }}</strong> pessoa(s) da planilha <strong>NÃO foram inseridas para criação de certificado</strong>
+          pois não possuem cadastro no Engaja.
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 80px;">Linha</th>
+                <th>Nome</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach(session('usuarios_nao_encontrados') as $usuario)
+              <tr>
+                <td>{{ $usuario['linha'] ?? '—' }}</td>
+                <td>{{ $usuario['nome'] }}</td>
+                <td>{{ $usuario['email'] }}</td>
+              </tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+@endif
+
 @endsection
 
 @push('scripts')
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+
+      // Auto-abrir modal de usuários não encontrados após importação Moodle
+      const modalNaoEncontrados = document.getElementById('modalUsuariosNaoEncontrados');
+      if (modalNaoEncontrados) {
+          const modal = new bootstrap.Modal(modalNaoEncontrados);
+          modal.show();
+      }
 
       // Lógica 1: Criação de novo Momento
       const btnConfirmarPreAcao = document.querySelector('.js-checklist-confirm[data-modal="modalChecklistPreAcao"]');

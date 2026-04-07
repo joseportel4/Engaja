@@ -92,42 +92,49 @@ Route::middleware(['auth','permission:inscricao.ver'])->group(function () {
     Route::get('/eventos/{evento}/inscritos', [InscricaoController::class, 'inscritos'])->name('inscricoes.inscritos');
 });
 
-Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {
-    Route::resource('dimensaos', DimensaoController::class);
-    Route::resource('indicadors', IndicadorController::class);
-    Route::resource('evidencias', EvidenciaController::class);
-    Route::resource('escalas', EscalaController::class);
-    Route::resource('questaos', QuestaoController::class);
-    Route::resource('templates-avaliacao', TemplateAvaliacaoController::class)
-        ->parameters(['templates-avaliacao' => 'template']);
-    Route::resource('avaliacoes', AvaliacaoController::class)
-        ->parameters(['avaliacoes' => 'avaliacao']);
-    Route::get('avaliacoes/{avaliacao}/respostas', [AvaliacaoController::class, 'respostas'])->name('avaliacoes.respostas');
-    Route::get('avaliacoes/{avaliacao}/respostas/{submissao}', [AvaliacaoController::class, 'respostasMostrar'])->name('avaliacoes.respostas.mostrar');
-    Route::get('atividades/{atividade}/avaliacoes', [AvaliacaoController::class, 'resultadosAtividade'])->name('atividades.avaliacoes');
-    Route::get('agendamentos/efetivacoes', [AgendamentoEfetivacaoController::class, 'index'])->name('agendamentos.efetivacoes.index');
-    Route::get('agendamentos/efetivados', [AgendamentoEfetivacaoController::class, 'efetivados'])->name('agendamentos.efetivados.index');
-    Route::get('agendamentos/{agendamento}/efetivar', [AgendamentoEfetivacaoController::class, 'create'])->name('agendamentos.efetivacoes.create');
-    Route::post('agendamentos/{agendamento}/efetivar/confirmar', [AgendamentoEfetivacaoController::class, 'confirm'])->name('agendamentos.efetivacoes.confirm');
-    Route::post('agendamentos/{agendamento}/efetivar', [AgendamentoEfetivacaoController::class, 'store'])->name('agendamentos.efetivacoes.store');
-    Route::resource('agendamentos', AgendamentoController::class);
-    Route::prefix('agendamentos/{agendamento}/participantes')
-        ->name('agendamentos.participantes.')
-        ->group(function () {
-            Route::get('/', [AgendamentoParticipanteController::class, 'index'])->name('index');
-            Route::get('/create', [AgendamentoParticipanteController::class, 'create'])->name('create');
-            Route::post('/', [AgendamentoParticipanteController::class, 'store'])->name('store');
-            Route::get('/{participante}/edit', [AgendamentoParticipanteController::class, 'edit'])->name('edit');
-            Route::put('/{participante}', [AgendamentoParticipanteController::class, 'update'])->name('update');
-            Route::delete('/{participante}', [AgendamentoParticipanteController::class, 'destroy'])->name('destroy');
+Route::middleware(['auth'])->group(function () {
+    //rotas que SME não pode acessar
+    Route::middleware(['role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {
+        Route::resource('dimensaos', DimensaoController::class);
+        Route::resource('indicadors', IndicadorController::class);
+        Route::resource('evidencias', EvidenciaController::class);
+        Route::resource('escalas', EscalaController::class);
+        Route::resource('questaos', QuestaoController::class);
+        Route::resource('templates-avaliacao', TemplateAvaliacaoController::class)
+            ->parameters(['templates-avaliacao' => 'template']);
+        Route::resource('avaliacoes', AvaliacaoController::class)
+            ->parameters(['avaliacoes' => 'avaliacao']);
+        Route::get('avaliacoes/{avaliacao}/respostas', [AvaliacaoController::class, 'respostas'])->name('avaliacoes.respostas');
+        Route::get('avaliacoes/{avaliacao}/respostas/{submissao}', [AvaliacaoController::class, 'respostasMostrar'])->name('avaliacoes.respostas.mostrar');
+        Route::get('atividades/{atividade}/avaliacoes', [AvaliacaoController::class, 'resultadosAtividade'])->name('atividades.avaliacoes');
+        Route::get('agendamentos/efetivacoes', [AgendamentoEfetivacaoController::class, 'index'])->name('agendamentos.efetivacoes.index');
+        Route::get('agendamentos/efetivados', [AgendamentoEfetivacaoController::class, 'efetivados'])->name('agendamentos.efetivados.index');
+        Route::get('agendamentos/{agendamento}/efetivar', [AgendamentoEfetivacaoController::class, 'create'])->name('agendamentos.efetivacoes.create');
+        Route::post('agendamentos/{agendamento}/efetivar/confirmar', [AgendamentoEfetivacaoController::class, 'confirm'])->name('agendamentos.efetivacoes.confirm');
+        Route::post('agendamentos/{agendamento}/efetivar', [AgendamentoEfetivacaoController::class, 'store'])->name('agendamentos.efetivacoes.store');
+    });
 
-            Route::get('/importar', [AgendamentoParticipanteController::class, 'import'])->name('import');
-            Route::post('/importar', [AgendamentoParticipanteController::class, 'upload'])->name('upload');
-            Route::get('/importar/preview', [AgendamentoParticipanteController::class, 'preview'])->name('import.preview');
-            Route::post('/importar/confirmar', [AgendamentoParticipanteController::class, 'confirm'])->name('import.confirm');
-        });
-    Route::resource('atividade-acoes', AtividadeAcaoController::class)
-        ->parameters(['atividade-acoes' => 'atividadeAcao']);
+    //ROTAS ABAIXO SME PODEM ACESSAR, POR ISSO A DIVISÃO
+    Route::middleware(['role:administrador|gerente|eq_pedagogica|articulador|SME'])->group(function () {
+        Route::resource('agendamentos', AgendamentoController::class);
+        Route::prefix('agendamentos/{agendamento}/participantes')
+            ->name('agendamentos.participantes.')
+            ->group(function () {
+                Route::get('/', [AgendamentoParticipanteController::class, 'index'])->name('index');
+                Route::get('/create', [AgendamentoParticipanteController::class, 'create'])->name('create');
+                Route::post('/', [AgendamentoParticipanteController::class, 'store'])->name('store');
+                Route::get('/{participante}/edit', [AgendamentoParticipanteController::class, 'edit'])->name('edit');
+                Route::put('/{participante}', [AgendamentoParticipanteController::class, 'update'])->name('update');
+                Route::delete('/{participante}', [AgendamentoParticipanteController::class, 'destroy'])->name('destroy');
+
+                Route::get('/importar', [AgendamentoParticipanteController::class, 'import'])->name('import');
+                Route::post('/importar', [AgendamentoParticipanteController::class, 'upload'])->name('upload');
+                Route::get('/importar/preview', [AgendamentoParticipanteController::class, 'preview'])->name('import.preview');
+                Route::post('/importar/confirmar', [AgendamentoParticipanteController::class, 'confirm'])->name('import.confirm');
+            });
+        Route::resource('atividade-acoes', AtividadeAcaoController::class)
+            ->parameters(['atividade-acoes' => 'atividadeAcao']);
+    });
 });
 
 Route::middleware(['auth', 'role:administrador|gerente'])

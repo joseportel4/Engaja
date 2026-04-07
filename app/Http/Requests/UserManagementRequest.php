@@ -160,7 +160,7 @@ class UserManagementRequest extends FormRequest
     private function assignableRoleNames(): array
     {
 
-        $rolesToExclude = array_merge(['administrador'], self::LEGACY_ROLES);
+        $rolesToExclude = self::LEGACY_ROLES;
 
         return Role::whereNotIn('name', $rolesToExclude)
             ->pluck('name')
