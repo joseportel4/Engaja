@@ -230,6 +230,41 @@ class AvaliacaoAtividadeController extends Controller
         return $this->download($relatorio);
     }
 
+    /**
+     * Gera PDF consolidado com todos os relatórios de um momento (atividade).
+     */
+    public function baixarTodosPorAtividade(Atividade $atividade)
+    {
+        abort_unless(
+            auth()->user()?->hasAnyRole(self::REPORT_EDIT_ROLES),
+            403,
+            'Sem permissão para baixar relatórios consolidados.'
+        );
+
+        $atividade->load(['evento', 'municipios']);
+
+        $relatorios = $atividade->avaliacaoAtividades()
+            ->with('user')
+            ->orderBy('nome_educador')
+            ->get();
+
+        abort_if($relatorios->isEmpty(), 404, 'Nenhum relatório encontrado para este momento.');
+
+        $resumoPublico = $this->calcularResumoPublico($atividade, $relatorios->first());
+
+        $pdf = Pdf::loadView('avaliacao-atividade.pdf-consolidado', [
+            'atividade' => $atividade,
+            'relatorios' => $relatorios,
+            'resumoPublico' => $resumoPublico,
+            'camposPerguntas' => self::REPORT_QUESTION_FIELDS,
+        ]);
+        $pdf->setPaper('a4', 'portrait');
+
+        $nomeArquivo = 'relatorios-consolidado-' . \Illuminate\Support\Str::slug($atividade->descricao ?? 'momento') . '.pdf';
+
+        return $pdf->download($nomeArquivo);
+    }
+
     private function authorizeRelatorio(AvaliacaoAtividade $relatorio): void
     {
         abort_unless(

@@ -48,7 +48,8 @@
                     $collapseId = 'relatorio-momento-' . ($atividade?->id ?? 'x') . '-' . $momentoIndex;
                 @endphp
                 <div class="border rounded-3 p-3 mb-3">
-                    <button class="btn w-100 text-start d-flex flex-wrap justify-content-between align-items-start gap-2 p-0 border-0 bg-transparent"
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                    <button class="btn flex-grow-1 text-start d-flex flex-wrap justify-content-between align-items-start gap-2 p-0 border-0 bg-transparent"
                             type="button"
                             data-bs-toggle="collapse"
                             data-bs-target="#{{ $collapseId }}"
@@ -71,6 +72,14 @@
                             </span>
                         </span>
                     </button>
+                    @if($atividade && auth()->user()?->hasAnyRole(['administrador', 'gerente']))
+                    <a href="{{ route('avaliacao-atividade.download-all', $atividade) }}"
+                       class="btn btn-sm btn-success text-nowrap"
+                       title="Baixar PDF consolidado com todos os relatórios deste momento">
+                        📄 PDF Geral
+                    </a>
+                    @endif
+                    </div>
 
                     <div id="{{ $collapseId }}" class="collapse mt-3">
 
