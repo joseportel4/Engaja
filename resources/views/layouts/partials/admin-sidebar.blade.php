@@ -46,13 +46,21 @@
   @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
     <div class="admin-sidebar__section">
       <p class="admin-sidebar__label">Agendamentos</p>
-      <a class="admin-nav-link {{ request()->routeIs('agendamentos.*') ? 'active' : '' }}" href="{{ route('agendamentos.index') }}">
+      <a class="admin-nav-link {{ request()->routeIs('agendamentos.*') && !request()->routeIs('agendamentos.efetivacoes.*') ? 'active' : '' }}" href="{{ route('agendamentos.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
             <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h.5A1.5 1.5 0 0 1 15 2.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 13.5v-11A1.5 1.5 0 0 1 2.5 1H3V.5a.5.5 0 0 1 .5-.5M2 5v8.5a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V5z"/>
           </svg>
         </span>
         <span class="admin-nav-text">Agendamentos</span>
+      </a>
+      <a class="admin-nav-link {{ request()->routeIs('agendamentos.efetivacoes.*') ? 'active' : '' }}" href="{{ route('agendamentos.efetivacoes.index') }}">
+        <span class="admin-nav-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M2.5 1A1.5 1.5 0 0 0 1 2.5v11A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 13.5 4H10V2.5A1.5 1.5 0 0 0 8.5 1zm0 1h6A.5.5 0 0 1 9 2.5V4H4.5A1.5 1.5 0 0 0 3 5.5v6A1.5 1.5 0 0 0 4.5 13H14v.5a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5m2 3A.5.5 0 0 0 4 5.5v6a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-6a.5.5 0 0 0-.5-.5zm6.854 1.146a.5.5 0 0 1 0 .708L8.707 9.5 7.146 7.939a.5.5 0 1 1 .708-.707L8.707 8.086l1.94-1.94a.5.5 0 0 1 .707 0"/>
+          </svg>
+        </span>
+        <span class="admin-nav-text">Efetuar agendamentos</span>
       </a>
       <a class="admin-nav-link {{ request()->routeIs('atividade-acoes.*') ? 'active' : '' }}" href="{{ route('atividade-acoes.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">

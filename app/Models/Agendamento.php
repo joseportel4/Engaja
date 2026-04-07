@@ -19,10 +19,15 @@ class Agendamento extends Model
         'data_horario',
         'publico_participante',
         'local_acao',
+        'efetivado',
+        'efetivado_em',
+        'atividade_id',
     ];
 
     protected $casts = [
         'data_horario' => 'datetime',
+        'efetivado' => 'boolean',
+        'efetivado_em' => 'datetime',
     ];
 
     public function atividadeAcao(): BelongsTo
@@ -43,5 +48,10 @@ class Agendamento extends Model
     public function participantesClonados(): HasMany
     {
         return $this->hasMany(AgendamentoParticipante::class);
+    }
+
+    public function atividade(): BelongsTo
+    {
+        return $this->belongsTo(Atividade::class);
     }
 }

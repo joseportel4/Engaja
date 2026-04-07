@@ -7,7 +7,9 @@
       <h1 class="h3 fw-bold text-engaja mb-0">Agendamento</h1>
       <div class="d-flex gap-2">
         <a href="{{ route('agendamentos.participantes.index', $agendamento) }}" class="btn btn-outline-dark">Participantes</a>
-        <a href="{{ route('agendamentos.edit', $agendamento) }}" class="btn btn-outline-secondary">Editar</a>
+        @unless($agendamento->efetivado)
+          <a href="{{ route('agendamentos.edit', $agendamento) }}" class="btn btn-outline-secondary">Editar</a>
+        @endunless
       </div>
     </div>
 
@@ -38,8 +40,29 @@
           <dt class="col-sm-4">Participantes cadastrados</dt>
           <dd class="col-sm-8">{{ $agendamento->participantes_clonados_count ?? 0 }}</dd>
 
+          <dt class="col-sm-4">Status</dt>
+          <dd class="col-sm-8">
+            @if($agendamento->efetivado)
+              <span class="badge bg-success">Efetivado em {{ optional($agendamento->efetivado_em)->format('d/m/Y H:i') }}</span>
+            @else
+              <span class="badge bg-warning text-dark">Pendente de efetivação</span>
+            @endif
+          </dd>
+
           <dt class="col-sm-4">Detalhe da atividade/ação</dt>
           <dd class="col-sm-8">{{ $agendamento->atividadeAcao?->detalhe ?: '—' }}</dd>
+
+          @if($agendamento->atividade)
+            <dt class="col-sm-4">Momento criado</dt>
+            <dd class="col-sm-8">
+              <a href="{{ route('atividades.show', $agendamento->atividade) }}" class="link-primary text-decoration-none">
+                {{ $agendamento->atividade->descricao }}
+              </a>
+              @if($agendamento->atividade->evento)
+                <div class="small text-muted">{{ $agendamento->atividade->evento->nome }}</div>
+              @endif
+            </dd>
+          @endif
         </dl>
       </div>
     </div>
