@@ -269,6 +269,7 @@
     if (q) {
       list = list.filter((m) => norm(m.nome).includes(q));
     }
+    list.sort((a, b) => String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
     return list;
   }
 
@@ -432,7 +433,9 @@
     const limEst = 8;
     const limReg = 6;
 
-    const munHits = MUNICIPIOS.filter((m) => norm(m.nome).includes(q)).slice(0, limMun);
+    const munHits = MUNICIPIOS.filter((m) => norm(m.nome).includes(q))
+      .sort((a, b) => String(a.nome).localeCompare(String(b.nome), 'pt-BR'))
+      .slice(0, limMun);
 
     const estadosMap = new Map();
     MUNICIPIOS.forEach((m) => {
