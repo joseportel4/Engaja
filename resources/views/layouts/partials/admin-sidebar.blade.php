@@ -19,9 +19,10 @@
     </a>
   </div>
 
+  @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
   <div class="admin-sidebar__section">
     <p class="admin-sidebar__label">Principal</p>
-    @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+
       <a class="admin-nav-link {{ request()->routeIs('eventos.*') ? 'active' : '' }}" href="{{ route('eventos.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
@@ -30,8 +31,7 @@
         </span>
         <span class="admin-nav-text">Ações pedagógicas</span>
       </a>
-    @endhasanyrole
-    @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+
       <a class="admin-nav-link {{ request()->routeIs('dashboard') || request()->routeIs('dashboards.*') ? 'active' : '' }}" href="{{ route('dashboard') }}">
         <span class="admin-nav-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
@@ -40,10 +40,10 @@
         </span>
         <span class="admin-nav-text">Dashboards</span>
       </a>
-    @endhasanyrole
   </div>
+  @endhasanyrole
 
-  @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+  @hasanyrole('administrador|gerente|eq_pedagogica|articulador|SME')
     <div class="admin-sidebar__section">
       <p class="admin-sidebar__label">Agendamentos</p>
       <a class="admin-nav-link {{ request()->routeIs('agendamentos.*') && !request()->routeIs('agendamentos.efetivacoes.*') ? 'active' : '' }}" href="{{ route('agendamentos.index') }}">
@@ -54,6 +54,8 @@
         </span>
         <span class="admin-nav-text">Agendamentos</span>
       </a>
+
+      @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
       <a class="admin-nav-link {{ request()->routeIs('agendamentos.efetivacoes.*') ? 'active' : '' }}" href="{{ route('agendamentos.efetivacoes.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
@@ -62,6 +64,8 @@
         </span>
         <span class="admin-nav-text">Efetuar agendamentos</span>
       </a>
+      @endhasanyrole
+
       <a class="admin-nav-link {{ request()->routeIs('atividade-acoes.*') ? 'active' : '' }}" href="{{ route('atividade-acoes.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">

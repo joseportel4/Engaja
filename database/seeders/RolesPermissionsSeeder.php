@@ -33,17 +33,19 @@ class RolesPermissionsSeeder extends Seeder
             'questao.ver','questao.criar','questao.editar','questao.excluir',
             'certificado.emitir','certificado.editar', 'certificado.baixar',
             'modeloCertificado.criar','modeloCertificado.editar','modeloCertificado.excluir',
+            'agendamento.criar','agendamento.editar','agentamento.ver','agendamento.excluir',
         ];
 
         foreach ($permissoes as $p) {
             Permission::firstOrCreate(['name' => $p, 'guard_name' => 'web']);
         }
 
-        $admin        = Role::firstOrCreate(['name' => 'administrador', 'guard_name' => 'web']);
-        $gerente       = Role::firstOrCreate(['name' => 'gerente', 'guard_name' => 'web']);
-        $eq_pedagogica     = Role::firstOrCreate(['name' => 'eq_pedagogica', 'guard_name' => 'web']);
-        $articulador      = Role::firstOrCreate(['name' => 'articulador', 'guard_name' => 'web']);
+        $admin = Role::firstOrCreate(['name' => 'administrador', 'guard_name' => 'web']);
+        $gerente = Role::firstOrCreate(['name' => 'gerente', 'guard_name' => 'web']);
+        $eq_pedagogica = Role::firstOrCreate(['name' => 'eq_pedagogica', 'guard_name' => 'web']);
+        $articulador = Role::firstOrCreate(['name' => 'articulador', 'guard_name' => 'web']);
         $participante = Role::firstOrCreate(['name' => 'participante', 'guard_name' => 'web']);
+        $SME = Role::firstOrCreate(['name' => 'SME', 'guard_name' => 'web']);
 
         $admin->givePermissionTo([
             'user.ver','user.criar','user.editar','user.excluir',
@@ -119,13 +121,16 @@ class RolesPermissionsSeeder extends Seeder
             'avaliacao.ver','avaliacao.criar','avaliacao.editar',
             'questao.ver','questao.criar','questao.editar',
             'certificado.baixar',
-
-
         ]);
 
         // PARTICIPANTE
         $participante->givePermissionTo([
             'inscricao.ver','inscricao.criar',
+        ]);
+
+        // SME
+        $SME->givePermissionTo([
+            'agendamento.criar','agendamento.editar', 'agentamento.ver', 'agendamento.excluir',
         ]);
     }
 }
