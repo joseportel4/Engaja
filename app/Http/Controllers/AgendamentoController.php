@@ -13,7 +13,7 @@ class AgendamentoController extends Controller
     public function index()
     {
         $agendamentos = Agendamento::query()
-            ->with(['atividadeAcao', 'municipio.estado', 'user'])
+            ->with(['atividadeAcao', 'municipio.estado', 'user', 'atividade.evento'])
             ->withCount('participantesClonados')
             ->orderBy('data_horario')
             ->paginate(15);
@@ -55,7 +55,7 @@ class AgendamentoController extends Controller
 
     public function show(Agendamento $agendamento)
     {
-        $agendamento->load(['atividadeAcao', 'municipio.estado', 'user'])
+        $agendamento->load(['atividadeAcao', 'municipio.estado', 'user', 'atividade.evento'])
             ->loadCount('participantesClonados');
 
         return view('agendamentos.show', compact('agendamento'));
@@ -63,6 +63,8 @@ class AgendamentoController extends Controller
 
     public function edit(Agendamento $agendamento)
     {
+        $this->garantirNaoEfetivado($agendamento);
+
         $atividadeAcoes = AtividadeAcao::query()
             ->orderBy('nome')
             ->get();
@@ -74,6 +76,8 @@ class AgendamentoController extends Controller
 
     public function update(Request $request, Agendamento $agendamento)
     {
+        $this->garantirNaoEfetivado($agendamento);
+
         $dados = $this->validarDados($request);
 
         $municipio = $this->municipioDoUsuario(auth()->user());
@@ -95,6 +99,8 @@ class AgendamentoController extends Controller
 
     public function destroy(Agendamento $agendamento)
     {
+        $this->garantirNaoEfetivado($agendamento);
+
         $agendamento->delete();
 
         return redirect()
@@ -150,5 +156,13 @@ class AgendamentoController extends Controller
             ->first()
             ?->municipio;
     }
-}
 
+    private function garantirNaoEfetivado(Agendamento $agendamento): void
+    {
+        if (!$agendamento->efetivado) {
+            return;
+        }
+
+        abort(403, 'Agendamentos efetivados não podem mais ser alterados ou excluídos.');
+    }
+}
