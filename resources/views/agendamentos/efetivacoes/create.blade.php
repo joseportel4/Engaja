@@ -100,9 +100,6 @@
           <div class="card-body">
             <h2 class="h6 text-uppercase text-muted mb-3">Participantes</h2>
             <div class="d-flex justify-content-between mb-2"><span>Total</span><strong>{{ $resumo['total'] }}</strong></div>
-            <div class="d-flex justify-content-between mb-2"><span>Com e-mail</span><strong>{{ $resumo['com_email'] }}</strong></div>
-            <div class="d-flex justify-content-between mb-2"><span>Sem e-mail</span><strong>{{ $resumo['sem_email'] }}</strong></div>
-            <div class="d-flex justify-content-between mb-2"><span>Com CPF</span><strong>{{ $resumo['com_cpf'] }}</strong></div>
             <div class="d-flex justify-content-between mb-2"><span>Usuários já localizados</span><strong>{{ $resumo['usuarios_existentes'] }}</strong></div>
             <div class="d-flex justify-content-between"><span>Usuários a criar</span><strong>{{ $resumo['usuarios_a_criar'] }}</strong></div>
           </div>
