@@ -47,7 +47,7 @@
             <td>{{ $cert->participante?->user?->name ?? '-' }}</td>
             <td class="text-startr">{{ $cert->evento_nome ?? '-' }}</td>
             <td class="text-center">{{ $cert->modelo?->nome ?? '-' }}</td>
-            <td class="text-center">{{ $cert->carga_horaria ?? '-' }}h</td>
+            <td class="text-center">{{ \App\Support\CargaHoraria::formatMinutos(isset($cert->carga_horaria) ? (int) $cert->carga_horaria : null) }}</td>
             <td class="text-center">
               <div class="d-flex gap-2 justify-content-center">
                 <a href="{{ route('certificados.download', $cert) }}" class="btn btn-engaja btn-sm px-3">

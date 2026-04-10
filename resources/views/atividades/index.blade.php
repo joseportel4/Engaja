@@ -47,11 +47,7 @@
               <td>{{ $munLabel }}</td>
               <td>{{ $at->publico_esperado ? number_format($at->publico_esperado, 0, ',', '.') : '—' }}</td>
               <td>
-                @php
-                  $carga = $at->carga_horaria;
-                  $cargaLabel = !is_null($carga) ? number_format($carga, 0, ',', '.') . 'h' : '—';
-                @endphp
-                {{ $cargaLabel }}
+                {{ !is_null($at->carga_horaria) ? \App\Support\CargaHoraria::formatMinutos((int) $at->carga_horaria) : '—' }}
               </td>
               <td>
                 {{-- ⚠️ Badge checklist incompleto --}}

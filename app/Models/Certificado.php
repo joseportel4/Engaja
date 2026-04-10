@@ -17,6 +17,7 @@ class Certificado extends Model
         'ano',
         'texto_frente',
         'texto_verso',
+        /** Total em minutos (nome legado da coluna). */
         'carga_horaria',
     ];
 

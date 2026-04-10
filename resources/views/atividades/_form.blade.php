@@ -688,12 +688,26 @@
   </div>
 
   <div class="col-md-6">
-    <label class="form-label">Carga horária (horas)</label>
-    <input type="number" name="carga_horaria" min="0" step="1"
-           value="{{ old('carga_horaria', $atividade->carga_horaria ?? '') }}"
-           class="form-control @error('carga_horaria') is-invalid @enderror"
-           placeholder="Ex.: 2">
-    @error('carga_horaria') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    <label class="form-label">Carga horária</label>
+    <div class="row g-2 align-items-end">
+      <div class="col-6">
+        <label for="carga_horas" class="form-label small text-muted mb-0">Horas</label>
+        <input type="number" name="carga_horas" id="carga_horas" min="0" step="1"
+               value="{{ old('carga_horas', isset($atividade) && $atividade->carga_horaria !== null ? intdiv($atividade->carga_horaria, 60) : 0) }}"
+               class="form-control @error('carga_horas') is-invalid @enderror"
+               placeholder="0">
+        @error('carga_horas') <div class="invalid-feedback">{{ $message }}</div> @enderror
+      </div>
+      <div class="col-6">
+        <label for="carga_minutos" class="form-label small text-muted mb-0">Minutos</label>
+        <input type="number" name="carga_minutos" id="carga_minutos" min="0" max="59" step="1"
+               value="{{ old('carga_minutos', isset($atividade) && $atividade->carga_horaria !== null ? $atividade->carga_horaria % 60 : 0) }}"
+               class="form-control @error('carga_minutos') is-invalid @enderror"
+               placeholder="0">
+        @error('carga_minutos') <div class="invalid-feedback">{{ $message }}</div> @enderror
+      </div>
+    </div>
+    <div class="form-text">De 0 a 59 minutos na fração.</div>
   </div>
 </div>
 

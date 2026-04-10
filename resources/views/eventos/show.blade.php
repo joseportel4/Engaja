@@ -386,7 +386,7 @@
                 : null;
               $publicoEsperado = $at->publico_esperado;
               $cargaHoraria = $at->carga_horaria;
-              $cargaLabel = !is_null($cargaHoraria) ? number_format($cargaHoraria, 0, ',', '.') . 'h' : null;
+              $cargaLabel = !is_null($cargaHoraria) ? \App\Support\CargaHoraria::formatMinutos((int) $cargaHoraria) : null;
               $minhaPresenca = ($presencasPorAtividade ?? collect())[$at->id] ?? null;
               $primeiraAvaliacao = $at->avaliacoes->first();
               @endphp

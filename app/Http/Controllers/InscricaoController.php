@@ -2,23 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Evento;
-use App\Models\User;
-use App\Models\Participante;
-use App\Models\Inscricao;
 use App\Imports\ParticipantesPreviewImport;
+use App\Models\Evento;
+use App\Models\Inscricao;
+use App\Models\Municipio;
+use App\Models\Participante;
+use App\Models\Presenca;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
-use Carbon\Carbon;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Illuminate\Validation\Rule;
-use Illuminate\Http\UploadedFile;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Models\Presenca;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -42,9 +43,10 @@ class InscricaoController extends Controller
     {
         return view('inscricoes.moodle_import', compact('evento'));
     }
+
     public function moodleMomentTemplateDownload(Evento $evento)
     {
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('momentos');
 
@@ -87,7 +89,7 @@ class InscricaoController extends Controller
                 'session_key' => $sessionKey,
             ]);
         } catch (\Throwable $e) {
-            $message = 'Falha ao processar as planilhas: ' . $e->getMessage();
+            $message = 'Falha ao processar as planilhas: '.$e->getMessage();
             $errorBag = str_contains(Str::lower($e->getMessage()), 'carga')
                 ? ['workloads_file' => $message]
                 : ['participants_file' => $message];
@@ -104,7 +106,7 @@ class InscricaoController extends Controller
         $sessionKey = (string) $request->query('session_key');
         $payload = session($sessionKey, []);
 
-        if (!is_array($payload) || empty($payload['participants'] ?? [])) {
+        if (! is_array($payload) || empty($payload['participants'] ?? [])) {
             return redirect()->route('inscricoes.moodle.import', $evento)
                 ->withErrors(['participants_file' => 'Sessão expirada. Envie as duas planilhas novamente.']);
         }
@@ -155,7 +157,7 @@ class InscricaoController extends Controller
         $sessionKey = $validated['session_key'];
         $payload = session($sessionKey, []);
 
-        if (!is_array($payload) || empty($payload['participants'] ?? [])) {
+        if (! is_array($payload) || empty($payload['participants'] ?? [])) {
             return back()->withErrors(['session_key' => 'Sessão expirada. Refaça a pré-visualização.']);
         }
 
@@ -171,7 +173,7 @@ class InscricaoController extends Controller
         $participants = collect($payload['participants'] ?? []);
 
         $momentosSemCarga = $momentos
-            ->filter(fn ($momento) => !is_int($momento['carga_horaria'] ?? null))
+            ->filter(fn ($momento) => ! is_int($momento['carga_horaria'] ?? null))
             ->pluck('nome')
             ->map(fn ($nome) => trim((string) $nome))
             ->filter()
@@ -183,7 +185,7 @@ class InscricaoController extends Controller
                 'evento' => $evento,
                 'session_key' => $sessionKey,
             ])->withErrors([
-                'import' => 'Não é permitido criar momento sem carga horária. Corrija a planilha de cargas para: ' . $momentosSemCarga->implode(', '),
+                'import' => 'Não é permitido criar momento sem carga horária. Corrija a planilha de cargas para: '.$momentosSemCarga->implode(', '),
             ]);
         }
 
@@ -203,14 +205,14 @@ class InscricaoController extends Controller
                 }
 
                 $carga = $momento['carga_horaria'];
-                if (!is_int($carga)) {
+                if (! is_int($carga)) {
                     throw new \RuntimeException("Momento '{$nome}' sem carga horária válida.");
                 }
 
                 $key = $this->normalizeMoodleLabel($nome);
                 $atividade = $atividadesByName->get($key);
 
-                if (!$atividade) {
+                if (! $atividade) {
                     $diaBase = $evento->data_inicio ?: now()->toDateString();
                     $horaInicio = '08:00';
                     $horaFim = '09:00';
@@ -221,19 +223,22 @@ class InscricaoController extends Controller
                             ->format('H:i');
                     }
 
+                    $cargaMinutos = is_int($carga) ? $carga * 60 : null;
+
                     $atividade = $evento->atividades()->create([
                         'descricao' => $nome,
                         'dia' => $diaBase,
                         'hora_inicio' => $horaInicio,
                         'hora_fim' => $horaFim,
-                        'carga_horaria' => is_int($carga) ? $carga : null,
+                        'carga_horaria' => $cargaMinutos,
                         'presenca_ativa' => false,
                     ]);
                     $momentoCriado++;
                     $atividadesByName->put($key, $atividade);
                 } else {
-                    if (is_int($carga) && $atividade->carga_horaria !== $carga) {
-                        $atividade->update(['carga_horaria' => $carga]);
+                    $cargaMinutosEsperada = is_int($carga) ? $carga * 60 : null;
+                    if (is_int($carga) && $cargaMinutosEsperada !== null && $atividade->carga_horaria !== $cargaMinutosEsperada) {
+                        $atividade->update(['carga_horaria' => $cargaMinutosEsperada]);
                         $momentoAtualizado++;
                     }
                 }
@@ -260,16 +265,17 @@ class InscricaoController extends Controller
                 if ($email === '') {
                     $usuariosNaoEncontrados[] = [
                         'linha' => $linha,
-                        'nome'  => $nome !== '' ? $nome : '(sem nome)',
+                        'nome' => $nome !== '' ? $nome : '(sem nome)',
                         'email' => '(sem email)',
                     ];
+
                     continue;
                 }
 
-                if (!$usersByEmail->has($email)) {
+                if (! $usersByEmail->has($email)) {
                     $usuariosNaoEncontrados[] = [
                         'linha' => $linha,
-                        'nome'  => $nome !== '' ? $nome : '(sem nome)',
+                        'nome' => $nome !== '' ? $nome : '(sem nome)',
                         'email' => $email,
                     ];
                 }
@@ -284,19 +290,19 @@ class InscricaoController extends Controller
 
             foreach ($participants as $row) {
                 $email = strtolower(trim((string) ($row['email'] ?? '')));
-                if (!$usersByEmail->has($email)) {
+                if (! $usersByEmail->has($email)) {
                     continue;
                 }
 
                 $user = $usersByEmail->get($email);
                 $participante = $participantesByUser->get($user->id);
-                if (!$participante) {
+                if (! $participante) {
                     $participante = Participante::create(['user_id' => $user->id]);
                     $participantesByUser->put($user->id, $participante);
                 }
 
                 foreach (($row['status_por_momento'] ?? []) as $nomeMomento => $statusConclusao) {
-                    if (!isset($momentoMap[$nomeMomento])) {
+                    if (! isset($momentoMap[$nomeMomento])) {
                         continue;
                     }
 
@@ -308,7 +314,7 @@ class InscricaoController extends Controller
                         ->where('participante_id', $participante->id)
                         ->first();
 
-                    if (!$inscricao) {
+                    if (! $inscricao) {
                         $inscricao = Inscricao::create([
                             'evento_id' => $evento->id,
                             'atividade_id' => $atividade->id,
@@ -363,7 +369,7 @@ class InscricaoController extends Controller
         );
 
         if (count($usuariosNaoEncontrados) > 0) {
-            $successMessage .= ' Porém ' . count($usuariosNaoEncontrados) . ' pessoa(s) não foram inseridas pois não possuem cadastro no Engaja.';
+            $successMessage .= ' Porém '.count($usuariosNaoEncontrados).' pessoa(s) não foram inseridas pois não possuem cadastro no Engaja.';
         }
 
         return redirect()->route('eventos.show', $evento)
@@ -407,7 +413,8 @@ class InscricaoController extends Controller
         $newUsers = $participantsByEmail
             ->filter(function ($row) use ($usersByEmail) {
                 $email = strtolower(trim((string) ($row['email'] ?? '')));
-                return $email !== '' && !$usersByEmail->has($email);
+
+                return $email !== '' && ! $usersByEmail->has($email);
             })
             ->map(fn ($row) => [
                 'nome' => trim((string) ($row['nome'] ?? '')),
@@ -487,9 +494,9 @@ class InscricaoController extends Controller
         if ($idxEmail === null) {
             throw new \RuntimeException(
                 'A planilha de participantes precisa conter ao menos a coluna de email. '
-                . 'Aceitos para email: [' . implode(', ', $acceptedEmail) . ']. '
-                . ($idxNome === null ? 'Coluna de nome não encontrada (aceitos: ' . implode(', ', $acceptedNome) . '). ' : '')
-                . 'Colunas encontradas: ' . $this->formatMoodleHeadersForError($headersRaw)
+                .'Aceitos para email: ['.implode(', ', $acceptedEmail).']. '
+                .($idxNome === null ? 'Coluna de nome não encontrada (aceitos: '.implode(', ', $acceptedNome).'). ' : '')
+                .'Colunas encontradas: '.$this->formatMoodleHeadersForError($headersRaw)
             );
         }
 
@@ -539,7 +546,7 @@ class InscricaoController extends Controller
                 $nome = Str::before($email, '@');
             }
 
-            if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            if ($email !== '' && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $errors[] = "Linha {$line}: email inválido ({$email}).";
             }
 
@@ -574,7 +581,7 @@ class InscricaoController extends Controller
 
         foreach ($participants as $row) {
             $email = $row['email'];
-            if ($email === '' || !$usersByEmail->has($email)) {
+            if ($email === '' || ! $usersByEmail->has($email)) {
                 continue;
             }
 
@@ -612,9 +619,9 @@ class InscricaoController extends Controller
         if ($idxMomento === null || $idxCarga === null) {
             throw new \RuntimeException(
                 'A planilha de cargas precisa conter colunas de momento e carga horária. '
-                . 'Aceitos para momento: [' . implode(', ', $acceptedMomento) . ']. '
-                . 'Aceitos para carga: [' . implode(', ', $acceptedCarga) . ']. '
-                . 'Colunas encontradas: ' . $this->formatMoodleHeadersForError($headersRaw)
+                .'Aceitos para momento: ['.implode(', ', $acceptedMomento).']. '
+                .'Aceitos para carga: ['.implode(', ', $acceptedCarga).']. '
+                .'Colunas encontradas: '.$this->formatMoodleHeadersForError($headersRaw)
             );
         }
 
@@ -635,17 +642,20 @@ class InscricaoController extends Controller
 
             if ($momento === '') {
                 $errors[] = "Linha {$line}: momento vazio na planilha de carga horária.";
+
                 continue;
             }
 
-            if ($cargaRaw === '' || !is_numeric($cargaRaw)) {
+            if ($cargaRaw === '' || ! is_numeric($cargaRaw)) {
                 $errors[] = "Linha {$line}: carga horária inválida para o momento '{$momento}'.";
+
                 continue;
             }
 
             $carga = (int) $cargaRaw;
             if ($carga < 0) {
                 $errors[] = "Linha {$line}: carga horária negativa para o momento '{$momento}'.";
+
                 continue;
             }
 
@@ -660,12 +670,14 @@ class InscricaoController extends Controller
     {
         $value = Str::lower(Str::ascii(trim($value)));
         $value = preg_replace('/[^a-z0-9]+/', '_', $value) ?? '';
+
         return trim($value, '_');
     }
 
     private function normalizeMoodleLabel(string $value): string
     {
         $value = Str::lower(Str::ascii(trim($value)));
+
         return preg_replace('/\s+/', ' ', $value) ?? $value;
     }
 
@@ -735,7 +747,7 @@ class InscricaoController extends Controller
             $firstName = 'usuario';
         }
 
-        return $firstName . '1234';
+        return $firstName.'1234';
     }
 
     private function fetchUsersByEmailInsensitive(Collection $emails): Collection
@@ -768,7 +780,7 @@ class InscricaoController extends Controller
             return '[sem cabeçalhos na primeira linha]';
         }
 
-        return '[' . implode(', ', $headers) . ']';
+        return '['.implode(', ', $headers).']';
     }
 
     /**
@@ -777,8 +789,8 @@ class InscricaoController extends Controller
     public function cadastro(Request $request, Evento $evento)
     {
         $validated = $request->validate([
-            'your_file'     => 'required|file|mimes:xlsx,xls,csv|max:20480',
-            'atividade_id'  => [
+            'your_file' => 'required|file|mimes:xlsx,xls,csv|max:20480',
+            'atividade_id' => [
                 'required',
                 'integer',
                 Rule::exists('atividades', 'id')->where('evento_id', $evento->id),
@@ -789,32 +801,32 @@ class InscricaoController extends Controller
             ->whereKey($validated['atividade_id'])
             ->first();
 
-        if (!$atividade) {
+        if (! $atividade) {
             return back()
                 ->withErrors(['atividade_id' => 'Momento inválido para este evento.'])
                 ->withInput();
         }
 
         try {
-            $import = new ParticipantesPreviewImport();
-            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('your_file'));
+            $import = new ParticipantesPreviewImport;
+            Excel::import($import, $request->file('your_file'));
 
             $rows = $import->rows->values()->all();
 
             $sessionKey = "import_preview_evento_{$evento->id}_atividade_{$atividade->id}";
             session([$sessionKey => [
                 'atividade_id' => $atividade->id,
-                'rows'         => $rows,
+                'rows' => $rows,
             ]]);
 
             return redirect()->route('inscricoes.preview', [
-                'evento'       => $evento,
-                'session_key'  => $sessionKey,
+                'evento' => $evento,
+                'session_key' => $sessionKey,
                 'atividade_id' => $atividade->id,
             ]);
         } catch (\Throwable $e) {
             return back()
-                ->withErrors(['your_file' => 'Falha ao processar o arquivo: ' . $e->getMessage()])
+                ->withErrors(['your_file' => 'Falha ao processar o arquivo: '.$e->getMessage()])
                 ->withInput();
         }
     }
@@ -827,14 +839,14 @@ class InscricaoController extends Controller
         $sessionKey = $request->query('session_key');
         $sessionPayload = session($sessionKey);
 
-        if (!is_array($sessionPayload) || empty($sessionPayload['rows'] ?? [])) {
+        if (! is_array($sessionPayload) || empty($sessionPayload['rows'] ?? [])) {
             return redirect()->route('inscricoes.import', $evento)
                 ->withErrors(['your_file' => 'Sessão de importação vazia/expirada. Envie o arquivo novamente.']);
         }
 
         $atividadeId = $request->query('atividade_id') ?? ($sessionPayload['atividade_id'] ?? null);
 
-        if (!$atividadeId) {
+        if (! $atividadeId) {
             return redirect()->route('inscricoes.import', $evento)
                 ->withErrors(['atividade_id' => 'Momento da importação não encontrado. Inicie o processo novamente.']);
         }
@@ -843,7 +855,7 @@ class InscricaoController extends Controller
             ->whereKey($atividadeId)
             ->first();
 
-        if (!$atividade) {
+        if (! $atividade) {
             return redirect()->route('inscricoes.import', $evento)
                 ->withErrors(['atividade_id' => 'Momento informado não pertence a este evento.']);
         }
@@ -853,8 +865,8 @@ class InscricaoController extends Controller
         $resumoImportacao = $this->montarResumoImportacao($allRows);
 
         $perPage = (int) $request->query('per_page', 50);
-        $page    = (int) max(1, $request->query('page', 1));
-        $total   = $allRows->count();
+        $page = (int) max(1, $request->query('page', 1));
+        $total = $allRows->count();
 
         $slice = $allRows->slice(($page - 1) * $perPage, $perPage)->values();
 
@@ -864,10 +876,10 @@ class InscricaoController extends Controller
             $perPage,
             $page,
             [
-                'path'  => route('inscricoes.preview', $evento),
+                'path' => route('inscricoes.preview', $evento),
                 'query' => [
-                    'session_key'  => $sessionKey,
-                    'per_page'     => $perPage,
+                    'session_key' => $sessionKey,
+                    'per_page' => $perPage,
                     'atividade_id' => $atividade->id,
                 ],
             ]
@@ -875,46 +887,46 @@ class InscricaoController extends Controller
 
         $globalOffset = ($page - 1) * $perPage;
 
-        $municipios = \App\Models\Municipio::with('estado')->orderBy('nome')->get(['id', 'nome', 'estado_id']);
+        $municipios = Municipio::with('estado')->orderBy('nome')->get(['id', 'nome', 'estado_id']);
 
         $organizacoes = config('engaja.organizacoes', []);
         $participanteTags = config('engaja.participante_tags', Participante::TAGS);
 
         return view('inscricoes.preview', [
-            'evento'           => $evento,
-            'atividade'        => $atividade,
-            'rows'             => $rowsPaginator,
-            'globalOffset'     => $globalOffset,
-            'sessionKey'       => $sessionKey,
-            'municipios'       => $municipios,
-            'organizacoes'     => $organizacoes,
+            'evento' => $evento,
+            'atividade' => $atividade,
+            'rows' => $rowsPaginator,
+            'globalOffset' => $globalOffset,
+            'sessionKey' => $sessionKey,
+            'municipios' => $municipios,
+            'organizacoes' => $organizacoes,
             'participanteTags' => $participanteTags,
             'usuariosExistentesCount' => $resumoImportacao['usuariosExistentesCount'],
             'usuariosNovosCount' => $resumoImportacao['usuariosNovosCount'],
         ]);
     }
 
-
     private function montarResumoImportacao(Collection $allRows): array
     {
         $rowsUnicosPorEmail = $allRows
             ->filter(function ($row) {
                 $email = strtolower(trim((string) ($row['email'] ?? '')));
+
                 return $email !== '';
             })
-            ->groupBy(fn($row) => strtolower(trim((string) ($row['email'] ?? ''))))
-            ->map(fn($grupo) => $grupo->first())
+            ->groupBy(fn ($row) => strtolower(trim((string) ($row['email'] ?? ''))))
+            ->map(fn ($grupo) => $grupo->first())
             ->values();
 
         $emailsImportacao = $rowsUnicosPorEmail
-            ->map(fn($row) => strtolower(trim((string) ($row['email'] ?? ''))))
+            ->map(fn ($row) => strtolower(trim((string) ($row['email'] ?? ''))))
             ->values();
 
         $emailsExistentes = $emailsImportacao->isEmpty()
             ? collect()
             : User::whereIn('email', $emailsImportacao)
                 ->pluck('email')
-                ->map(fn($email) => strtolower(trim((string) $email)))
+                ->map(fn ($email) => strtolower(trim((string) $email)))
                 ->unique()
                 ->values();
 
@@ -923,7 +935,8 @@ class InscricaoController extends Controller
         $rowsNovos = $rowsUnicosPorEmail
             ->filter(function ($row) use ($emailsExistentesLookup) {
                 $email = strtolower(trim((string) ($row['email'] ?? '')));
-                return !isset($emailsExistentesLookup[$email]);
+
+                return ! isset($emailsExistentesLookup[$email]);
             })
             ->values();
 
@@ -932,8 +945,8 @@ class InscricaoController extends Controller
 
         return [
             'usuariosExistentesCount' => $usuariosExistentesCount,
-            'usuariosNovosCount'      => $usuariosNovosCount,
-            'rowsNovos'               => $rowsNovos,
+            'usuariosNovosCount' => $usuariosNovosCount,
+            'rowsNovos' => $rowsNovos,
         ];
     }
 
@@ -944,18 +957,18 @@ class InscricaoController extends Controller
     {
         $request->validate([
             'session_key' => 'required|string',
-            'rows'        => 'required|array',
+            'rows' => 'required|array',
         ]);
 
-        $sessionKey     = $request->input('session_key');
+        $sessionKey = $request->input('session_key');
         $sessionPayload = session($sessionKey);
 
-        if (!is_array($sessionPayload) || empty($sessionPayload['rows'] ?? [])) {
+        if (! is_array($sessionPayload) || empty($sessionPayload['rows'] ?? [])) {
             return back()->withErrors(['rows' => 'Sessão expirada. Reenvie o arquivo.']);
         }
 
         $atividadeId = $sessionPayload['atividade_id'] ?? $request->input('atividade_id');
-        if (!$atividadeId) {
+        if (! $atividadeId) {
             return back()->withErrors(['atividade_id' => 'Momento da importação não encontrado. Inicie novamente.']);
         }
 
@@ -971,28 +984,29 @@ class InscricaoController extends Controller
         session([
             $sessionKey => [
                 'atividade_id' => $atividadeId,
-                'rows'         => $allRows->values()->all(),
+                'rows' => $allRows->values()->all(),
             ],
         ]);
 
-        $page    = (int) $request->query('page', 1);
+        $page = (int) $request->query('page', 1);
         $perPage = (int) $request->query('per_page', 50);
 
         return redirect()->route('inscricoes.preview', [
-            'evento'       => $evento,
-            'session_key'  => $sessionKey,
-            'page'         => $page,
-            'per_page'     => $perPage,
+            'evento' => $evento,
+            'session_key' => $sessionKey,
+            'page' => $page,
+            'per_page' => $perPage,
             'atividade_id' => $atividadeId,
         ])->with('success', 'Alterações desta página salvas.');
     }
-/**
+
+    /**
      * Confirma TUDO: lê as linhas da sessão e grava no banco.
      */
     public function confirmar(Request $request, Evento $evento)
     {
         $validated = $request->validate([
-            'session_key'  => 'required|string',
+            'session_key' => 'required|string',
             'atividade_id' => [
                 'required',
                 'integer',
@@ -1000,10 +1014,10 @@ class InscricaoController extends Controller
             ],
         ]);
 
-        $sessionKey     = $validated['session_key'];
+        $sessionKey = $validated['session_key'];
         $sessionPayload = session($sessionKey);
 
-        if (!is_array($sessionPayload) || empty($sessionPayload['rows'] ?? [])) {
+        if (! is_array($sessionPayload) || empty($sessionPayload['rows'] ?? [])) {
             return back()->withErrors(['rows' => 'Sessão de importação vazia/expirada. Reenvie o arquivo.']);
         }
 
@@ -1018,7 +1032,7 @@ class InscricaoController extends Controller
             ->whereKey($atividadeId)
             ->first();
 
-        if (!$atividade) {
+        if (! $atividade) {
             return back()->withErrors(['atividade_id' => 'Momento informado não pertence a este evento.']);
         }
 
@@ -1027,23 +1041,25 @@ class InscricaoController extends Controller
         DB::transaction(function () use ($rows, $evento, $atividade) {
             $ids = [];
 
-            $emails = collect($rows)->pluck('email')->map(fn($e) => strtolower(trim((string)$e)))->unique()->filter()->values();
-            $usersExistentes = User::whereIn('email', $emails)->get()->keyBy(fn($u) => strtolower($u->email));
+            $emails = collect($rows)->pluck('email')->map(fn ($e) => strtolower(trim((string) $e)))->unique()->filter()->values();
+            $usersExistentes = User::whereIn('email', $emails)->get()->keyBy(fn ($u) => strtolower($u->email));
 
             $novosUsuarios = [];
             foreach ($rows as $row) {
-                $email = strtolower(trim((string)($row['email'] ?? '')));
-                if (!$email || $usersExistentes->has($email)) continue;
-                $name  = trim((string)($row['nome'] ?? ''));
+                $email = strtolower(trim((string) ($row['email'] ?? '')));
+                if (! $email || $usersExistentes->has($email)) {
+                    continue;
+                }
+                $name = trim((string) ($row['nome'] ?? ''));
                 $novosUsuarios[] = [
-                    'email'    => $email,
-                    'name'     => $name !== '' ? $name : ($row['cpf'] ?? 'Participante'),
+                    'email' => $email,
+                    'name' => $name !== '' ? $name : ($row['cpf'] ?? 'Participante'),
                     'password' => Hash::make(Str::random(12)),
                 ];
             }
             if (count($novosUsuarios)) {
                 User::insert($novosUsuarios);
-                $usersExistentes = User::whereIn('email', $emails)->get()->keyBy(fn($u) => strtolower($u->email));
+                $usersExistentes = User::whereIn('email', $emails)->get()->keyBy(fn ($u) => strtolower($u->email));
             }
 
             $userIds = $usersExistentes->pluck('id')->values();
@@ -1053,9 +1069,13 @@ class InscricaoController extends Controller
             $atualizacoes = [];
 
             $toDate = function ($raw) {
-                if ($raw === null) return null;
-                $s = trim((string)$raw);
-                if ($s === '') return null;
+                if ($raw === null) {
+                    return null;
+                }
+                $s = trim((string) $raw);
+                if ($s === '') {
+                    return null;
+                }
                 try {
                     if (is_numeric($s)) {
                         return Carbon::instance(ExcelDate::excelToDateTimeObject($s))->format('Y-m-d');
@@ -1063,6 +1083,7 @@ class InscricaoController extends Controller
                     if (preg_match('~^\d{2}/\d{2}/\d{4}$~', $s)) {
                         return Carbon::createFromFormat('d/m/Y', $s)->format('Y-m-d');
                     }
+
                     return Carbon::parse($s)->format('Y-m-d');
                 } catch (\Throwable $e) {
                     return null;
@@ -1073,26 +1094,30 @@ class InscricaoController extends Controller
             $tagLookup = array_fill_keys($tagOptions, true);
 
             foreach ($rows as $row) {
-                $email = strtolower(trim((string)($row['email'] ?? '')));
-                if (!$email) continue;
+                $email = strtolower(trim((string) ($row['email'] ?? '')));
+                if (! $email) {
+                    continue;
+                }
                 $user = $usersExistentes[$email] ?? null;
-                if (!$user) continue;
+                if (! $user) {
+                    continue;
+                }
                 $userId = $user->id;
 
                 $tipoOrgRaw = $row['tipo_organizacao'] ?? $row['organizacao'] ?? null;
-                $tipoOrg    = is_string($tipoOrgRaw) ? trim($tipoOrgRaw) : null;
+                $tipoOrg = is_string($tipoOrgRaw) ? trim($tipoOrgRaw) : null;
 
                 $orgRaw = $row['escola_unidade'] ?? $row['organizacao_nome'] ?? null;
-                if ($orgRaw === null && !isset($row['tipo_organizacao'])) {
+                if ($orgRaw === null && ! isset($row['tipo_organizacao'])) {
                     $orgRaw = $row['organizacao'] ?? null;
                 }
-                $org    = is_string($orgRaw) ? trim($orgRaw) : null;
+                $org = is_string($orgRaw) ? trim($orgRaw) : null;
 
                 $tagRaw = $row['tag'] ?? null;
-                $tag    = is_string($tagRaw) ? trim($tagRaw) : null;
+                $tag = is_string($tagRaw) ? trim($tagRaw) : null;
                 if ($tag === '') {
                     $tag = null;
-                } elseif (!isset($tagLookup[$tag])) {
+                } elseif (! isset($tagLookup[$tag])) {
                     $tag = null;
                 }
 
@@ -1104,31 +1129,31 @@ class InscricaoController extends Controller
                 $telefoneValue = $telefoneValue !== '' ? $telefoneValue : null;
 
                 $dados = [
-                    'municipio_id'     => ($row['municipio_id'] ?? null) ?: null,
-                    'cpf'              => (($row['cpf'] ?? '') !== '') ? trim((string)$row['cpf']) : null,
-                    'telefone'         => $telefoneValue,
-                    'escola_unidade'   => ($org !== '') ? $org : null,
+                    'municipio_id' => ($row['municipio_id'] ?? null) ?: null,
+                    'cpf' => (($row['cpf'] ?? '') !== '') ? trim((string) $row['cpf']) : null,
+                    'telefone' => $telefoneValue,
+                    'escola_unidade' => ($org !== '') ? $org : null,
                     'tipo_organizacao' => ($tipoOrg !== '') ? $tipoOrg : null,
-                    'tag'              => $tag,
-                    'data_entrada'     => $toDate($row['data_entrada'] ?? null),
+                    'tag' => $tag,
+                    'data_entrada' => $toDate($row['data_entrada'] ?? null),
                 ];
 
                 if ($participantesExistentes->has($userId)) {
-                   $camposProtegidos = ['municipio_id', 'cpf', 'telefone', 'escola_unidade', 'tipo_organizacao', 'tag', 'data_entrada'];
-                   foreach ($camposProtegidos as $campo) {
-                    if (array_key_exists($campo, $dados) && $dados[$campo] === null) {
-                        unset($dados[$campo]);
+                    $camposProtegidos = ['municipio_id', 'cpf', 'telefone', 'escola_unidade', 'tipo_organizacao', 'tag', 'data_entrada'];
+                    foreach ($camposProtegidos as $campo) {
+                        if (array_key_exists($campo, $dados) && $dados[$campo] === null) {
+                            unset($dados[$campo]);
+                        }
                     }
-                }
 
-                if (!empty($dados)) {
-                    $atualizacoes[] = ['user_id' => $userId] + $dados;
-                }
+                    if (! empty($dados)) {
+                        $atualizacoes[] = ['user_id' => $userId] + $dados;
+                    }
 
-                $ids[] = $participantesExistentes[$userId]->id;
+                    $ids[] = $participantesExistentes[$userId]->id;
 
                 } else {
-                    $dados['user_id']    = $userId;
+                    $dados['user_id'] = $userId;
                     $dados['created_at'] = now();
                     $novosParticipantes[] = $dados;
                 }
@@ -1149,8 +1174,9 @@ class InscricaoController extends Controller
                 foreach ($campos as $field) {
                     $sql = "$field = CASE user_id\n";
                     foreach ($atualizacoes as $upd) {
-                        if (!array_key_exists($field, $upd)) {
+                        if (! array_key_exists($field, $upd)) {
                             $sql .= "WHEN {$upd['user_id']} THEN $field\n";
+
                             continue;
                         }
                         $value = $upd[$field] === null ? 'NULL' : DB::getPdo()->quote($upd[$field]);
@@ -1172,7 +1198,7 @@ class InscricaoController extends Controller
                     ->where('atividade_id', $atividade->id)
                     ->first();
 
-                if (!$inscricao) {
+                if (! $inscricao) {
                     $inscricao = Inscricao::withTrashed()
                         ->where('participante_id', $participanteId)
                         ->where('evento_id', $evento->id)
@@ -1182,19 +1208,19 @@ class InscricaoController extends Controller
 
                 if ($inscricao) {
                     $inscricao->fill([
-                        'evento_id'       => $evento->id,
-                        'atividade_id'    => $atividade->id,
+                        'evento_id' => $evento->id,
+                        'atividade_id' => $atividade->id,
                         'participante_id' => $participanteId,
-                        'ouvinte'         => false,
+                        'ouvinte' => false,
                     ]);
                     $inscricao->deleted_at = null;
                     $inscricao->save();
                 } else {
                     Inscricao::create([
-                        'evento_id'       => $evento->id,
-                        'atividade_id'    => $atividade->id,
+                        'evento_id' => $evento->id,
+                        'atividade_id' => $atividade->id,
                         'participante_id' => $participanteId,
-                        'ouvinte'         => false,
+                        'ouvinte' => false,
                     ]);
                 }
             }
@@ -1206,14 +1232,15 @@ class InscricaoController extends Controller
             ->route('eventos.show', $evento)
             ->with('success', 'Importação confirmada e salva com sucesso!');
     }
+
     public function inscritos(Request $request, Evento $evento)
     {
-        $search      = $request->query('q');
+        $search = $request->query('q');
         $municipioId = $request->query('municipio_id');
         $atividadeId = $request->query('atividade_id');
-        $perPage     = (int) $request->query('per_page', 50);
+        $perPage = (int) $request->query('per_page', 50);
 
-        $municipios = \App\Models\Municipio::with('estado')
+        $municipios = Municipio::with('estado')
             ->orderBy('nome')
             ->get(['id', 'nome', 'estado_id']);
 
@@ -1230,8 +1257,8 @@ class InscricaoController extends Controller
             ])
             ->where('evento_id', $evento->id)
             ->whereNull('deleted_at')
-            ->when($atividadeId, fn($q) => $q->where('atividade_id', $atividadeId))
-            ->when($municipioId, fn($q) => $q->whereHas('participante', fn($pq) => $pq->where('municipio_id', $municipioId)))
+            ->when($atividadeId, fn ($q) => $q->where('atividade_id', $atividadeId))
+            ->when($municipioId, fn ($q) => $q->whereHas('participante', fn ($pq) => $pq->where('municipio_id', $municipioId)))
             ->when($search, function ($q) use ($search) {
                 $q->where(function ($w) use ($search) {
                     $like = "%{$search}%";
@@ -1239,13 +1266,13 @@ class InscricaoController extends Controller
                         $uq->where('name', 'ilike', $like)
                             ->orWhere('email', 'ilike', $like);
                     })
-                    ->orWhereHas('participante', function ($pq) use ($like) {
-                        $pq->where('cpf', 'ilike', $like)
-                            ->orWhere('telefone', 'ilike', $like);
-                    })
-                    ->orWhereHas('participante.municipio', function ($mq) use ($like) {
-                        $mq->where('nome', 'ilike', $like);
-                    });
+                        ->orWhereHas('participante', function ($pq) use ($like) {
+                            $pq->where('cpf', 'ilike', $like)
+                                ->orWhere('telefone', 'ilike', $like);
+                        })
+                        ->orWhereHas('participante.municipio', function ($mq) use ($like) {
+                            $mq->where('nome', 'ilike', $like);
+                        });
                 });
             })
             ->orderByDesc('id');
@@ -1255,30 +1282,30 @@ class InscricaoController extends Controller
             ->appends($request->query());
 
         return view('inscricoes.index', [
-            'evento'       => $evento,
-            'inscricoes'   => $inscricoes,
-            'municipios'   => $municipios,
-            'atividades'   => $atividades,
-            'search'       => $search,
-            'municipioId'  => $municipioId,
-            'atividadeId'  => $atividadeId,
-            'perPage'      => $perPage,
+            'evento' => $evento,
+            'inscricoes' => $inscricoes,
+            'municipios' => $municipios,
+            'atividades' => $atividades,
+            'search' => $search,
+            'municipioId' => $municipioId,
+            'atividadeId' => $atividadeId,
+            'perPage' => $perPage,
         ]);
     }
 
     public function selecionar(Request $request, Evento $evento)
     {
-        $search      = trim((string) $request->query('q', ''));
+        $search = trim((string) $request->query('q', ''));
         $municipioId = $request->query('municipio_id');
         $tagSelecionada = $request->query('tag');
         $atividadeId = $request->query('atividade_id');
-        $perPage     = (int) $request->query('per_page', 25);
+        $perPage = (int) $request->query('per_page', 25);
 
-        if (!in_array($perPage, [25, 50, 100, 200], true)) {
+        if (! in_array($perPage, [25, 50, 100, 200], true)) {
             $perPage = 25;
         }
 
-        $municipios = \App\Models\Municipio::with('estado')
+        $municipios = Municipio::with('estado')
             ->orderBy('nome')
             ->get(['id', 'nome', 'estado_id']);
 
@@ -1290,7 +1317,7 @@ class InscricaoController extends Controller
         $atividadeSelecionada = null;
         if ($atividadeId) {
             $atividadeSelecionada = $atividades->firstWhere('id', (int) $atividadeId);
-            if (!$atividadeSelecionada) {
+            if (! $atividadeSelecionada) {
                 $atividadeId = null;
             }
         }
@@ -1299,7 +1326,7 @@ class InscricaoController extends Controller
             ? $request->boolean('apenas_disponiveis')
             : (bool) $atividadeId;
 
-        if (!$atividadeId) {
+        if (! $atividadeId) {
             $apenasDisponiveis = false;
         }
 
@@ -1317,7 +1344,7 @@ class InscricaoController extends Controller
 
         $inscritosAtividade = $atividadeId
             ? $inscricoesAtivas
-                ->filter(fn($item) => (int) $item->atividade_id === (int) $atividadeId)
+                ->filter(fn ($item) => (int) $item->atividade_id === (int) $atividadeId)
                 ->pluck('participante_id')
                 ->unique()
                 ->all()
@@ -1329,10 +1356,10 @@ class InscricaoController extends Controller
                 'municipio.estado:id,nome,sigla',
             ])
             ->whereNull('participantes.deleted_at')
-            ->when($municipioId, fn($q) => $q->where('municipio_id', $municipioId))
-            ->when($tagSelecionada, fn($q) => $q->where('tag', $tagSelecionada))
+            ->when($municipioId, fn ($q) => $q->where('municipio_id', $municipioId))
+            ->when($tagSelecionada, fn ($q) => $q->where('tag', $tagSelecionada))
             ->when($search, function ($query) use ($search) {
-                $like = '%' . $search . '%';
+                $like = '%'.$search.'%';
                 $query->where(function ($inner) use ($like) {
                     $inner->where('cpf', 'ilike', $like)
                         ->orWhere('telefone', 'ilike', $like)
@@ -1347,7 +1374,7 @@ class InscricaoController extends Controller
             });
 
         if ($atividadeId && $apenasDisponiveis) {
-            $participantesQuery->whereDoesntHave('inscricoes', function ($q) use ($evento, $atividadeId) {
+            $participantesQuery->whereDoesntHave('inscricoes', function ($q) use ($evento) {
                 $q->where('evento_id', $evento->id)
                     ->whereNull('deleted_at');
             });
@@ -1361,20 +1388,20 @@ class InscricaoController extends Controller
             ->appends($request->query());
 
         return view('inscricoes.selecionar', [
-            'evento'               => $evento,
-            'participantes'        => $participantes,
-            'municipios'           => $municipios,
-            'atividades'           => $atividades,
-            'participanteTags'     => $participanteTags,
-            'search'               => $search,
-            'municipioId'          => $municipioId,
-            'tagSelecionada'       => $tagSelecionada,
-            'atividadeId'          => $atividadeId,
+            'evento' => $evento,
+            'participantes' => $participantes,
+            'municipios' => $municipios,
+            'atividades' => $atividades,
+            'participanteTags' => $participanteTags,
+            'search' => $search,
+            'municipioId' => $municipioId,
+            'tagSelecionada' => $tagSelecionada,
+            'atividadeId' => $atividadeId,
             'atividadeSelecionada' => $atividadeSelecionada,
-            'apenasDisponiveis'    => $apenasDisponiveis,
-            'perPage'              => $perPage,
+            'apenasDisponiveis' => $apenasDisponiveis,
+            'perPage' => $perPage,
             'inscritosNaAtividade' => $inscritosAtividade,
-            'inscritosNoEvento'    => $inscritosEvento,
+            'inscritosNoEvento' => $inscritosEvento,
         ]);
     }
 
@@ -1386,14 +1413,14 @@ class InscricaoController extends Controller
                 'integer',
                 Rule::exists('atividades', 'id')->where('evento_id', $evento->id),
             ],
-            'participantes'   => ['required', 'array', 'min:1'],
+            'participantes' => ['required', 'array', 'min:1'],
             'participantes.*' => [
                 'integer',
                 Rule::exists('participantes', 'id'),
             ],
         ], [
             'participantes.required' => 'Selecione pelo menos um participante.',
-            'participantes.min'      => 'Selecione pelo menos um participante.',
+            'participantes.min' => 'Selecione pelo menos um participante.',
         ]);
 
         $atividade = $evento->atividades()
@@ -1411,7 +1438,7 @@ class InscricaoController extends Controller
         $resultado = DB::transaction(function () use ($participantes, $evento, $atividade) {
             $totais = [
                 'adicionados' => 0,
-                'ignorados'   => 0,
+                'ignorados' => 0,
             ];
 
             foreach ($participantes as $participante) {
@@ -1423,10 +1450,11 @@ class InscricaoController extends Controller
 
                 if ($inscricao && $inscricao->deleted_at === null) {
                     $totais['ignorados']++;
+
                     continue;
                 }
 
-                if (!$inscricao) {
+                if (! $inscricao) {
                     $inscricao = Inscricao::withTrashed()
                         ->where('participante_id', $participante->id)
                         ->where('evento_id', $evento->id)
@@ -1436,19 +1464,19 @@ class InscricaoController extends Controller
 
                 if ($inscricao) {
                     $inscricao->fill([
-                        'evento_id'       => $evento->id,
-                        'atividade_id'    => $atividade->id,
+                        'evento_id' => $evento->id,
+                        'atividade_id' => $atividade->id,
                         'participante_id' => $participante->id,
-                        'ouvinte'         => false,
+                        'ouvinte' => false,
                     ]);
                     $inscricao->deleted_at = null;
                     $inscricao->save();
                 } else {
                     Inscricao::create([
-                        'evento_id'       => $evento->id,
-                        'atividade_id'    => $atividade->id,
+                        'evento_id' => $evento->id,
+                        'atividade_id' => $atividade->id,
                         'participante_id' => $participante->id,
-                        'ouvinte'         => false,
+                        'ouvinte' => false,
                     ]);
                 }
 
@@ -1464,11 +1492,11 @@ class InscricaoController extends Controller
         }
 
         $queryParams = [
-            'atividade_id'       => $validated['atividade_id'],
-            'q'                  => $request->input('q'),
-            'municipio_id'       => $request->input('municipio_id'),
-            'tag'                => $request->input('tag'),
-            'per_page'           => $request->input('per_page'),
+            'atividade_id' => $validated['atividade_id'],
+            'q' => $request->input('q'),
+            'municipio_id' => $request->input('municipio_id'),
+            'tag' => $request->input('tag'),
+            'per_page' => $request->input('per_page'),
             'apenas_disponiveis' => $request->has('apenas_disponiveis')
                 ? ($request->boolean('apenas_disponiveis') ? 1 : 0)
                 : 1,
@@ -1476,7 +1504,7 @@ class InscricaoController extends Controller
 
         $queryParams = array_filter(
             $queryParams,
-            fn($value) => $value !== null && $value !== ''
+            fn ($value) => $value !== null && $value !== ''
         );
 
         return redirect()
@@ -1484,8 +1512,7 @@ class InscricaoController extends Controller
             ->with('success', $mensagem);
     }
 
-
-    public function inscrever(Request $request, \App\Models\Evento $evento)
+    public function inscrever(Request $request, Evento $evento)
     {
         $user = $request->user();
         $participante = $user->participante; // já existe pelo booted()
@@ -1514,10 +1541,10 @@ class InscricaoController extends Controller
 
         // cria nova
         \DB::table('inscricaos')->insert([
-            'evento_id'       => $evento->id,
+            'evento_id' => $evento->id,
             'participante_id' => $participante->id,
-            'created_at'      => now(),
-            'updated_at'      => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         return back()->with('success', 'Inscrição realizada com sucesso!');
@@ -1528,7 +1555,7 @@ class InscricaoController extends Controller
         $user = $request->user();
         $participanteId = optional($user->participante)->id;
 
-        if (!$participanteId) {
+        if (! $participanteId) {
             return back()->with('error', 'Você não possui cadastro de participante.');
         }
 
@@ -1551,18 +1578,23 @@ class InscricaoController extends Controller
     public function create()
     { /* ... */
     }
+
     public function store(Request $request)
     { /* ... */
     }
+
     public function show(string $id)
     { /* ... */
     }
+
     public function edit(string $id)
     { /* ... */
     }
+
     public function update(Request $request, string $id)
     { /* ... */
     }
+
     public function destroy(string $id)
     { /* ... */
     }

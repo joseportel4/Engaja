@@ -252,7 +252,7 @@
           @forelse($momentos as $momento)
           <tr>
             <td>{{ $momento['nome'] }}</td>
-            <td>{{ $momento['carga_horaria'] ?? '—' }}</td>
+            <td>@if(isset($momento['carga_horaria']) && is_int($momento['carga_horaria'])){{ $momento['carga_horaria'] }}h@else—@endif</td>
             <td>{{ !empty($momento['em_participantes']) ? 'Sim' : 'Não' }}</td>
             <td>{{ !empty($momento['em_cargas']) ? 'Sim' : 'Não' }}</td>
           </tr>
