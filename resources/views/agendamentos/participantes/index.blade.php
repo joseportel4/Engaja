@@ -17,6 +17,16 @@
     @endunless
   </div>
 
+  <div class="alert alert-light border mb-3">
+    <strong>Agendamento selecionado:</strong>
+    {{ optional($agendamento->data_horario)->format('d/m/Y H:i') }} ·
+    {{ $agendamento->atividadeAcao?->nome ?? 'Atividade/Ação' }} ·
+    {{ $agendamento->local_acao }}
+    @if($agendamento->turma)
+      · Turma {{ $agendamento->turma }}
+    @endif
+  </div>
+
   <form method="GET" action="{{ route('agendamentos.participantes.index', $agendamento) }}" class="row g-2 align-items-end mb-3">
     <div class="col-md-6">
       <label class="form-label mb-1">Buscar</label>
@@ -40,7 +50,7 @@
 
   <div class="table-responsive">
     <table class="table table-sm align-middle table-bordered bg-white">
-      <thead class="table-light">
+      <thead class="table-light text-center">
         <tr>
           <th>Nome</th>
           <th>CPF</th>
@@ -50,7 +60,9 @@
           <th>Vínculo</th>
           <th>Turma</th>
           <th>Origem</th>
-          <th class="text-end">Ações</th>
+          @unless($agendamento->efetivado)
+            <th class="text-center">Ações</th>
+          @endunless
         </tr>
       </thead>
       <tbody>
@@ -64,20 +76,20 @@
             <td>{{ $participante->vinculo ?: '—' }}</td>
             <td>{{ $participante->turma ?: '—' }}</td>
             <td>{{ $participante->origem }}</td>
-            <td class="text-end">
-              @unless($agendamento->efetivado)
+            @unless($agendamento->efetivado)
+              <td class="text-center">
                 <a href="{{ route('agendamentos.participantes.edit', [$agendamento, $participante]) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
                 <form method="POST" action="{{ route('agendamentos.participantes.destroy', [$agendamento, $participante]) }}" class="d-inline">
                   @csrf
                   @method('DELETE')
                   <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Tem certeza que deseja excluir este participante?')">Excluir</button>
                 </form>
-              @endunless
-            </td>
+              </td>
+            @endunless
           </tr>
         @empty
           <tr>
-            <td colspan="9" class="text-center text-muted py-4">Nenhum participante cadastrado para este agendamento.</td>
+            <td colspan="{{ $agendamento->efetivado ? 8 : 9 }}" class="text-center text-muted py-4">Nenhum participante cadastrado para este agendamento.</td>
           </tr>
         @endforelse
       </tbody>

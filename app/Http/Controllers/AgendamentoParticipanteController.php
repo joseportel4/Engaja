@@ -52,7 +52,7 @@ class AgendamentoParticipanteController extends Controller
         $this->garantirAgendamentoNaoEfetivado($agendamento);
 
         $dados = $this->validarParticipante($request, $agendamento);
-        $dados['origem'] = 'manual';
+        $dados['origem'] = 'formulário';
         $dados['turma'] = $agendamento->turma;
 
         $agendamento->participantesClonados()->create($dados);
@@ -273,7 +273,7 @@ class AgendamentoParticipanteController extends Controller
                     'telefone' => $this->normalizarTelefone((string) ($row['telefone'] ?? '')),
                     'vinculo' => $this->normalizarTexto($row['vinculo'] ?? null),
                     'turma' => $agendamento->turma,
-                    'origem' => 'importacao',
+                    'origem' => 'importação',
                     'observacoes' => $observacoes,
                 ];
 

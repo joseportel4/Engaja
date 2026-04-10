@@ -17,12 +17,10 @@
       <thead class="table-light">
         <tr>
           <th>Data e horário</th>
-          <th>Município</th>
           <th>Atividade/Ação</th>
           <th>Turma</th>
           <th>Público participante</th>
           <th>Local da ação</th>
-          <th>Cadastro por</th>
           <th>Participantes</th>
           <th>Status</th>
           <th class="text-end">Ações</th>
@@ -32,12 +30,10 @@
         @forelse ($agendamentos as $agendamento)
           <tr>
             <td>{{ optional($agendamento->data_horario)->format('d/m/Y H:i') }}</td>
-            <td>{{ $agendamento->municipio?->nome_com_estado ?? '—' }}</td>
             <td>{{ $agendamento->atividadeAcao?->nome ?? '—' }}</td>
             <td>{{ $agendamento->turma ?: '—' }}</td>
             <td>{{ $agendamento->publico_participante }}</td>
             <td>{{ $agendamento->local_acao }}</td>
-            <td>{{ $agendamento->user?->name ?? '—' }}</td>
             <td>{{ $agendamento->participantes_clonados_count ?? 0 }}</td>
             <td>
               @if($agendamento->efetivado)
@@ -61,7 +57,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="10" class="text-center text-muted py-4">Nenhum agendamento cadastrado.</td>
+            <td colspan="8" class="text-center text-muted py-4">Nenhum agendamento cadastrado.</td>
           </tr>
         @endforelse
       </tbody>

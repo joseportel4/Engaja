@@ -1,4 +1,4 @@
-﻿@csrf
+@csrf
 
 @php
   $dataHorarioValor = old('data_horario');
@@ -86,15 +86,6 @@
   @enderror
 </div>
 
-<div class="mb-4">
-  <label class="form-label">Município (do participante que realiza o cadastro)</label>
-  <input type="text" class="form-control" readonly
-         value="{{ $municipio?->nome_com_estado ?? 'Município não definido no perfil do participante' }}">
-  @error('municipio_id')
-    <div class="invalid-feedback d-block">{{ $message }}</div>
-  @enderror
-</div>
-
 <div class="d-flex justify-content-between">
   <a href="{{ route('agendamentos.index') }}" class="btn btn-outline-secondary">Cancelar</a>
   <button type="submit" class="btn btn-engaja" @disabled($atividadeAcoes->isEmpty())>{{ $submitLabel ?? 'Salvar' }}</button>
@@ -166,4 +157,3 @@
   });
 </script>
 @endpush
-
