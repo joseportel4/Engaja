@@ -707,7 +707,6 @@
         @error('carga_minutos') <div class="invalid-feedback">{{ $message }}</div> @enderror
       </div>
     </div>
-    <div class="form-text">De 0 a 59 minutos na fração.</div>
   </div>
 </div>
 

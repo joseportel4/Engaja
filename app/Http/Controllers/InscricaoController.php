@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Imports\ParticipantesPreviewImport;
+use App\Models\Atividade;
 use App\Models\Evento;
 use App\Models\Inscricao;
 use App\Models\Municipio;
@@ -1326,7 +1327,7 @@ class InscricaoController extends Controller
             ? $request->boolean('apenas_disponiveis')
             : (bool) $atividadeId;
 
-        if (! $atividadeId) {
+        if (! $atividadeId && ! $atividades->count()) {
             $apenasDisponiveis = false;
         }
 
@@ -1349,6 +1350,21 @@ class InscricaoController extends Controller
                 ->unique()
                 ->all()
             : [];
+
+        $idsAtividadesEvento = $atividades->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $totalMomentosEvento = count($idsAtividadesEvento);
+
+        $momentosInscritosPorParticipante = [];
+        if ($totalMomentosEvento > 0) {
+            $idSet = array_flip($idsAtividadesEvento);
+            foreach ($inscricoesAtivas as $ins) {
+                $aid = $ins->atividade_id !== null ? (int) $ins->atividade_id : null;
+                if ($aid !== null && isset($idSet[$aid])) {
+                    $pid = (int) $ins->participante_id;
+                    $momentosInscritosPorParticipante[$pid] = ($momentosInscritosPorParticipante[$pid] ?? 0) + 1;
+                }
+            }
+        }
 
         $participantesQuery = Participante::query()
             ->with([
@@ -1373,11 +1389,22 @@ class InscricaoController extends Controller
                 });
             });
 
-        if ($atividadeId && $apenasDisponiveis) {
-            $participantesQuery->whereDoesntHave('inscricoes', function ($q) use ($evento) {
-                $q->where('evento_id', $evento->id)
-                    ->whereNull('deleted_at');
-            });
+        if ($apenasDisponiveis && $totalMomentosEvento > 0) {
+            if ($atividadeId) {
+                $participantesQuery->whereDoesntHave('inscricoes', function ($q) use ($evento, $atividadeId) {
+                    $q->where('evento_id', $evento->id)
+                        ->where('atividade_id', (int) $atividadeId)
+                        ->whereNull('deleted_at');
+                });
+            } else {
+                $placeholders = implode(',', array_fill(0, $totalMomentosEvento, '?'));
+                $participantesQuery->whereRaw(
+                    '(SELECT COUNT(DISTINCT atividade_id) FROM inscricaos WHERE participantes.id = inscricaos.participante_id'
+                    .' AND inscricaos.evento_id = ? AND inscricaos.deleted_at IS NULL'
+                    .' AND inscricaos.atividade_id IN ('.$placeholders.')) < ?',
+                    array_merge([$evento->id], $idsAtividadesEvento, [$totalMomentosEvento])
+                );
+            }
         }
 
         $participantes = $participantesQuery
@@ -1402,14 +1429,20 @@ class InscricaoController extends Controller
             'perPage' => $perPage,
             'inscritosNaAtividade' => $inscritosAtividade,
             'inscritosNoEvento' => $inscritosEvento,
+            'totalMomentosEvento' => $totalMomentosEvento,
+            'momentosInscritosPorParticipante' => $momentosInscritosPorParticipante,
         ]);
     }
 
     public function selecionarStore(Request $request, Evento $evento)
     {
+        if ($request->input('atividade_id') === '' || $request->input('atividade_id') === null) {
+            $request->merge(['atividade_id' => null]);
+        }
+
         $validated = $request->validate([
             'atividade_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('atividades', 'id')->where('evento_id', $evento->id),
             ],
@@ -1423,72 +1456,71 @@ class InscricaoController extends Controller
             'participantes.min' => 'Selecione pelo menos um participante.',
         ]);
 
-        $atividade = $evento->atividades()
-            ->whereKey($validated['atividade_id'])
-            ->firstOrFail();
+        $modoTodosOsMomentos = $validated['atividade_id'] === null;
+
+        $atividadesAlvo = $modoTodosOsMomentos
+            ? $evento->atividades()->orderBy('dia')->orderBy('hora_inicio')->get()
+            : collect();
+
+        if ($modoTodosOsMomentos && $atividadesAlvo->isEmpty()) {
+            return back()
+                ->withInput()
+                ->withErrors(['atividade_id' => 'Este evento não possui momentos cadastrados.']);
+        }
 
         $participanteIds = array_values(array_unique($validated['participantes']));
 
         $participantes = Participante::whereIn('id', $participanteIds)->get();
 
         if ($participantes->isEmpty()) {
-            return back()->withErrors(['participantes' => 'Nenhum participante v�lido foi selecionado.']);
+            return back()->withErrors(['participantes' => 'Nenhum participante válido foi selecionado.']);
         }
 
-        $resultado = DB::transaction(function () use ($participantes, $evento, $atividade) {
+        $resultado = DB::transaction(function () use ($participantes, $evento, $validated, $modoTodosOsMomentos, $atividadesAlvo) {
             $totais = [
                 'adicionados' => 0,
                 'ignorados' => 0,
             ];
 
-            foreach ($participantes as $participante) {
-                $inscricao = Inscricao::withTrashed()
-                    ->where('participante_id', $participante->id)
-                    ->where('atividade_id', $atividade->id)
-                    ->where('evento_id', $evento->id)
-                    ->first();
-
-                if ($inscricao && $inscricao->deleted_at === null) {
-                    $totais['ignorados']++;
-
-                    continue;
+            if ($modoTodosOsMomentos) {
+                foreach ($participantes as $participante) {
+                    foreach ($atividadesAlvo as $atividade) {
+                        $r = $this->inscreverParticipanteNoMomento($evento, $atividade, $participante);
+                        if ($r === 'adicionado') {
+                            $totais['adicionados']++;
+                        } else {
+                            $totais['ignorados']++;
+                        }
+                    }
                 }
+            } else {
+                $atividade = $evento->atividades()
+                    ->whereKey($validated['atividade_id'])
+                    ->firstOrFail();
 
-                if (! $inscricao) {
-                    $inscricao = Inscricao::withTrashed()
-                        ->where('participante_id', $participante->id)
-                        ->where('evento_id', $evento->id)
-                        ->whereNull('atividade_id')
-                        ->first();
+                foreach ($participantes as $participante) {
+                    $r = $this->inscreverParticipanteNoMomento($evento, $atividade, $participante);
+                    if ($r === 'adicionado') {
+                        $totais['adicionados']++;
+                    } else {
+                        $totais['ignorados']++;
+                    }
                 }
-
-                if ($inscricao) {
-                    $inscricao->fill([
-                        'evento_id' => $evento->id,
-                        'atividade_id' => $atividade->id,
-                        'participante_id' => $participante->id,
-                        'ouvinte' => false,
-                    ]);
-                    $inscricao->deleted_at = null;
-                    $inscricao->save();
-                } else {
-                    Inscricao::create([
-                        'evento_id' => $evento->id,
-                        'atividade_id' => $atividade->id,
-                        'participante_id' => $participante->id,
-                        'ouvinte' => false,
-                    ]);
-                }
-
-                $totais['adicionados']++;
             }
 
             return $totais;
         });
 
-        $mensagem = "{$resultado['adicionados']} participante(s) inscrito(s).";
-        if ($resultado['ignorados'] > 0) {
-            $mensagem .= " {$resultado['ignorados']} j� estavam inscritos neste momento.";
+        if ($modoTodosOsMomentos) {
+            $mensagem = "{$resultado['adicionados']} inscrição(ões) adicionada(s) ou reativada(s).";
+            if ($resultado['ignorados'] > 0) {
+                $mensagem .= " {$resultado['ignorados']} ignorada(s) (já inscrito no momento).";
+            }
+        } else {
+            $mensagem = "{$resultado['adicionados']} participante(s) inscrito(s).";
+            if ($resultado['ignorados'] > 0) {
+                $mensagem .= " {$resultado['ignorados']} já estavam inscritos neste momento.";
+            }
         }
 
         $queryParams = [
@@ -1510,6 +1542,50 @@ class InscricaoController extends Controller
         return redirect()
             ->route('inscricoes.selecionar', array_merge(['evento' => $evento->id], $queryParams))
             ->with('success', $mensagem);
+    }
+
+    /**
+     * @return 'adicionado'|'ignorado'
+     */
+    private function inscreverParticipanteNoMomento(Evento $evento, Atividade $atividade, Participante $participante): string
+    {
+        $inscricao = Inscricao::withTrashed()
+            ->where('participante_id', $participante->id)
+            ->where('atividade_id', $atividade->id)
+            ->where('evento_id', $evento->id)
+            ->first();
+
+        if ($inscricao && $inscricao->deleted_at === null) {
+            return 'ignorado';
+        }
+
+        if (! $inscricao) {
+            $inscricao = Inscricao::withTrashed()
+                ->where('participante_id', $participante->id)
+                ->where('evento_id', $evento->id)
+                ->whereNull('atividade_id')
+                ->first();
+        }
+
+        if ($inscricao) {
+            $inscricao->fill([
+                'evento_id' => $evento->id,
+                'atividade_id' => $atividade->id,
+                'participante_id' => $participante->id,
+                'ouvinte' => false,
+            ]);
+            $inscricao->deleted_at = null;
+            $inscricao->save();
+        } else {
+            Inscricao::create([
+                'evento_id' => $evento->id,
+                'atividade_id' => $atividade->id,
+                'participante_id' => $participante->id,
+                'ouvinte' => false,
+            ]);
+        }
+
+        return 'adicionado';
     }
 
     public function inscrever(Request $request, Evento $evento)
