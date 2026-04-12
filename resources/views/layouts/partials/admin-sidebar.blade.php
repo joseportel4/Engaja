@@ -15,7 +15,7 @@
           <path d="M7.293 1.5a1 1 0 0 1 1.414 0l5.793 5.793a1 1 0 0 1 .293.707V14a1 1 0 0 1-1 1h-4a.5.5 0 0 1-.5-.5V11a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v3.5a.5.5 0 0 1-.5.5h-4a1 1 0 0 1-1-1V8c0-.266.105-.52.293-.707z"/>
         </svg>
       </span>
-      <span class="admin-nav-text">Inicio</span>
+      <span class="admin-nav-text">Início</span>
     </a>
   </div>
 
@@ -43,7 +43,7 @@
   </div>
   @endhasanyrole
 
-  @hasanyrole('administrador|gerente|eq_pedagogica|articulador|SME')
+  @hasanyrole('administrador|gerente|articulador|SME')
     <div class="admin-sidebar__section">
       <p class="admin-sidebar__label">Agendamentos</p>
       <a class="admin-nav-link {{ request()->routeIs('agendamentos.*') && !request()->routeIs('agendamentos.efetivacoes.*') ? 'active' : '' }}" href="{{ route('agendamentos.index') }}">
@@ -55,7 +55,7 @@
         <span class="admin-nav-text">Agendamentos</span>
       </a>
 
-      @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+      @hasanyrole('administrador|gerente|articulador')
       <a class="admin-nav-link {{ request()->routeIs('agendamentos.efetivacoes.*') ? 'active' : '' }}" href="{{ route('agendamentos.efetivacoes.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
@@ -66,6 +66,7 @@
       </a>
       @endhasanyrole
 
+      @hasanyrole('administrador|gerente|articulador')
       <a class="admin-nav-link {{ request()->routeIs('atividade-acoes.*') ? 'active' : '' }}" href="{{ route('atividade-acoes.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
@@ -74,6 +75,7 @@
         </span>
         <span class="admin-nav-text">Atividade/Ação</span>
       </a>
+      @endhasanyrole
     </div>
   @endhasanyrole
 

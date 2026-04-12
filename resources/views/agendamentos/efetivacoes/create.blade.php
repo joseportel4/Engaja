@@ -62,9 +62,20 @@
                   @error('publico_esperado') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-6">
-                  <label for="carga_horaria" class="form-label">Carga horária (horas)</label>
-                  <input type="number" name="carga_horaria" id="carga_horaria" min="0" step="1" value="{{ old('carga_horaria', $dadosPadrao['carga_horaria']) }}" class="form-control @error('carga_horaria') is-invalid @enderror">
-                  @error('carga_horaria') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                  <label class="form-label">Carga horária</label>
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <label for="carga_horas" class="form-label small text-muted mb-0">Horas</label>
+                      <input type="number" name="carga_horas" id="carga_horas" min="0" step="1" value="{{ old('carga_horas', $dadosPadrao['carga_horas'] ?? 0) }}" class="form-control @error('carga_horas') is-invalid @enderror">
+                      @error('carga_horas') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-6">
+                      <label for="carga_minutos" class="form-label small text-muted mb-0">Minutos</label>
+                      <input type="number" name="carga_minutos" id="carga_minutos" min="0" max="59" step="1" value="{{ old('carga_minutos', $dadosPadrao['carga_minutos'] ?? 0) }}" class="form-control @error('carga_minutos') is-invalid @enderror">
+                      @error('carga_minutos') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                  </div>
+                  <div class="form-text">Deixe em 0 para calcular pela duração entre início e fim.</div>
                 </div>
               </div>
 

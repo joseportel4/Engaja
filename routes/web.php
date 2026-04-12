@@ -5,24 +5,27 @@ use App\Http\Controllers\AvaliacaoController;
 use App\Http\Controllers\AgendamentoController;
 use App\Http\Controllers\AgendamentoEfetivacaoController;
 use App\Http\Controllers\AgendamentoParticipanteController;
-use App\Http\Controllers\AtividadeController;
 use App\Http\Controllers\AtividadeAcaoController;
-use App\Http\Controllers\DimensaoController;
+use App\Http\Controllers\AtividadeController;
+use App\Http\Controllers\AvaliacaoAtividadeController;
+use App\Http\Controllers\CertificadoController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DimensaoController;
 use App\Http\Controllers\EscalaController;
+use App\Http\Controllers\EstadoController;
 use App\Http\Controllers\EventoController;
-use App\Http\Controllers\InscricaoController;
-use App\Http\Controllers\IndicadorController;
 use App\Http\Controllers\EvidenciaController;
+use App\Http\Controllers\IndicadorController;
+use App\Http\Controllers\InscricaoController;
+use App\Http\Controllers\ModeloCertificadoController;
+use App\Http\Controllers\MunicipioController;
 use App\Http\Controllers\PresencaController;
 use App\Http\Controllers\PresencaImportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuestaoController;
+use App\Http\Controllers\RegiaoController;
 use App\Http\Controllers\TemplateAvaliacaoController;
 use App\Http\Controllers\UserManagementController;
-use App\Http\Controllers\ModeloCertificadoController;
-use App\Http\Controllers\CertificadoController;
-use App\Http\Controllers\AvaliacaoAtividadeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -89,12 +92,12 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
     Route::post('/eventos/{evento}/inscricoes/selecionar', [InscricaoController::class, 'selecionarStore'])->name('inscricoes.selecionar.store');
 });
 
-Route::middleware(['auth','permission:inscricao.ver'])->group(function () {
+Route::middleware(['auth', 'permission:inscricao.ver'])->group(function () {
     Route::get('/eventos/{evento}/inscritos', [InscricaoController::class, 'inscritos'])->name('inscricoes.inscritos');
 });
 
 Route::middleware(['auth'])->group(function () {
-    //rotas que SME não pode acessar
+    // rotas que SME não pode acessar
     Route::middleware(['role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {
         Route::resource('dimensaos', DimensaoController::class);
         Route::resource('indicadors', IndicadorController::class);
@@ -108,6 +111,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('avaliacoes/{avaliacao}/respostas', [AvaliacaoController::class, 'respostas'])->name('avaliacoes.respostas');
         Route::get('avaliacoes/{avaliacao}/respostas/{submissao}', [AvaliacaoController::class, 'respostasMostrar'])->name('avaliacoes.respostas.mostrar');
         Route::get('atividades/{atividade}/avaliacoes', [AvaliacaoController::class, 'resultadosAtividade'])->name('atividades.avaliacoes');
+        Route::get('atividades/{atividade}/avaliacoes/pdf', [AvaliacaoController::class, 'downloadResultadosPdf'])->name('atividades.avaliacoes.pdf');
         Route::get('agendamentos/efetivacoes', [AgendamentoEfetivacaoController::class, 'index'])->name('agendamentos.efetivacoes.index');
         Route::get('agendamentos/efetivados', [AgendamentoEfetivacaoController::class, 'efetivados'])->name('agendamentos.efetivados.index');
         Route::get('agendamentos/{agendamento}/efetivar', [AgendamentoEfetivacaoController::class, 'create'])->name('agendamentos.efetivacoes.create');
@@ -115,7 +119,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('agendamentos/{agendamento}/efetivar', [AgendamentoEfetivacaoController::class, 'store'])->name('agendamentos.efetivacoes.store');
     });
 
-    //ROTAS ABAIXO SME PODEM ACESSAR, POR ISSO A DIVISÃO
+    // ROTAS ABAIXO SME PODEM ACESSAR, POR ISSO A DIVISÃO
     Route::middleware(['role:administrador|gerente|eq_pedagogica|articulador|SME'])->group(function () {
         Route::resource('agendamentos', AgendamentoController::class);
         Route::prefix('agendamentos/{agendamento}/participantes')
@@ -149,13 +153,13 @@ Route::middleware(['auth', 'role:administrador|gerente'])
 
 Route::middleware(['auth', 'role:administrador'])
     ->group(function () {
-        Route::resource('regioes', \App\Http\Controllers\RegiaoController::class)
+        Route::resource('regioes', RegiaoController::class)
             ->parameters(['regioes' => 'regiao'])
             ->except(['create', 'edit', 'show']);
-        Route::resource('estados', \App\Http\Controllers\EstadoController::class)
+        Route::resource('estados', EstadoController::class)
             ->parameters(['estados' => 'estado'])
             ->except(['create', 'edit', 'show']);
-        Route::resource('municipios', \App\Http\Controllers\MunicipioController::class)
+        Route::resource('municipios', MunicipioController::class)
             ->parameters(['municipios' => 'municipio'])
             ->except(['create', 'edit', 'show']);
     });
@@ -181,10 +185,9 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
     });
 
 Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {
-        Route::get('/eventos/{evento}/relatorios', [EventoController::class, 'relatorios'])
+    Route::get('/eventos/{evento}/relatorios', [EventoController::class, 'relatorios'])
         ->name('eventos.relatorios');
-    });
-
+});
 
 Route::middleware(['auth'])->group(function () {
     Route::controller(AvaliacaoAtividadeController::class)
@@ -251,8 +254,8 @@ Route::middleware(['auth', 'role:administrador|gerente'])->group(function () {
         ->name('certificados.update');
 });
 
-Route::get( '/formulario-avaliacao/{avaliacao}', [AvaliacaoController::class, 'formularioAvaliacao'])->name('avaliacao.formulario');
+Route::get('/formulario-avaliacao/{avaliacao}', [AvaliacaoController::class, 'formularioAvaliacao'])->name('avaliacao.formulario');
 Route::post('/formulario-avaliacao/{avaliacao}', [AvaliacaoController::class, 'responderFormulario'])->name('avaliacao.formulario.responder');
 Route::get('/validacao/{codigo}', [CertificadoController::class, 'validar'])->name('certificados.validacao');
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

@@ -62,7 +62,7 @@
           @error('workloads_file')
             <div class="invalid-feedback">{{ $message }}</div>
           @enderror
-          <div class="form-text">Inclua colunas de momento e carga_horaria.</div>
+          <div class="form-text">Inclua colunas de momento e carga horária em <strong>horas inteiras</strong> (coluna aceita nomes como carga_horaria, horas, duração em horas).</div>
           <div class="mt-2">
             <a
               href="{{ route('inscricoes.moodle.template.momentos', $evento) }}"

@@ -48,7 +48,7 @@
           <dt class="col-sm-3">Público esperado</dt>
           <dd class="col-sm-9">{{ $dados['publico_esperado'] }}</dd>
           <dt class="col-sm-3">Carga horária</dt>
-          <dd class="col-sm-9">{{ $dados['carga_horaria'] }} hora(s)</dd>
+          <dd class="col-sm-9">{{ \App\Support\CargaHoraria::formatMinutos($dados['carga_horaria'] ?? null) }}</dd>
         </dl>
       </div>
     </div>
@@ -70,7 +70,8 @@
       <input type="hidden" name="hora_inicio" value="{{ $dados['hora_inicio'] }}">
       <input type="hidden" name="hora_fim" value="{{ $dados['hora_fim'] }}">
       <input type="hidden" name="publico_esperado" value="{{ $dados['publico_esperado'] }}">
-      <input type="hidden" name="carga_horaria" value="{{ $dados['carga_horaria'] }}">
+      <input type="hidden" name="carga_horas" value="{{ $dados['carga_horas'] ?? 0 }}">
+      <input type="hidden" name="carga_minutos" value="{{ $dados['carga_minutos'] ?? 0 }}">
       <a href="{{ route('agendamentos.efetivacoes.create', $agendamento) }}" class="btn btn-outline-secondary">Ajustar</a>
       <button type="submit" class="btn btn-engaja">Confirmar e efetivar</button>
     </form>

@@ -8,6 +8,7 @@ use App\Models\Evento;
 use App\Models\Inscricao;
 use App\Models\Participante;
 use App\Models\User;
+use App\Support\CargaHoraria;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -126,11 +127,11 @@ class AgendamentoEfetivacaoController extends Controller
         );
 
         if ($stats['usuarios_criados'] > 0) {
-            $mensagem .= ' Usuários criados automaticamente: ' . $stats['usuarios_criados'] . '.';
+            $mensagem .= ' Usuários criados automaticamente: '.$stats['usuarios_criados'].'.';
         }
 
         if ($stats['inscricoes_restauradas'] > 0) {
-            $mensagem .= ' Inscrições reativadas: ' . $stats['inscricoes_restauradas'] . '.';
+            $mensagem .= ' Inscrições reativadas: '.$stats['inscricoes_restauradas'].'.';
         }
 
         return redirect()
@@ -147,7 +148,8 @@ class AgendamentoEfetivacaoController extends Controller
             'hora_inicio' => ['required', 'date_format:H:i'],
             'hora_fim' => ['required', 'date_format:H:i', 'after:hora_inicio'],
             'publico_esperado' => ['nullable', 'integer', 'min:0'],
-            'carga_horaria' => ['nullable', 'integer', 'min:0'],
+            'carga_horas' => ['nullable', 'integer', 'min:0'],
+            'carga_minutos' => ['nullable', 'integer', 'min:0', 'max:59'],
         ]);
 
         if (($agendamento->participantes_clonados_count ?? $agendamento->participantesClonados()->count()) < 1) {
@@ -157,7 +159,15 @@ class AgendamentoEfetivacaoController extends Controller
         }
 
         $dados['publico_esperado'] = $dados['publico_esperado'] ?? $agendamento->participantesClonados()->count();
-        $dados['carga_horaria'] = $dados['carga_horaria'] ?? $this->calcularCargaHoraria($dados['hora_inicio'], $dados['hora_fim']);
+
+        $cargaHoras = (int) ($dados['carga_horas'] ?? 0);
+        $cargaMinutos = (int) ($dados['carga_minutos'] ?? 0);
+        unset($dados['carga_horas'], $dados['carga_minutos']);
+
+        $manual = CargaHoraria::totalMinutosFromPartes($cargaHoras, $cargaMinutos);
+        $dados['carga_horaria'] = $manual ?? $this->calcularCargaHoraria($dados['hora_inicio'], $dados['hora_fim']);
+        $dados['carga_horas'] = $cargaHoras;
+        $dados['carga_minutos'] = $cargaMinutos;
 
         return $dados;
     }
@@ -173,7 +183,8 @@ class AgendamentoEfetivacaoController extends Controller
             'hora_inicio' => $inicio->format('H:i'),
             'hora_fim' => $fim->format('H:i'),
             'publico_esperado' => $agendamento->participantes_clonados_count ?? 0,
-            'carga_horaria' => 1,
+            'carga_horas' => 1,
+            'carga_minutos' => 0,
         ];
     }
 
@@ -184,15 +195,15 @@ class AgendamentoEfetivacaoController extends Controller
         ];
 
         if ($agendamento->turma) {
-            $partes[] = 'Turma ' . trim((string) $agendamento->turma);
+            $partes[] = 'Turma '.trim((string) $agendamento->turma);
         }
 
         if ($agendamento->publico_participante) {
-            $partes[] = 'Público: ' . trim((string) $agendamento->publico_participante);
+            $partes[] = 'Público: '.trim((string) $agendamento->publico_participante);
         }
 
         if ($agendamento->local_acao) {
-            $partes[] = 'Local: ' . trim((string) $agendamento->local_acao);
+            $partes[] = 'Local: '.trim((string) $agendamento->local_acao);
         }
 
         return implode(' | ', array_filter($partes));
@@ -203,7 +214,7 @@ class AgendamentoEfetivacaoController extends Controller
         $inicio = Carbon::createFromFormat('H:i', $horaInicio);
         $fim = Carbon::createFromFormat('H:i', $horaFim);
 
-        return max(1, (int) ceil($inicio->diffInMinutes($fim) / 60));
+        return max(1, (int) $inicio->diffInMinutes($fim));
     }
 
     private function montarResumoParticipantes(Agendamento $agendamento): array
@@ -216,6 +227,7 @@ class AgendamentoEfetivacaoController extends Controller
         foreach ($participantes as $participante) {
             if ($this->localizarParticipanteExistente($participante)) {
                 $encontrados++;
+
                 continue;
             }
 
@@ -253,10 +265,11 @@ class AgendamentoEfetivacaoController extends Controller
 
             if ($inscricao && $inscricao->deleted_at === null) {
                 $stats['inscricoes']++;
+
                 continue;
             }
 
-            if (!$inscricao) {
+            if (! $inscricao) {
                 $inscricao = Inscricao::withTrashed()
                     ->where('evento_id', $evento->id)
                     ->whereNull('atividade_id')
@@ -349,7 +362,7 @@ class AgendamentoEfetivacaoController extends Controller
             return $participantePorCpf;
         }
 
-        if (!$userPorEmail) {
+        if (! $userPorEmail) {
             return null;
         }
 
@@ -362,9 +375,8 @@ class AgendamentoEfetivacaoController extends Controller
         Agendamento $agendamento,
         $participanteAgendado,
         string $cpf
-    ): Participante
-    {
-        if (!$participante) {
+    ): Participante {
+        if (! $participante) {
             $participante = Participante::create([
                 'user_id' => $user?->id,
             ]);
@@ -386,12 +398,12 @@ class AgendamentoEfetivacaoController extends Controller
 
     private function gerarEmailPlaceholder(Agendamento $agendamento, $participanteAgendado): string
     {
-        $base = 'agendamento-' . $agendamento->id . '-participante-' . $participanteAgendado->id;
-        $email = $base . '@engaja.local';
+        $base = 'agendamento-'.$agendamento->id.'-participante-'.$participanteAgendado->id;
+        $email = $base.'@engaja.local';
         $suffix = 1;
 
         while (User::query()->whereRaw('LOWER(email) = ?', [strtolower($email)])->exists()) {
-            $email = $base . '-' . $suffix . '@engaja.local';
+            $email = $base.'-'.$suffix.'@engaja.local';
             $suffix++;
         }
 
@@ -402,7 +414,7 @@ class AgendamentoEfetivacaoController extends Controller
     {
         $emailInformado = strtolower(trim((string) ($participanteAgendado->email ?? '')));
 
-        if ($emailInformado !== '' && !User::query()->whereRaw('LOWER(email) = ?', [$emailInformado])->exists()) {
+        if ($emailInformado !== '' && ! User::query()->whereRaw('LOWER(email) = ?', [$emailInformado])->exists()) {
             return $emailInformado;
         }
 
@@ -411,7 +423,7 @@ class AgendamentoEfetivacaoController extends Controller
 
     private function senhaPadraoNovoUsuario(): string
     {
-        return 'A' . now()->format('dmY') . 'b#';
+        return 'A'.now()->format('dmY').'b#';
     }
 
     private function normalizarTelefone(?string $telefone): ?string

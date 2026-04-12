@@ -410,12 +410,12 @@
               </svg>
             </button>
             <div>
-              <div class="text-uppercase text-muted small fw-semibold mb-0">Area interna</div>
+              <div class="text-uppercase text-muted small fw-semibold mb-0">Área interna</div>
               <p class="admin-topbar__title fw-bold mb-0">Painel Engaja</p>
             </div>
           </div>
           <div class="d-flex align-items-center gap-3">
-            <span class="text-muted small d-none d-md-inline">Ola, {{ Auth::user()->name }}</span>
+            <span class="text-muted small d-none d-md-inline">Olá, {{ Auth::user()->name }}</span>
             <div class="dropdown">
               <button class="btn btn-light border dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 @if (Auth::user()->profile_photo_url)
