@@ -265,7 +265,7 @@
                                         </svg>
 
                                         <label class="form-check-label mb-0" for="autorizacao_imagem" style="cursor: pointer; font-size: 1rem;">
-                                            Autorização de uso de imagem
+                                            Autorização de imagem, voz e nome
                                         </label>
 
                                         <button type="button" class="btn btn-link p-0 border-0 bg-transparent" data-bs-toggle="modal" data-bs-target="#modalTermosImagem" aria-label="Ler termos de uso de imagem" title="Ler termos de uso de imagem">
@@ -587,8 +587,14 @@
                    04.950.603/0001-05.
                 </p>
             </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-engaja" data-bs-dismiss="modal">Estou ciente!</button>
+            <div class="modal-footer border-0 border-top d-flex justify-content-between align-items-center pt-3 mt-1">
+                <div class="form-check m-0">
+                    <input class="form-check-input" type="checkbox" id="checkConcordoTermos" style="cursor: pointer;">
+                    <label class="form-check-label fw-medium text-dark user-select-none mb-2" for="checkConcordoTermos" style="cursor: pointer;">
+                        Li todos os termos e concordo com a destinação <span class="text-danger">*</span>
+                    </label>
+                </div>
+                <button type="button" class="btn btn-engaja" id="btnEstouCiente" data-bs-dismiss="modal" disabled>Ok</button>
             </div>
         </div>
     </div>
@@ -655,13 +661,33 @@
 
     function initModalAutorizacaoImagem() {
         const checkboxImagem = document.getElementById('autorizacao_imagem');
-        const modalTermos = document.getElementBy   Id('modalTermosImagem');
+        const modalTermos = document.getElementById('modalTermosImagem');
+
+        const checkConcordo = document.getElementById('checkConcordoTermos');
+        const btnCiente = document.getElementById('btnEstouCiente');
 
         if (checkboxImagem && modalTermos) {
+
+            if(checkConcordo && btnCiente) {
+                checkConcordo.addEventListener('change', function() {
+                    btnCiente.disabled = !this.checked;
+                });
+            }
+
             checkboxImagem.addEventListener('change', function () {
                 if (this.checked) {
+
+                    if(checkConcordo) checkConcordo.checked = false;
+                    if(btnCiente) btnCiente.disabled = true;
+
                     const modalInstance = new bootstrap.Modal(modalTermos);
                     modalInstance.show();
+                }
+            });
+
+            modalTermos.addEventListener('hide.bs.modal', function () {
+                if(checkConcordo && !checkConcordo.checked && checkboxImagem.checked) {
+                    checkboxImagem.checked = false;
                 }
             });
         }

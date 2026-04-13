@@ -148,6 +148,8 @@ Route::middleware(['auth', 'role:administrador|gerente'])
     ->group(function () {
         Route::resource('modelos', ModeloCertificadoController::class)
             ->parameters(['modelos' => 'modelo']);
+        Route::post('emitir/preparar', [CertificadoController::class, 'prepararEmissao'])->name('emitir.preparar');
+        Route::get('emitir/preview-lista', [CertificadoController::class, 'previewLista'])->name('emitir.preview_lista');
         Route::post('emitir', [CertificadoController::class, 'emitir'])->name('emitir');
     });
 

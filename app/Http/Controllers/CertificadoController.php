@@ -13,11 +13,25 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class CertificadoController extends Controller
 {
     public function emitir(Request $request)
     {
+
+        $sessionKey = $request->input('session_key');
+        if ($sessionKey) {
+            $payload = session($sessionKey);
+            if (!$payload) {
+                return redirect()->route('eventos.index')->with('error', 'Sessão expirada. Tente novamente.');
+            }
+            $request->merge([
+                'modelo_id' => $payload['modelo_id'],
+                'eventos'   => $payload['eventos'],
+            ]);
+        }
+
         $data = $request->validate([
             'modelo_id' => ['required', 'exists:modelo_certificados,id'],
             'eventos' => ['required'],
@@ -114,9 +128,103 @@ class CertificadoController extends Controller
             $message .= " {$skippedZeroWorkload} certificado(s) não emitido(s) por carga horária total igual a 0.";
         }
 
+        if ($sessionKey) {
+            session()->forget($sessionKey);
+        }
+
         return redirect()
-            ->back()
+            ->route('eventos.index')
             ->with('success', $message);
+    }
+
+    public function prepararEmissao(Request $request)
+    {
+        $data = $request->validate([
+            'modelo_id' => ['required', 'exists:modelo_certificados,id'],
+            'eventos'   => ['required'],
+        ]);
+
+        $sessionKey = 'emissao_certificados_' . Str::uuid();
+        session([$sessionKey => [
+            'modelo_id' => $data['modelo_id'],
+            'eventos'   => $data['eventos']
+        ]]);
+
+        return redirect()->route('certificados.emitir.preview_lista', ['session_key' => $sessionKey]);
+    }
+
+    public function previewLista(Request $request)
+    {
+        $sessionKey = $request->query('session_key');
+        $payload = session($sessionKey);
+
+        if (!$payload) {
+            return redirect()->route('eventos.index')->with('error', 'Sessão expirada. Refaça a seleção das ações pedagógicas.');
+        }
+
+        $modelo = ModeloCertificado::findOrFail($payload['modelo_id']);
+
+        $eventosIds = array_unique(array_filter(array_map('intval', explode(',', $payload['eventos']))));
+        $eventos = Evento::with(['presencas.inscricao.participante.user', 'presencas.atividade'])
+            ->whereIn('id', $eventosIds)
+            ->get();
+
+        $previewData = collect();
+        $skippedZeroWorkload = 0;
+
+        foreach ($eventos as $evento) {
+            $presencasEvento = $evento->presencas->filter(function ($presenca) {
+                return ($presenca->status ?? null) === 'presente'
+                    && !$presenca->certificado_emitido
+                    && $presenca->inscricao?->participante?->id;
+            });
+
+            $presencasPorParticipante = $presencasEvento->groupBy(fn ($p) => $p->inscricao->participante->id);
+
+            foreach ($presencasPorParticipante as $participanteId => $presencas) {
+                $participante = $presencas->first()->inscricao?->participante;
+                if (!$participante || !$participante->user) continue;
+
+                $cargaTotal = (int) $presencas->sum(fn($p) => (int) ($p->atividade?->carga_horaria ?? 0));
+
+                if ($cargaTotal <= 0) {
+                    $skippedZeroWorkload++;
+                    continue;
+                }
+
+                $previewData->push([
+                    'nome'          => $participante->user->name,
+                    'email'         => $participante->user->email,
+                    'cpf'           => $participante->cpf ?? '-',
+                    'carga_horaria' => CargaHoraria::formatMinutos($cargaTotal),
+                    'evento_nome'   => $evento->nome
+                ]);
+            }
+        }
+
+        //paginação
+        $perPage = 50;
+        $page = (int) max(1, $request->query('page', 1));
+        $slice = $previewData->slice(($page - 1) * $perPage, $perPage)->values();
+
+        $paginator = new LengthAwarePaginator(
+            $slice,
+            $previewData->count(),
+            $perPage,
+            $page,
+            [
+                'path'  => route('certificados.emitir.preview_lista'),
+                'query' => ['session_key' => $sessionKey],
+            ]
+        );
+
+        return view('certificados.preview_lista', [
+            'paginator'           => $paginator,
+            'sessionKey'          => $sessionKey,
+            'totalProntos'        => $previewData->count(),
+            'skippedZeroWorkload' => $skippedZeroWorkload,
+            'modelo'              => $modelo,
+        ]);
     }
 
     private function notificarLote(array $paraNotificar): void
