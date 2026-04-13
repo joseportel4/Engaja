@@ -59,9 +59,12 @@ class EventoController extends Controller
     {
         $this->authorize('create', Evento::class);
 
-        $matrizes = MatrizAprendizagem::orderBy('nome')->get();
-        $situacoes = SituacaoDesafiadora::orderBy('categoria')->orderBy('nome')->get()
-            ->groupBy('categoria');
+        $matrizes  = MatrizAprendizagem::all()
+            ->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+        $situacoes = SituacaoDesafiadora::orderBy('categoria')->get()
+                ->groupBy('categoria')
+                ->map(fn($itens) => $itens->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values());
 
         return view('eventos.create', compact('matrizes', 'situacoes'));
     }
@@ -180,9 +183,12 @@ class EventoController extends Controller
 
         $evento->load(['matrizes', 'situacoesDesafiadoras', 'sequenciasDidaticas']);
 
-        $matrizes = MatrizAprendizagem::orderBy('nome')->get();
-        $situacoes = SituacaoDesafiadora::orderBy('categoria')->orderBy('nome')->get()
-            ->groupBy('categoria');
+        $matrizes  = MatrizAprendizagem::all()
+            ->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+        $situacoes = SituacaoDesafiadora::orderBy('categoria')->get()
+                ->groupBy('categoria')
+                ->map(fn($itens) => $itens->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values());
 
         return view('eventos.edit', compact('evento', 'matrizes', 'situacoes'));
     }
@@ -259,12 +265,16 @@ class EventoController extends Controller
         $this->authorize('update', $evento);
 
         $evento->load(['situacoesDesafiadoras', 'matrizes', 'sequenciasDidaticas']);
+        $matrizesOrdenadas = $evento->matrizes
+            ->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
 
-        $pdf = Pdf::loadView('eventos.planejamento_pdf', [
-            'evento' => $evento,
-            'acoesGerais' => Evento::ACOES_GERAIS,
-            'checklistItems' => array_values(Evento::CHECKLIST_PLANEJAMENTO_ITEMS),
-        ])
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('eventos.planejamento_pdf', [
+                'evento'         => $evento,
+                'matrizesOrdenadas' => $matrizesOrdenadas,
+                'acoesGerais'    => Evento::ACOES_GERAIS,
+                'checklistItems' => array_values(Evento::CHECKLIST_PLANEJAMENTO_ITEMS),
+            ])
             ->setPaper('a4', 'portrait');
 
         return $pdf->stream('planejamento-'.Str::slug($evento->nome).'.pdf');

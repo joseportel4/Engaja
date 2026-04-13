@@ -98,8 +98,7 @@
     <div class="col-12">
         <label class="form-label fw-semibold">Avaliação da Logística</label>
         <div class="form-text mb-2">
-            (Faça a sua avaliação desta ação em relação aos aspectos logísticos como transporte,
-            hospedagem, alimentação e recursos disponibilizados, quando for o caso)
+            Pense nos seguintes pontos: O local era adequado? (espaço, conforto, iluminação, som); Os materiais e equipamentos funcionaram bem? Como foi transporte, alimentação e organização geral? Houve problemas? Como foram resolvidos? A logística ajudou ou atrapalhou a ação?
         </div>
         <textarea name="avaliacao_logistica" rows="4"
             class="form-control @error('avaliacao_logistica') is-invalid @enderror"
@@ -111,9 +110,7 @@
     <div class="col-12">
         <label class="form-label fw-semibold">Avaliação do acolhimento e apoio da SME</label>
         <div class="form-text mb-2">
-            (Faça a sua avaliação quando a prontidão da SME em resolver eventuais imprevistos, em apoiar
-            a organização da ação, bem como da sua presença e participação nos momentos chaves como
-            abertura e encerramento)
+            Reflita sobre: A SME ajudou na organização e mobilização? Esteve presente nos momentos importantes? Foi ágil para resolver problemas? Houve diálogo e parceria com a equipe? Avalie o nível de compromisso da SME com a ação.
         </div>
         <textarea name="avaliacao_acolhimento_sme" rows="4"
             class="form-control @error('avaliacao_acolhimento_sme') is-invalid @enderror"
@@ -125,8 +122,7 @@
     <div class="col-12">
         <label class="form-label fw-semibold">Atuação da Equipe do IPF</label>
         <div class="form-text mb-2">
-            (Faça uma avaliação do trabalho e atuação da equipe do IPF que esteve envolvida nesta ação,
-            tendo por referência o nosso guia de ética e de convivência)
+            Observe: A equipe foi acolhedora e respeitosa? Houve diálogo e escuta dos participantes? A condução foi clara e bem organizada? A equipe conseguiu lidar bem com imprevistos? Demonstrou sensibilidade ao contexto local? Analise se a prática e conduta da equipe refletiu os princípios institucionais do IPF.
         </div>
         <textarea name="avaliacao_atuacao_equipe" rows="4"
             class="form-control @error('avaliacao_atuacao_equipe') is-invalid @enderror"
@@ -144,8 +140,7 @@
                     O Planejamento desta ação se mostrou suficiente e adequado?
                 </label>
                 <div class="form-text mb-2">
-                    (Considerar nesta sua análise as situações desafiadoras da Leitura do Mundo,
-                    a Matriz de Aprendizagens e os ODS associados a essa ação)
+                    Reflita sobre: O planejamento fez sentido para esse município? Dialogou com a realidade local (Leitura do Mundo)? As atividades foram adequadas ao público? O tempo foi suficiente? Foi possível adaptar quando necessário? Considerar nesta sua análise as situações desafiadoras da Leitura do Mundo, a Matriz de Aprendizagens e os ODS associados a essa ação
                 </div>
                 <textarea name="avaliacao_planejamento" rows="4"
                     class="form-control @error('avaliacao_planejamento') is-invalid @enderror"
@@ -157,6 +152,9 @@
                 <label class="form-label fw-semibold">
                     Os recursos materiais utilizados atenderam aos objetivos da ação?
                 </label>
+                <div class="form-text mb-2">
+                    Reflita sobre: Os materiais ajudaram na aprendizagem? Foram adequados ao público? Foram suficientes? Foram bem utilizados durante a ação?
+                </div>
                 <textarea name="avaliacao_recursos_materiais" rows="4"
                     class="form-control @error('avaliacao_recursos_materiais') is-invalid @enderror"
                     placeholder="Sua avaliação...">{{ old('avaliacao_recursos_materiais', $avaliacao->avaliacao_recursos_materiais) }}</textarea>
@@ -168,6 +166,9 @@
                     Os links e QR codes de acesso à lista de presença, ficha de avaliação do encontro,
                     entre outros, funcionaram corretamente?
                 </label>
+                <div class="form-text mb-2">
+                    Reflita sobre: Os participantes conseguiram acessar? Houve problemas de internet? A adesão foi boa? Foi fácil orientar o uso? Indique se a estratégia digital funcionou no território.
+                </div>
                 <textarea name="avaliacao_links_presenca" rows="4"
                     class="form-control @error('avaliacao_links_presenca') is-invalid @enderror"
                     placeholder="Sua avaliação...">{{ old('avaliacao_links_presenca', $avaliacao->avaliacao_links_presenca) }}</textarea>
@@ -178,12 +179,14 @@
                 <label class="form-label fw-semibold">
                     Que destaques sobre essa ação você acha importante fazer?
                 </label>
+                <div class="form-text mb-2">
+                    Aqui você pode destacar o que foi mais importante: Momentos marcantes do encontro; Reações dos participantes; Aprendizagens percebidas; Falas ou situações significativas; Algo inesperado que vale registrar;
+                </div>
                 <textarea name="avaliacao_destaques" rows="4"
                     class="form-control @error('avaliacao_destaques') is-invalid @enderror"
                     placeholder="Sua avaliação...">{{ old('avaliacao_destaques', $avaliacao->avaliacao_destaques) }}</textarea>
                 @error('avaliacao_destaques')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-
         </div>
     </div>
 

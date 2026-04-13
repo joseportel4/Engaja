@@ -228,10 +228,11 @@
     @endif
 
     {{-- ── Matriz de Aprendizagens ── --}}
-    @if ($evento->matrizes->isNotEmpty())
+    @php $matrizesPlanejamento = $matrizesOrdenadas ?? $evento->matrizes; @endphp
+    @if ($matrizesPlanejamento->isNotEmpty())
     <div class="section">
         <div class="section-title">Matriz de Aprendizagens</div>
-        @foreach ($evento->matrizes as $matriz)
+        @foreach ($matrizesPlanejamento as $matriz)
         <div class="list-item">{{ $matriz->nome }}</div>
         @endforeach
     </div>
