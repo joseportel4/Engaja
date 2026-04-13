@@ -17,6 +17,11 @@ class Municipio extends Model
     {
         return $this->belongsTo(Estado::class);
     }
+
+    public function agendamentos()
+    {
+        return $this->hasMany(Agendamento::class);
+    }
     
     public function getNomeComEstadoAttribute(): string
     {

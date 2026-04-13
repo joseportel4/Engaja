@@ -62,7 +62,7 @@
           @error('workloads_file')
             <div class="invalid-feedback">{{ $message }}</div>
           @enderror
-          <div class="form-text">Inclua colunas de momento e carga_horaria.</div>
+          <div class="form-text">Esta é a planilha de importação de momentos, com os campos de <strong>horas</strong> e <strong>minutos</strong>. Se horas ou minutos vierem vazios, o sistema considera 0 no campo correspondente.</div>
           <div class="mt-2">
             <a
               href="{{ route('inscricoes.moodle.template.momentos', $evento) }}"

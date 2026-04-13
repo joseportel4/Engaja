@@ -5,22 +5,24 @@ namespace App\Http\Controllers;
 use App\Models\Atividade;
 use App\Models\Avaliacao;
 use App\Models\AvaliacaoQuestao;
-use App\Models\Evidencia;
 use App\Models\Escala;
-use App\Models\Inscricao;
+use App\Models\Evidencia;
 use App\Models\Presenca;
+use App\Models\Questao;
 use App\Models\RespostaAvaliacao;
 use App\Models\SubmissaoAvaliacao;
 use App\Models\TemplateAvaliacao;
+use App\Services\AvaliacaoRespostasDashboardService;
 use App\ViewModels\Avaliacao\QuestoesFormViewModel;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Throwable;
 
 class AvaliacaoController extends Controller
@@ -29,7 +31,7 @@ class AvaliacaoController extends Controller
 
     public function index(Request $request)
     {
-        $avaliacaoTable = (new Avaliacao())->getTable();
+        $avaliacaoTable = (new Avaliacao)->getTable();
 
         $query = Avaliacao::query()->with([
             'inscricao.participante.user',
@@ -43,19 +45,19 @@ class AvaliacaoController extends Controller
         if ($searchTerm !== '') {
             $query->where(function ($nested) use ($searchTerm) {
                 $nested->whereHas('atividade', function ($atividade) use ($searchTerm) {
-                    $atividade->where('descricao', 'like', '%' . $searchTerm . '%')
+                    $atividade->where('descricao', 'like', '%'.$searchTerm.'%')
                         ->orWhereHas('evento', function ($evento) use ($searchTerm) {
-                            $evento->where('nome', 'like', '%' . $searchTerm . '%');
+                            $evento->where('nome', 'like', '%'.$searchTerm.'%');
                         });
                 })
                     ->orWhereHas('templateAvaliacao', function ($template) use ($searchTerm) {
-                        $template->where('nome', 'like', '%' . $searchTerm . '%');
+                        $template->where('nome', 'like', '%'.$searchTerm.'%');
                     })
                     ->orWhereHas('inscricao.participante.user', function ($usuario) use ($searchTerm) {
-                        $usuario->where('name', 'like', '%' . $searchTerm . '%');
+                        $usuario->where('name', 'like', '%'.$searchTerm.'%');
                     })
                     ->orWhereHas('inscricao.evento', function ($evento) use ($searchTerm) {
-                        $evento->where('nome', 'like', '%' . $searchTerm . '%');
+                        $evento->where('nome', 'like', '%'.$searchTerm.'%');
                     });
 
                 if (ctype_digit($searchTerm)) {
@@ -172,10 +174,10 @@ class AvaliacaoController extends Controller
         )->toArray();
 
         return view('avaliacoes.create', [
-            'atividades'      => $atividades,
-            'templates'       => $templates,
+            'atividades' => $atividades,
+            'templates' => $templates,
             'selectedTemplateId' => $selectedTemplateId,
-            'questoesForm'    => $questoesForm,
+            'questoesForm' => $questoesForm,
         ]);
     }
 
@@ -275,10 +277,10 @@ class AvaliacaoController extends Controller
         $personalizacoes = $avaliacao->avaliacaoQuestoes
             ->mapWithKeys(fn ($questao) => [
                 $questao->questao_id ?? $questao->id => [
-                    'texto'        => $questao->texto,
-                    'tipo'         => $questao->tipo,
+                    'texto' => $questao->texto,
+                    'tipo' => $questao->tipo,
                     'evidencia_id' => $questao->evidencia_id,
-                    'escala_id'    => $questao->escala_id,
+                    'escala_id' => $questao->escala_id,
                 ],
             ])
             ->all();
@@ -286,12 +288,12 @@ class AvaliacaoController extends Controller
         $questoesAdicionais = $avaliacao->avaliacaoQuestoes
             ->whereNull('questao_id')
             ->map(fn ($questao) => [
-                'id'          => $questao->id,
-                'texto'       => $questao->texto,
-                'tipo'        => $questao->tipo,
-                'evidencia_id'=> $questao->evidencia_id,
-                'escala_id'   => $questao->escala_id,
-                'ordem'       => $questao->ordem,
+                'id' => $questao->id,
+                'texto' => $questao->texto,
+                'tipo' => $questao->tipo,
+                'evidencia_id' => $questao->evidencia_id,
+                'escala_id' => $questao->escala_id,
+                'ordem' => $questao->ordem,
             ])
             ->values()
             ->all();
@@ -330,12 +332,12 @@ class AvaliacaoController extends Controller
         )->toArray();
 
         return view('avaliacoes.edit', [
-            'avaliacao'           => $avaliacao,
-            'atividades'          => $atividades,
-            'templates'           => $templates,
+            'avaliacao' => $avaliacao,
+            'atividades' => $atividades,
+            'templates' => $templates,
             'templateSelecionado' => $avaliacao->templateAvaliacao,
-            'selectedTemplateId'  => $selectedTemplateId,
-            'questoesForm'        => $questoesForm,
+            'selectedTemplateId' => $selectedTemplateId,
+            'questoesForm' => $questoesForm,
         ]);
     }
 
@@ -378,9 +380,9 @@ class AvaliacaoController extends Controller
 
         $templateAlterado = $avaliacao->template_avaliacao_id !== $dados['template_avaliacao_id'];
         $tentouAlterarQuestoes = $templateAlterado
-            || !empty($customizacoes)
+            || ! empty($customizacoes)
             || ($questoesAdicionais && $questoesAdicionais->isNotEmpty())
-            || !empty($questoesAdicionaisRemovidas)
+            || ! empty($questoesAdicionaisRemovidas)
             || (is_array($respostas) && count($respostas) > 0);
 
         if ($jaTemRespostas && $tentouAlterarQuestoes) {
@@ -393,10 +395,10 @@ class AvaliacaoController extends Controller
             // Se possui respostas, apenas campos básicos são atualizados.
             $mudouQuestoesOuRespostas = ! $jaTemRespostas && (
                 $templateAlterado
-                || !empty($customizacoes)
+                || ! empty($customizacoes)
                 || (is_array($respostas) && count($respostas) > 0)
                 || ($questoesAdicionais && $questoesAdicionais->isNotEmpty())
-                || !empty($questoesAdicionaisRemovidas)
+                || ! empty($questoesAdicionaisRemovidas)
             );
 
             $avaliacao->update($dados);
@@ -456,15 +458,15 @@ class AvaliacaoController extends Controller
             if (! $jaExiste) {
                 $avaliacao->respostas()->create([
                     'avaliacao_questao_id' => $questao->id,
-                    'inscricao_id'         => $inscricaoParaResposta,
-                    'resposta'             => is_array($valor) ? json_encode($valor) : $valor,
+                    'inscricao_id' => $inscricaoParaResposta,
+                    'resposta' => is_array($valor) ? json_encode($valor) : $valor,
                 ]);
             }
         }
     }
 
     /**
-     * @return array{0: \Illuminate\Support\Collection, 1: array<int>}
+     * @return array{0: Collection, 1: array<int>}
      */
     private function processaQuestoesAdicionais(Request $request, ?Avaliacao $avaliacao = null): array
     {
@@ -489,25 +491,25 @@ class AvaliacaoController extends Controller
             $validator = Validator::make(
                 $questao,
                 [
-                    'id'           => $avaliacao
+                    'id' => $avaliacao
                         ? ['nullable', 'integer', Rule::exists('avaliacao_questoes', 'id')
                             ->where('avaliacao_id', $avaliacao->id)
                             ->whereNull('questao_id')]
                         : ['prohibited'],
-                    'texto'        => ['required', 'string', 'max:1000'],
-                    'tipo'         => ['required', 'string', Rule::in($tipos)],
+                    'texto' => ['required', 'string', 'max:1000'],
+                    'tipo' => ['required', 'string', Rule::in($tipos)],
                     'evidencia_id' => ['nullable', 'integer', Rule::exists('evidencias', 'id')],
-                    'escala_id'    => ['nullable', 'integer', Rule::exists('escalas', 'id')],
-                    'ordem'        => ['nullable', 'integer', 'min:1', 'max:999'],
+                    'escala_id' => ['nullable', 'integer', Rule::exists('escalas', 'id')],
+                    'ordem' => ['nullable', 'integer', 'min:1', 'max:999'],
                 ],
                 [],
                 [
-                    'id'           => "questoes_adicionais.$index.id",
-                    'texto'        => "questoes_adicionais.$index.texto",
-                    'tipo'         => "questoes_adicionais.$index.tipo",
+                    'id' => "questoes_adicionais.$index.id",
+                    'texto' => "questoes_adicionais.$index.texto",
+                    'tipo' => "questoes_adicionais.$index.tipo",
                     'evidencia_id' => "questoes_adicionais.$index.evidencia_id",
-                    'escala_id'    => "questoes_adicionais.$index.escala_id",
-                    'ordem'        => "questoes_adicionais.$index.ordem",
+                    'escala_id' => "questoes_adicionais.$index.escala_id",
+                    'ordem' => "questoes_adicionais.$index.ordem",
                 ]
             );
 
@@ -583,14 +585,14 @@ class AvaliacaoController extends Controller
             }
 
             $payload = [
-                'questao_id'   => null,
+                'questao_id' => null,
                 'indicador_id' => $indicadorId,
-                'escala_id'    => $dados['escala_id'] ?? null,
+                'escala_id' => $dados['escala_id'] ?? null,
                 'evidencia_id' => $dados['evidencia_id'] ?? null,
-                'texto'        => $dados['texto'],
-                'tipo'         => $dados['tipo'],
-                'ordem'        => $dados['ordem'] ?? null,
-                'fixa'         => false,
+                'texto' => $dados['texto'],
+                'tipo' => $dados['tipo'],
+                'ordem' => $dados['ordem'] ?? null,
+                'fixa' => false,
             ];
 
             if ($questaoId && $existentes->has($questaoId)) {
@@ -615,16 +617,16 @@ class AvaliacaoController extends Controller
         $anonRule = $avaliacaoId ? ['prohibited'] : ['sometimes', 'boolean'];
 
         $dados = $request->validate([
-            'inscricao_id'          => ['nullable', Rule::exists('inscricaos', 'id')],
-            'atividade_id'          => ['required', Rule::exists('atividades', 'id')],
+            'inscricao_id' => ['nullable', Rule::exists('inscricaos', 'id')],
+            'atividade_id' => ['required', Rule::exists('atividades', 'id')],
             'template_avaliacao_id' => ['required', Rule::exists('template_avaliacaos', 'id')],
-            'respostas'             => ['nullable', 'array'],
-            'anonima'               => $anonRule,
+            'respostas' => ['nullable', 'array'],
+            'anonima' => $anonRule,
         ]);
 
         $resultado = [
-            'inscricao_id'          => $dados['inscricao_id'] ?? null,
-            'atividade_id'          => $dados['atividade_id'],
+            'inscricao_id' => $dados['inscricao_id'] ?? null,
+            'atividade_id' => $dados['atividade_id'],
             'template_avaliacao_id' => $dados['template_avaliacao_id'],
         ];
 
@@ -636,7 +638,7 @@ class AvaliacaoController extends Controller
     }
 
     /**
-     * @param \Illuminate\Support\Collection<int,\App\Models\Questao> $questoesTemplate
+     * @param  Collection<int,Questao>  $questoesTemplate
      * @return array<int, array{texto?: string|null}>
      */
     private function validarQuestoesPersonalizadas(Request $request, Collection $questoesTemplate): array
@@ -664,12 +666,12 @@ class AvaliacaoController extends Controller
 
         foreach ($dados['questoes'] ?? [] as $questaoId => $config) {
             $resultado[$questaoId] = [
-                'texto'        => $config['texto'] ?? null,
-                'tipo'         => isset($config['tipo']) && $config['tipo'] !== '' ? $config['tipo'] : null,
+                'texto' => $config['texto'] ?? null,
+                'tipo' => isset($config['tipo']) && $config['tipo'] !== '' ? $config['tipo'] : null,
                 'evidencia_id' => array_key_exists('evidencia_id', $config) && $config['evidencia_id'] !== ''
                     ? (int) $config['evidencia_id']
                     : null,
-                'escala_id'    => array_key_exists('escala_id', $config) && $config['escala_id'] !== ''
+                'escala_id' => array_key_exists('escala_id', $config) && $config['escala_id'] !== ''
                     ? (int) $config['escala_id']
                     : null,
             ];
@@ -679,8 +681,8 @@ class AvaliacaoController extends Controller
     }
 
     /**
-     * @param \Illuminate\Support\Collection<int,\App\Models\Questao> $questoesTemplate
-     * @return \Illuminate\Support\Collection<int,\App\Models\AvaliacaoQuestao>
+     * @param  Collection<int,Questao>  $questoesTemplate
+     * @return Collection<int,AvaliacaoQuestao>
      */
     private function sincronizaQuestoesPersonalizadas(
         Avaliacao $avaliacao,
@@ -758,14 +760,14 @@ class AvaliacaoController extends Controller
             }
 
             $payload = [
-                'questao_id'   => $questao->id,
+                'questao_id' => $questao->id,
                 'indicador_id' => $indicadorId,
-                'escala_id'    => $escalaId,
+                'escala_id' => $escalaId,
                 'evidencia_id' => $questao->fixa ? $questao->evidencia_id : $evidenciaId,
-                'texto'        => $texto,
-                'tipo'         => $tipo,
-                'ordem'        => $questao->ordem,
-                'fixa'         => (bool) $questao->fixa,
+                'texto' => $texto,
+                'tipo' => $tipo,
+                'ordem' => $questao->ordem,
+                'fixa' => (bool) $questao->fixa,
             ];
 
             if ($recriar || ! $existentes->has($questao->id)) {
@@ -792,10 +794,10 @@ class AvaliacaoController extends Controller
     public function tiposQuestao(): array
     {
         return [
-            'texto'  => 'Texto aberto',
+            'texto' => 'Texto aberto',
             'escala' => 'Escala',
             'numero' => 'Numero',
-            'boolean'=> 'Sim/Nao',
+            'boolean' => 'Sim/Nao',
         ];
     }
 
@@ -804,8 +806,8 @@ class AvaliacaoController extends Controller
         return $evidencias
             ->mapWithKeys(fn ($evidencia) => [
                 $evidencia->id => ($evidencia->indicador && $evidencia->indicador->dimensao
-                        ? $evidencia->indicador->dimensao->descricao . ' - '
-                        : '') . ($evidencia->indicador->descricao ?? '') . ' | ' . $evidencia->descricao,
+                        ? $evidencia->indicador->dimensao->descricao.' - '
+                        : '').($evidencia->indicador->descricao ?? '').' | '.$evidencia->descricao,
             ])
             ->sort(SORT_NATURAL | SORT_FLAG_CASE)
             ->toArray();
@@ -922,13 +924,14 @@ class AvaliacaoController extends Controller
     {
         if ($questao->tipo === 'escala') {
             $valores = $questao->escala?->valores ?? [];
+
             return empty($valores) ? ['nullable', 'string'] : ['nullable', Rule::in($valores)];
         }
 
         return match ($questao->tipo) {
-            'numero'  => ['nullable', 'numeric'],
+            'numero' => ['nullable', 'numeric'],
             'boolean' => ['nullable', Rule::in(['0', '1'])],
-            default   => ['nullable', 'string', 'max:2000'],
+            default => ['nullable', 'string', 'max:2000'],
         };
     }
 
@@ -994,18 +997,19 @@ class AvaliacaoController extends Controller
         ]);
     }
 
-     /**
+    /**
      * Listagem anónima das respostas de participantes para um Momento (Atividade).
      * Nunca expõe nome, e-mail ou qualquer dado identificador do participante.
      */
-    public function resultadosAtividade(Atividade $atividade)
+    public function resultadosAtividade(Atividade $atividade, AvaliacaoRespostasDashboardService $avaliacaoRespostas)
     {
         $this->authorize('update', $atividade->evento);
 
         $atividade->load(['evento', 'municipios']);
 
         $avaliacao = $atividade->avaliacoes()
-            ->with(['avaliacaoQuestoes.escala'])
+            ->with(['avaliacaoQuestoes.escala', 'templateAvaliacao'])
+            ->orderByDesc('id')
             ->first();
 
         if (! $avaliacao) {
@@ -1020,6 +1024,62 @@ class AvaliacaoController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('avaliacoes.resultados_atividade', compact('atividade', 'avaliacao', 'submissoes'));
+        $filterRequest = Request::create('/dashboards/avaliacoes/dados', 'GET', [
+            'atividade_id' => $atividade->id,
+        ]);
+        $payload = $avaliacaoRespostas->buildDashboardPayload($filterRequest);
+
+        $submissoesComRespostas = $submissoes->filter(fn ($s) => $s->respostas->isNotEmpty())->count();
+
+        return view('avaliacoes.resultados_atividade', [
+            'atividade' => $atividade,
+            'avaliacao' => $avaliacao,
+            'submissoes' => $submissoes,
+            'totais' => $payload['totais'],
+            'perguntas' => $payload['perguntas'],
+            'submissoesComRespostas' => $submissoesComRespostas,
+        ]);
+    }
+
+    /**
+     * PDF agregado das respostas do momento (mesma lógica do dashboard de avaliações, barras horizontais no layout).
+     */
+    public function downloadResultadosPdf(Atividade $atividade, AvaliacaoRespostasDashboardService $avaliacaoRespostas)
+    {
+        $this->authorize('update', $atividade->evento);
+
+        $atividade->load(['evento', 'municipios.estado']);
+
+        $avaliacao = $atividade->avaliacoes()
+            ->with(['templateAvaliacao', 'avaliacaoQuestoes.escala'])
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $avaliacao) {
+            return redirect()
+                ->route('eventos.show', $atividade->evento_id)
+                ->with('info', 'Nenhum formulário de avaliação configurado para este momento.');
+        }
+
+        $filterRequest = Request::create('/dashboards/avaliacoes/dados', 'GET', [
+            'atividade_id' => $atividade->id,
+        ]);
+
+        $payload = $avaliacaoRespostas->buildDashboardPayload($filterRequest);
+
+        $fileSlug = Str::slug($atividade->descricao ?: 'momento');
+        $fileName = 'avaliacoes-momento-'.$atividade->id.'-'.$fileSlug.'-'.now()->format('Ymd_His').'.pdf';
+
+        $pdf = Pdf::loadView('avaliacoes.resultados_atividade_pdf', [
+            'atividade' => $atividade,
+            'avaliacao' => $avaliacao,
+            'totais' => $payload['totais'],
+            'perguntas' => $payload['perguntas'],
+            'geradoEm' => now(),
+        ]);
+
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->download($fileName);
     }
 }

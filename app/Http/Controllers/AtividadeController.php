@@ -8,13 +8,18 @@ use App\Models\Inscricao;
 use App\Models\Municipio;
 use App\Models\Participante;
 use App\Models\Presenca;
+use App\Pdf\AutorizacaoDeImagem\ListaAutorizacaoImagem;
+use App\Pdf\ListaDePresenca\ListaPresencaFactory;
+use App\Support\CargaHoraria;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class AtividadeController extends Controller
 {
     use AuthorizesRequests;
+
     public function index(Evento $evento)
     {
         $userId = auth()->id();
@@ -22,11 +27,12 @@ class AtividadeController extends Controller
         $atividades = $evento->atividades()
             ->with([
                 'municipios.estado',
-                'avaliacaoAtividades' => fn($rel) => $rel->when($userId, fn($query) => $query->where('user_id', $userId)),
+                'avaliacaoAtividades' => fn ($rel) => $rel->when($userId, fn ($query) => $query->where('user_id', $userId)),
             ])
-            ->orderBy('dia')
-            ->orderBy('hora_inicio')
+            ->orderByDesc('dia')
+            ->orderByDesc('hora_inicio')
             ->paginate(12);
+
         return view('atividades.index', compact('evento', 'atividades'));
     }
 
@@ -38,7 +44,7 @@ class AtividadeController extends Controller
         if (is_string($marcadosRaw)) {
             $marcadosRaw = $marcadosRaw === '' ? [] : explode(',', $marcadosRaw);
         }
-        if (!is_array($marcadosRaw)) {
+        if (! is_array($marcadosRaw)) {
             $marcadosRaw = [];
         }
 
@@ -50,29 +56,32 @@ class AtividadeController extends Controller
                 $regiao = $m->estado->regiao->nome ?? '';
                 $regiaoLower = mb_strtolower(trim($regiao));
                 $ordemRegiao = match ($regiaoLower) {
-                    'nordeste i', 'nordeste 1'  => 1,
+                    'nordeste i', 'nordeste 1' => 1,
                     'nordeste ii', 'nordeste 2' => 2,
-                    'norte'                     => 3,
-                    default                     => 9,
+                    'norte' => 3,
+                    default => 9,
                 };
+
                 return sprintf('%02d-%s', $ordemRegiao, $m->nome);
             })
             ->values();
 
         $atividadesCopiaveis = $this->listarAtividadesCopiaveis();
 
-        return view('atividades.create', compact('evento', 'municipios', 'atividadesCopiaveis', 'marcadosPlanejamento'));
+        $municipiosJson = $this->municipiosParaSelecaoJson($municipios);
+
+        return view('atividades.create', compact('evento', 'municipios', 'municipiosJson', 'atividadesCopiaveis', 'marcadosPlanejamento'));
     }
 
     public function saveChecklist(Request $request, Atividade $atividade)
     {
         $request->validate([
-            'tipo'   => 'required|in:planejamento,encerramento',
-            'itens'  => 'nullable|array',
-            'itens.*'=> 'integer|min:0',
+            'tipo' => 'required|in:planejamento,encerramento',
+            'itens' => 'nullable|array',
+            'itens.*' => 'integer|min:0',
         ]);
 
-        $campo = 'checklist_' . $request->tipo;
+        $campo = 'checklist_'.$request->tipo;
         $atividade->$campo = $this->normalizarChecklistIndices($request->input('itens', []));
         $atividade->save();
 
@@ -84,23 +93,30 @@ class AtividadeController extends Controller
         $this->authorize('atividade.criar');
 
         $dados = $request->validate([
-            'municipios'          => 'nullable|array',
-            'municipios.*'        => 'exists:municipios,id',
-            'descricao'           => 'required|string',
-            'dia'                 => 'required|date',
-            'hora_inicio'         => 'required|date_format:H:i',
-            'hora_fim'            => 'required|date_format:H:i|after:hora_inicio',
-            'publico_esperado'    => 'nullable|integer|min:0',
-            'carga_horaria'       => 'nullable|integer|min:0',
+            'municipios' => 'nullable|array',
+            'municipios.*' => 'exists:municipios,id',
+            'descricao' => 'required|string',
+            'dia' => 'required|date',
+            'hora_inicio' => 'required|date_format:H:i',
+            'hora_fim' => 'required|date_format:H:i|after:hora_inicio',
+            'publico_esperado' => 'nullable|integer|min:0',
+            'carga_horas' => 'nullable|integer|min:0',
+            'carga_minutos' => 'nullable|integer|min:0|max:59',
             'copiar_inscritos_de' => 'nullable|exists:atividades,id',
-            'checklist_planejamento'      => 'nullable|array',
-            'checklist_planejamento.*'    => 'integer|min:0',
-            'checklist_encerramento'      => 'nullable|array',
-            'checklist_encerramento.*'    => 'integer|min:0',
+            'checklist_planejamento' => 'nullable|array',
+            'checklist_planejamento.*' => 'integer|min:0',
+            'checklist_encerramento' => 'nullable|array',
+            'checklist_encerramento.*' => 'integer|min:0',
         ]);
 
         $copiarDe = $dados['copiar_inscritos_de'] ?? null;
         unset($dados['copiar_inscritos_de']);
+
+        $dados['carga_horaria'] = CargaHoraria::totalMinutosFromPartes(
+            (int) ($dados['carga_horas'] ?? 0),
+            (int) ($dados['carga_minutos'] ?? 0)
+        );
+        unset($dados['carga_horas'], $dados['carga_minutos']);
 
         $dados['checklist_planejamento'] = $this->normalizarChecklistIndices($dados['checklist_planejamento'] ?? []);
         $dados['checklist_encerramento'] = $this->normalizarChecklistIndices($dados['checklist_encerramento'] ?? []);
@@ -116,8 +132,8 @@ class AtividadeController extends Controller
         $copiados = $this->copiarInscritos($copiarDe, $atividade);
 
         return redirect()
-        ->route('eventos.show', $evento)
-        ->with('success', 'Momento criado com sucesso!');
+            ->route('eventos.show', $evento)
+            ->with('success', 'Momento criado com sucesso!');
     }
 
     public function edit(Atividade $atividade)
@@ -133,18 +149,21 @@ class AtividadeController extends Controller
                 $regiao = $m->estado->regiao->nome ?? '';
                 $regiaoLower = mb_strtolower(trim($regiao));
                 $ordemRegiao = match ($regiaoLower) {
-                    'nordeste i', 'nordeste 1'  => 1,
+                    'nordeste i', 'nordeste 1' => 1,
                     'nordeste ii', 'nordeste 2' => 2,
-                    'norte'                     => 3,
-                    default                     => 9,
+                    'norte' => 3,
+                    default => 9,
                 };
+
                 return sprintf('%02d-%s', $ordemRegiao, $m->nome);
             })
             ->values();
 
         $atividadesCopiaveis = $this->listarAtividadesCopiaveis($atividade);
 
-        return view('atividades.edit', compact('evento', 'atividade', 'municipios', 'atividadesCopiaveis'));
+        $municipiosJson = $this->municipiosParaSelecaoJson($municipios);
+
+        return view('atividades.edit', compact('evento', 'atividade', 'municipios', 'municipiosJson', 'atividadesCopiaveis'));
     }
 
     public function update(Request $request, Atividade $atividade)
@@ -153,23 +172,30 @@ class AtividadeController extends Controller
         $this->authorize('atividade.editar');
 
         $dados = $request->validate([
-            'municipios'          => 'nullable|array',
-            'municipios.*'        => 'exists:municipios,id',
-            'descricao'           => 'required|string',
-            'dia'                 => 'required|date',
-            'hora_inicio'         => 'required|date_format:H:i',
-            'hora_fim'            => 'required|date_format:H:i|after:hora_inicio',
-            'publico_esperado'    => 'nullable|integer|min:0',
-            'carga_horaria'       => 'nullable|integer|min:0',
+            'municipios' => 'nullable|array',
+            'municipios.*' => 'exists:municipios,id',
+            'descricao' => 'required|string',
+            'dia' => 'required|date',
+            'hora_inicio' => 'required|date_format:H:i',
+            'hora_fim' => 'required|date_format:H:i|after:hora_inicio',
+            'publico_esperado' => 'nullable|integer|min:0',
+            'carga_horas' => 'nullable|integer|min:0',
+            'carga_minutos' => 'nullable|integer|min:0|max:59',
             'copiar_inscritos_de' => 'nullable|exists:atividades,id',
-            'checklist_planejamento'      => 'nullable|array',
-            'checklist_planejamento.*'    => 'integer|min:0',
-            'checklist_encerramento'      => 'nullable|array',
-            'checklist_encerramento.*'    => 'integer|min:0',
+            'checklist_planejamento' => 'nullable|array',
+            'checklist_planejamento.*' => 'integer|min:0',
+            'checklist_encerramento' => 'nullable|array',
+            'checklist_encerramento.*' => 'integer|min:0',
         ]);
 
         $copiarDe = $dados['copiar_inscritos_de'] ?? null;
         unset($dados['copiar_inscritos_de']);
+
+        $dados['carga_horaria'] = CargaHoraria::totalMinutosFromPartes(
+            (int) ($dados['carga_horas'] ?? 0),
+            (int) ($dados['carga_minutos'] ?? 0)
+        );
+        unset($dados['carga_horas'], $dados['carga_minutos']);
 
         $dados['checklist_planejamento'] = $this->normalizarChecklistIndices($dados['checklist_planejamento'] ?? []);
         $dados['checklist_encerramento'] = $this->normalizarChecklistIndices($dados['checklist_encerramento'] ?? []);
@@ -197,12 +223,35 @@ class AtividadeController extends Controller
         return back()->with('success', 'Momento removida.');
     }
 
+    /**
+     * Dados dos municípios para o seletor: apenas o nome no município; UF e região por associação.
+     *
+     * @param  Collection<int, Municipio>  $municipios
+     * @return array<int, array{id: string, nome: string, estado: array{sigla: string, nome: string}, regiao: array{nome: string}}>
+     */
+    private function municipiosParaSelecaoJson($municipios): array
+    {
+        return $municipios->map(function (Municipio $m) {
+            return [
+                'id' => (string) $m->id,
+                'nome' => $m->nome,
+                'estado' => [
+                    'sigla' => $m->estado->sigla ?? '',
+                    'nome' => $m->estado->nome ?? '',
+                ],
+                'regiao' => [
+                    'nome' => $m->estado->regiao->nome ?? '',
+                ],
+            ];
+        })->values()->all();
+    }
+
     private function normalizarChecklistIndices(array $itens): array
     {
         return array_values(array_unique(array_map('intval', $itens)));
     }
 
-    public function show(\App\Models\Atividade $atividade)
+    public function show(Atividade $atividade)
     {
         $atividade->load(['evento', 'municipios.estado']);
 
@@ -216,7 +265,7 @@ class AtividadeController extends Controller
             ->withQueryString();
         $user = auth()->user();
         $podeImportar = $user?->can('presenca.import') ?? false;
-        $podeAbrir    = $user?->can('presenca.abrir')   ?? false;
+        $podeAbrir = $user?->can('presenca.abrir') ?? false;
 
         return view('atividades.show', compact('atividade', 'presencas', 'podeImportar', 'podeAbrir'));
     }
@@ -261,19 +310,19 @@ class AtividadeController extends Controller
 
         if ($inscricao) {
             $inscricao->fill([
-                'evento_id'       => $evento->id,
-                'atividade_id'    => $atividade->id,
+                'evento_id' => $evento->id,
+                'atividade_id' => $atividade->id,
                 'participante_id' => $participante->id,
-                'ouvinte'         => $inscricao->atividade_id === $atividade->id ? $inscricao->ouvinte : true,
+                'ouvinte' => $inscricao->atividade_id === $atividade->id ? $inscricao->ouvinte : true,
             ]);
             $inscricao->deleted_at = null;
             $inscricao->save();
         } else {
             $inscricao = Inscricao::create([
-                'evento_id'       => $evento->id,
-                'atividade_id'    => $atividade->id,
+                'evento_id' => $evento->id,
+                'atividade_id' => $atividade->id,
                 'participante_id' => $participante->id,
-                'ouvinte'         => true,
+                'ouvinte' => true,
             ]);
         }
 
@@ -291,7 +340,7 @@ class AtividadeController extends Controller
         return Atividade::with('evento')
             ->withCount('inscricoes')
             ->whereHas('inscricoes')
-            ->when($ignorar, fn($q) => $q->where('id', '!=', $ignorar->id))
+            ->when($ignorar, fn ($q) => $q->where('id', '!=', $ignorar->id))
             ->orderByDesc('dia')
             ->orderBy('hora_inicio')
             ->get();
@@ -299,12 +348,12 @@ class AtividadeController extends Controller
 
     private function copiarInscritos(?int $origemId, Atividade $destino): int
     {
-        if (!$origemId || $origemId === $destino->id) {
+        if (! $origemId || $origemId === $destino->id) {
             return 0;
         }
 
         $origem = Atividade::find($origemId);
-        if (!$origem) {
+        if (! $origem) {
             return 0;
         }
 
@@ -327,14 +376,15 @@ class AtividadeController extends Controller
                     $copiados++;
                 }
                 $existente->save();
+
                 continue;
             }
 
             Inscricao::create([
-                'evento_id'       => $destino->evento_id,
-                'atividade_id'    => $destino->id,
+                'evento_id' => $destino->evento_id,
+                'atividade_id' => $destino->id,
                 'participante_id' => $inscricao->participante_id,
-                'ouvinte'         => false,
+                'ouvinte' => false,
             ]);
             $copiados++;
         }
@@ -349,25 +399,26 @@ class AtividadeController extends Controller
         }
 
         $sufixo = $copiados === 1 ? ' 1 inscrito copiado.' : " {$copiados} inscritos copiados.";
-        return $mensagem . $sufixo;
+
+        return $mensagem.$sufixo;
     }
 
     public function downloadListaPresencaPdf(Request $request, Atividade $atividade)
     {
         $this->authorize('presenca.abrir');
 
-        //o default para evitar erros é assessoria
+        // o default para evitar erros é assessoria
         $tipoTemplate = $request->query('tipo', 'assessoria');
 
-        //puxa os dados
+        // puxa os dados
         $inscritos = $atividade->inscricoes()->with([
             'participante.user',
-            'participante.municipio.estado'
+            'participante.municipio.estado',
         ])->get()->pluck('participante');
 
         $presentes = $atividade->presencas()->with([
             'inscricao.participante.user',
-            'inscricao.participante.municipio.estado'
+            'inscricao.participante.municipio.estado',
         ])->get()->pluck('inscricao.participante');
 
         $participantes = $inscritos->concat($presentes)
@@ -375,55 +426,57 @@ class AtividadeController extends Controller
             ->unique('id')
             ->sortBy(function ($participante) {
                 $nome = mb_strtolower($participante->user->name ?? '');
-                return \Illuminate\Support\Str::ascii($nome);
+
+                return Str::ascii($nome);
             })->values();
 
         try {
-            $estrategia = \App\Pdf\ListaDePresenca\ListaPresencaFactory::criar($tipoTemplate);
+            $estrategia = ListaPresencaFactory::criar($tipoTemplate);
             $conteudoPdf = $estrategia->gerarPdf($atividade, $participantes);
 
-            $fileName = 'Lista_Presenca_' . Str::slug($atividade->descricao) . '.pdf';
+            $fileName = 'Lista_Presenca_'.Str::slug($atividade->descricao).'.pdf';
 
             return response($conteudoPdf, 200)
                 ->header('Content-Type', 'application/pdf')
-                ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
+                ->header('Content-Disposition', 'attachment; filename="'.$fileName.'"');
 
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
     }
 
-    public function downloadListaAutorizacaoImagemPdf(\App\Models\Atividade $atividade)
+    public function downloadListaAutorizacaoImagemPdf(Atividade $atividade)
     {
         $this->authorize('presenca.abrir');
 
-        //logica do codigo alterada para puxar de inscrição e presença
+        // logica do codigo alterada para puxar de inscrição e presença
         $inscritos = $atividade->inscricoes()->with([
             'participante.user',
-            'participante.municipio.estado'
+            'participante.municipio.estado',
         ])->get()->pluck('participante');
 
         $presentes = $atividade->presencas()->with([
             'inscricao.participante.user',
-            'inscricao.participante.municipio.estado'
+            'inscricao.participante.municipio.estado',
         ])->get()->pluck('inscricao.participante');
 
-        //unifica e ordena as incrições e presenças, tirando duplicações por id
+        // unifica e ordena as incrições e presenças, tirando duplicações por id
         $participantes = $inscritos->concat($presentes)
             ->filter()
             ->unique('id')
             ->sortBy(function ($participante) {
                 $nome = mb_strtolower($participante->user->name ?? '');
-                return \Illuminate\Support\Str::ascii($nome);
+
+                return Str::ascii($nome);
             })->values();
 
         $templatePath = storage_path('app/templates/base_lista_autorizacao.pdf');
 
-        if (!file_exists($templatePath)) {
+        if (! file_exists($templatePath)) {
             return back()->with('error', 'O template base em PDF não foi encontrado.');
         }
 
-        $pdf = new \App\Pdf\AutorizacaoDeImagem\ListaAutorizacaoImagem();
+        $pdf = new ListaAutorizacaoImagem;
         $pdf->setBaseTemplate($templatePath);
 
         $pdf->SetMargins(10, 10, 10);
@@ -446,27 +499,26 @@ class AtividadeController extends Controller
                     $nome = substr($nome, 0, -1);
                 }
 
-                //formatando o CPF
+                // formatando o CPF
                 $cpfSujo = $inscricao->participante->cpf ?? '';
                 $cpfLimpo = preg_replace('/[^0-9]/', '', $cpfSujo);
                 if (strlen($cpfLimpo) === 11) {
-                    $cpfFormatado = preg_replace("/(\d{3})(\d{3})(\d{3})(\d{2})/", "\$1.\$2.\$3-\$4", $cpfLimpo);
+                    $cpfFormatado = preg_replace("/(\d{3})(\d{3})(\d{3})(\d{2})/", '$1.$2.$3-$4', $cpfLimpo);
                 } else {
                     $cpfFormatado = $cpfSujo ?: '';
                 }
                 $cpf = utf8_decode($cpfFormatado);
 
-
                 $pdf->Cell(8, 8, $contador++, 1, 0, 'C');
-                $pdf->Cell(90, 8, $nome, 1, 0, 'L');          //nome
-                $pdf->Cell(45, 8, $cpf, 1, 0, 'C');           //CPF
-                $pdf->Cell(47, 8, '', 1, 1, 'C');         //assinatura (em branco)
+                $pdf->Cell(90, 8, $nome, 1, 0, 'L');          // nome
+                $pdf->Cell(45, 8, $cpf, 1, 0, 'C');           // CPF
+                $pdf->Cell(47, 8, '', 1, 1, 'C');         // assinatura (em branco)
             }
         }
-        $fileName = 'Lista_Autorizacao_' . \Illuminate\Support\Str::slug($atividade->descricao) . '.pdf';
+        $fileName = 'Lista_Autorizacao_'.Str::slug($atividade->descricao).'.pdf';
 
         return response($pdf->Output('S'), 200)
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
+            ->header('Content-Disposition', 'attachment; filename="'.$fileName.'"');
     }
 }

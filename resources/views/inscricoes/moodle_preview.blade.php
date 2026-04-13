@@ -98,7 +98,7 @@
         id="moodle-confirm-form"
         method="POST"
         action="{{ route('inscricoes.moodle.confirm', $evento) }}"
-        data-has-new-users="{{ $newUsers->isNotEmpty() ? '1' : '0' }}">
+        data-has-not-found="{{ $newUsers->isNotEmpty() ? '1' : '0' }}">
         @csrf
         <input type="hidden" name="session_key" value="{{ $sessionKey }}">
         <button class="btn btn-primary" {{ $errorsList->isNotEmpty() ? 'disabled' : '' }}>
@@ -146,8 +146,8 @@
     <div class="col-md-3">
       <div class="card border-0 shadow-sm">
         <div class="card-body">
-          <div class="text-muted small">Usuários novos no Engaja</div>
-          <div class="fs-4 fw-semibold {{ ($resumo['new_users_count'] ?? 0) > 0 ? 'text-warning' : 'text-success' }}">
+          <div class="text-muted small">Não encontrados no Engaja</div>
+          <div class="fs-4 fw-semibold {{ ($resumo['new_users_count'] ?? 0) > 0 ? 'text-danger' : 'text-success' }}">
             {{ $resumo['new_users_count'] ?? 0 }}
           </div>
         </div>
@@ -166,13 +166,14 @@
   @endif
 
   @if($newUsers->isNotEmpty())
-  <div class="card border-warning shadow-sm mb-3">
-    <div class="card-header bg-warning-subtle text-warning-emphasis fw-semibold">
-      Usuários que serão cadastrados agora (não encontrados no Engaja)
+  <div class="card border-danger shadow-sm mb-3">
+    <div class="card-header bg-danger-subtle text-danger-emphasis fw-semibold">
+      ⚠️ Pessoas não encontradas no Engaja — serão ignoradas na importação
     </div>
     <div class="card-body">
       <p class="mb-2">
-        Foram encontrados <strong>{{ $newUsers->count() }}</strong> usuário(s) da planilha sem cadastro prévio no Engaja.
+        Foram encontrados <strong>{{ $newUsers->count() }}</strong> pessoa(s) da planilha sem cadastro no Engaja.
+        <strong class="text-danger">Estas pessoas NÃO serão inseridas para criação de certificado.</strong>
       </p>
       <div class="table-responsive">
         <table class="table table-sm mb-0 align-middle">
@@ -251,7 +252,7 @@
           @forelse($momentos as $momento)
           <tr>
             <td>{{ $momento['nome'] }}</td>
-            <td>{{ $momento['carga_horaria'] ?? '—' }}</td>
+            <td>{{ isset($momento['carga_horaria']) && is_int($momento['carga_horaria']) ? \App\Support\CargaHoraria::formatMinutos((int) $momento['carga_horaria']) : '—' }}</td>
             <td>{{ !empty($momento['em_participantes']) ? 'Sim' : 'Não' }}</td>
             <td>{{ !empty($momento['em_cargas']) ? 'Sim' : 'Não' }}</td>
           </tr>
@@ -302,28 +303,43 @@
   </div>
 </div>
 
+{{-- Modal de confirmação quando existem pessoas não encontradas --}}
 @if($newUsers->isNotEmpty() && $errorsList->isEmpty())
-<div class="modal fade" id="newUsersWarningModal" tabindex="-1" aria-labelledby="newUsersWarningModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable new-users-modal">
+<div class="modal fade" id="moodleNotFoundModal" tabindex="-1" aria-labelledby="moodleNotFoundModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable new-users-modal">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="newUsersWarningModalLabel">Atenção: novos usuários serão cadastrados</h5>
+      <div class="modal-header bg-warning-subtle">
+        <h5 class="modal-title text-warning-emphasis" id="moodleNotFoundModalLabel">⚠️ Pessoas não encontradas no Engaja</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
       <div class="modal-body">
         <p class="mb-2">
-          <strong>{{ $newUsers->count() }}</strong> usuário(s) da planilha não existem no Engaja e serão cadastrados agora.
+          <strong>{{ $newUsers->count() }}</strong> pessoa(s) da planilha não possuem cadastro no Engaja e
+          <strong class="text-danger">NÃO serão inseridas para criação de certificado</strong>.
         </p>
-        <p class="mb-2">Nomes:</p>
-        <ul class="mb-0 new-users-list">
-          @foreach($newUsers as $newUser)
-          <li>{{ $newUser['nome'] }} ({{ $newUser['email'] }})</li>
-          @endforeach
-        </ul>
+        <p class="mb-3 text-muted small">A importação continuará normalmente para os demais participantes encontrados.</p>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Nome</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach($newUsers as $newUser)
+              <tr>
+                <td>{{ $newUser['nome'] }}</td>
+                <td>{{ $newUser['email'] }}</td>
+              </tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Revisar</button>
-        <button type="button" class="btn btn-primary btn-sm" id="new-users-confirm-proceed">Salvar</button>
+        <button type="button" class="btn btn-primary" id="moodle-not-found-confirm-proceed">OK, Confirmar importação</button>
       </div>
     </div>
   </div>
@@ -332,10 +348,10 @@
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('moodle-confirm-form');
-    const proceedBtn = document.getElementById('new-users-confirm-proceed');
-    const modalElement = document.getElementById('newUsersWarningModal');
+    const proceedBtn = document.getElementById('moodle-not-found-confirm-proceed');
+    const modalElement = document.getElementById('moodleNotFoundModal');
 
-    if (!form || !modalElement || form.dataset.hasNewUsers !== '1') {
+    if (!form || !modalElement || form.dataset.hasNotFound !== '1') {
       return;
     }
 
@@ -354,7 +370,7 @@
         return;
       }
 
-      const fallbackConfirm = window.confirm('Existem usuários novos que serão cadastrados agora. Deseja continuar?');
+      const fallbackConfirm = window.confirm('Existem pessoas não encontradas no Engaja que serão ignoradas na importação. Deseja continuar?');
       if (fallbackConfirm) {
         allowSubmit = true;
         form.submit();

@@ -33,6 +33,7 @@ class UserManagementRequest extends FormRequest
             'escola_unidade'   => $toNull(isset($this->escola_unidade) ? trim((string)$this->escola_unidade) : null),
             'tipo_organizacao' => $toNull(isset($this->tipo_organizacao) ? trim((string)$this->tipo_organizacao) : null),
             'tag'              => $toNull(isset($this->tag) ? trim((string)$this->tag) : null),
+            'autorizacao_imagem' => $this->boolean('autorizacao_imagem'),
         ]);
     }
 
@@ -57,6 +58,7 @@ class UserManagementRequest extends FormRequest
             'escola_unidade'   => ['nullable','string','max:255'],
             'tipo_organizacao' => ['nullable','string','max:255', Rule::in(config('engaja.organizacoes', []))],
             'tag'              => ['nullable', Rule::in(Participante::TAGS)],
+            'autorizacao_imagem' => ['boolean'],
 
             //campos demograficos
             'identidade_genero'            => ['nullable', 'string', Rule::in(['Mulher Cisgênero', 'Mulher Transsexual', 'Homem Cisgênero', 'Homem Transsexual', 'Travesti', 'Não binárie', 'Prefiro não responder', 'Outro'])],
@@ -160,7 +162,7 @@ class UserManagementRequest extends FormRequest
     private function assignableRoleNames(): array
     {
 
-        $rolesToExclude = array_merge(['administrador'], self::LEGACY_ROLES);
+        $rolesToExclude = self::LEGACY_ROLES;
 
         return Role::whereNotIn('name', $rolesToExclude)
             ->pluck('name')

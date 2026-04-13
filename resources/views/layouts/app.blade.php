@@ -57,7 +57,9 @@
     }
 
     .admin-sidebar {
-      width: 300px;
+      flex: 0 0 auto;
+      width: max-content;
+      min-width: 300px;
       background: linear-gradient(180deg, #421944 0%, #2c1230 100%);
       color: #f5f3ff;
       min-height: 100vh;
@@ -72,7 +74,6 @@
       z-index: 1030;
       transition: transform .3s ease;
       overflow-y: auto;
-      overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
     }
 
@@ -157,7 +158,7 @@
       width: 100%;
       max-width: 100%;
       box-sizing: border-box;
-      overflow: hidden;
+      overflow: visible;
     }
 
     .admin-nav-link.btn {
@@ -198,7 +199,9 @@
     }
 
     .admin-nav-text {
+      flex: 0 0 auto;
       white-space: nowrap;
+      line-height: 1.2;
     }
 
     .admin-topbar {
@@ -273,6 +276,18 @@
 
     .admin-shell.is-collapsed .admin-sidebar {
       width: 86px;
+      min-width: 0;
+      max-width: 86px;
+      flex: 0 0 86px;
+      box-sizing: border-box;
+      align-items: center;
+      padding-left: 0.45rem;
+      padding-right: 0.45rem;
+      overflow-x: hidden;
+    }
+
+    .admin-shell.is-collapsed .admin-sidebar__section {
+      justify-items: center;
     }
 
     .admin-shell.is-collapsed .admin-nav-text,
@@ -283,14 +298,6 @@
 
     .admin-shell.is-collapsed .admin-sidebar__logo {
       height: 34px;
-    }
-
-    .admin-shell.is-collapsed .admin-nav-link {
-      justify-content: center;
-    }
-
-    .admin-shell.is-collapsed .admin-nav-icon {
-      margin: 0;
     }
 
     .admin-shell.is-collapsed .admin-topbar {
@@ -316,11 +323,24 @@
     }
 
     .admin-shell.is-collapsed .admin-nav-link {
-      padding: .55rem;
+      padding: .55rem .35rem;
       justify-content: center;
+      width: auto;
+      max-width: 100%;
+    }
+
+    .admin-shell.is-collapsed .admin-sidebar form {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .admin-shell.is-collapsed .admin-nav-link.btn.w-100 {
+      width: auto !important;
     }
 
     .admin-shell.is-collapsed .admin-nav-icon {
+      margin: 0;
       width: 38px;
       height: 38px;
     }
@@ -390,12 +410,12 @@
               </svg>
             </button>
             <div>
-              <div class="text-uppercase text-muted small fw-semibold mb-0">Area interna</div>
+              <div class="text-uppercase text-muted small fw-semibold mb-0">Área interna</div>
               <p class="admin-topbar__title fw-bold mb-0">Painel Engaja</p>
             </div>
           </div>
           <div class="d-flex align-items-center gap-3">
-            <span class="text-muted small d-none d-md-inline">Ola, {{ Auth::user()->name }}</span>
+            <span class="text-muted small d-none d-md-inline">Olá, {{ Auth::user()->name }}</span>
             <div class="dropdown">
               <button class="btn btn-light border dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 @if (Auth::user()->profile_photo_url)

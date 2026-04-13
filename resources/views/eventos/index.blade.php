@@ -104,11 +104,8 @@
                                     <a href="{{ route('eventos.show', $ev) }}" class="btn btn-sm btn-outline-primary">
                                         Ver
                                     </a>
-                                    
-                                    {{-- Atalho para o PDF --}}
-                                    <a href="{{ route('eventos.planejamento.pdf', $ev) }}" target="_blank" class="btn btn-sm btn-outline-danger" title="Baixar PDF do Planejamento">
-                                        PDF
-                                    </a>
+
+                                    <a href="{{ route('eventos.planejamento.pdf', $ev) }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-danger" title="Ver PDF">PDF</a>
 
                                     @can('update', $ev)
                                         @hasanyrole('administrador|gerente|eq_pedagogica')
@@ -140,7 +137,7 @@
     </div>
 
     @hasanyrole('administrador|gerente')
-    <form method="POST" action="{{ route('certificados.emitir') }}">
+    <form method="POST" action="{{ route('certificados.emitir.preparar') }}">
         @csrf
         <input type="hidden" name="eventos" id="eventosSelecionados">
         <div class="modal fade" id="modalEmitirCertificados" tabindex="-1" aria-hidden="true">
@@ -168,7 +165,7 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="button" class="btn btn-outline-primary" id="btn-preview-certificado" disabled>Pré-visualizar</button>
-                        <button type="submit" class="btn btn-engaja" id="btn-confirmar-emissao" disabled>Emitir agora</button>
+                        <button type="submit" class="btn btn-engaja" id="btn-confirmar-emissao" disabled>Prosseguir</button>
                     </div>
                 </div>
             </div>

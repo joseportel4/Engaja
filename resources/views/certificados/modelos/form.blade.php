@@ -78,6 +78,15 @@
       <input type="hidden" name="layout_frente[qr_x]" id="layout_frente_qr_x" value="{{ old('layout_frente.qr_x', $modelo->layout_frente['qr_x'] ?? '') }}">
       <input type="hidden" name="layout_frente[qr_y]" id="layout_frente_qr_y" value="{{ old('layout_frente.qr_y', $modelo->layout_frente['qr_y'] ?? '') }}">
       <input type="hidden" name="layout_frente[qr_size]" id="layout_frente_qr_size" value="{{ old('layout_frente.qr_size', $modelo->layout_frente['qr_size'] ?? 140) }}">
+      <input type="hidden" name="layout_frente[date_x]" id="layout_frente_date_x" value="{{ old('layout_frente.date_x', $modelo->layout_frente['date_x'] ?? '') }}">
+      <input type="hidden" name="layout_frente[date_y]" id="layout_frente_date_y" value="{{ old('layout_frente.date_y', $modelo->layout_frente['date_y'] ?? '') }}">
+      <input type="hidden" name="layout_frente[date_w]" id="layout_frente_date_w" value="{{ old('layout_frente.date_w', $modelo->layout_frente['date_w'] ?? 320) }}">
+      <input type="hidden" name="layout_frente[date_h]" id="layout_frente_date_h" value="{{ old('layout_frente.date_h', $modelo->layout_frente['date_h'] ?? '') }}">
+      <input type="hidden" name="layout_frente[date_font_family]" id="layout_frente_date_font_family" value="{{ old('layout_frente.date_font_family', $modelo->layout_frente['date_font_family'] ?? 'Arial') }}">
+      <input type="hidden" name="layout_frente[date_font_size]" id="layout_frente_date_font_size" value="{{ old('layout_frente.date_font_size', $modelo->layout_frente['date_font_size'] ?? 18) }}">
+      <input type="hidden" name="layout_frente[date_font_weight]" id="layout_frente_date_font_weight" value="{{ old('layout_frente.date_font_weight', $modelo->layout_frente['date_font_weight'] ?? 'normal') }}">
+      <input type="hidden" name="layout_frente[date_font_style]" id="layout_frente_date_font_style" value="{{ old('layout_frente.date_font_style', $modelo->layout_frente['date_font_style'] ?? 'normal') }}">
+      <input type="hidden" name="layout_frente[date_align]" id="layout_frente_date_align" value="{{ old('layout_frente.date_align', $modelo->layout_frente['date_align'] ?? 'left') }}">
 
       <input type="hidden" name="layout_verso[x]" id="layout_verso_x" value="{{ old('layout_verso.x', $modelo->layout_verso['x'] ?? '') }}">
       <input type="hidden" name="layout_verso[y]" id="layout_verso_y" value="{{ old('layout_verso.y', $modelo->layout_verso['y'] ?? '') }}">
@@ -197,8 +206,11 @@
       canvasWInputId, canvasHInputId,
       fontFamilyInputId, fontSizeInputId, fontWeightInputId, fontStyleInputId, alignInputId, stylesInputId,
       qrXInputId, qrYInputId, qrSizeInputId,
+      dateXInputId, dateYInputId, dateWInputId, dateHInputId,
+      dateFontFamilyInputId, dateFontSizeInputId, dateFontWeightInputId, dateFontStyleInputId, dateAlignInputId,
       existingUrl, toolbar,
       qrEnabled = true,
+      dateEnabled = false,
     } = opts;
 
     const canvasEl = document.getElementById(canvasId);
@@ -220,11 +232,21 @@
     const qrXInput = qrEnabled ? document.getElementById(qrXInputId) : null;
     const qrYInput = qrEnabled ? document.getElementById(qrYInputId) : null;
     const qrSizeInput = qrEnabled ? document.getElementById(qrSizeInputId) : null;
+    const dateXInput = dateEnabled ? document.getElementById(dateXInputId) : null;
+    const dateYInput = dateEnabled ? document.getElementById(dateYInputId) : null;
+    const dateWInput = dateEnabled ? document.getElementById(dateWInputId) : null;
+    const dateHInput = dateEnabled ? document.getElementById(dateHInputId) : null;
+    const dateFontFamilyInput = dateEnabled ? document.getElementById(dateFontFamilyInputId) : null;
+    const dateFontSizeInput = dateEnabled ? document.getElementById(dateFontSizeInputId) : null;
+    const dateFontWeightInput = dateEnabled ? document.getElementById(dateFontWeightInputId) : null;
+    const dateFontStyleInput = dateEnabled ? document.getElementById(dateFontStyleInputId) : null;
+    const dateAlignInput = dateEnabled ? document.getElementById(dateAlignInputId) : null;
     if (!canvasEl || !fileInput || !textArea || !xInput || !yInput || !wInput || !hInput || !fontFamilyInput || !fontSizeInput || !fontWeightInput || !fontStyleInput || !alignInput || !stylesInput) return;
 
     const canvas = new fabric.Canvas(canvasId, { selection: false, backgroundColor: '#ffffff' });
     let textObj = null;
     let qrObj = null;
+    let dateObj = null;
     let guides = [];
     let snapGuides = [];
 
@@ -272,6 +294,17 @@
         qrXInput && (qrXInput.value = Math.round(qrObj.left ?? 0));
         qrYInput && (qrYInput.value = Math.round(qrObj.top ?? 0));
         qrSizeInput && (qrSizeInput.value = Math.round(qrObj.width ?? 0));
+      }
+      if (dateObj) {
+        dateXInput && (dateXInput.value = Math.round(dateObj.left ?? 0));
+        dateYInput && (dateYInput.value = Math.round(dateObj.top ?? 0));
+        dateWInput && (dateWInput.value = Math.round(dateObj.width ?? 0));
+        dateHInput && (dateHInput.value = Math.round(dateObj.height ?? 0));
+        dateFontFamilyInput && (dateFontFamilyInput.value = dateObj.fontFamily || 'Arial');
+        dateFontSizeInput && (dateFontSizeInput.value = Math.round(dateObj.fontSize || 18));
+        dateFontWeightInput && (dateFontWeightInput.value = dateObj.fontWeight || 'normal');
+        dateFontStyleInput && (dateFontStyleInput.value = dateObj.fontStyle || 'normal');
+        dateAlignInput && (dateAlignInput.value = dateObj.textAlign || 'left');
       }
     };
 
@@ -374,11 +407,46 @@
       canvas.renderAll();
     };
 
+    const ensureDate = () => {
+      if (!dateEnabled || dateObj || !dateXInput || !dateYInput || !dateWInput || !dateHInput) return;
+      const dx = parseFloat(dateXInput.value || '0') || canvas.getWidth() * 0.56;
+      const dy = parseFloat(dateYInput.value || '0') || canvas.getHeight() * 0.74;
+      dateObj = new fabric.Textbox('S\u00e3o Paulo, 21 de fevereiro de 2026.', {
+        left: dx,
+        top: dy,
+        width: parseFloat(dateWInput.value) || 320,
+        height: parseFloat(dateHInput.value) || undefined,
+        fill: '#111',
+        fontSize: parseFloat(fontSizeInput.value) || 22,
+        fontFamily: fontFamilyInput.value || 'Arial',
+        fontWeight: fontWeightInput.value || 'normal',
+        fontStyle: fontStyleInput.value || 'normal',
+        textAlign: dateAlignInput?.value || 'left',
+        editable: false,
+        lockScalingFlip: true,
+      });
+      const lockDateScale = () => {
+        const newW = (dateObj.width || 0) * (dateObj.scaleX || 1);
+        const newH = (dateObj.height || 0) * (dateObj.scaleY || 1);
+        dateObj.set({ width: newW, height: newH, scaleX: 1, scaleY: 1 });
+      };
+      dateObj.on('modified', () => { lockDateScale(); updateHidden(); });
+      dateObj.on('moving', updateHidden);
+      dateObj.on('scaled', () => { lockDateScale(); updateHidden(); });
+      dateObj.on('scaling', () => { lockDateScale(); updateHidden(); });
+      canvas.add(dateObj);
+      textObj && textObj.bringToFront();
+      dateObj.bringToFront();
+      updateHidden();
+      canvas.renderAll();
+    };
+
     const loadImage = (url) => {
       // Sempre desenha guias e texto, mesmo que não haja imagem
       drawGuides();
       ensureText();
       ensureQr();
+      ensureDate();
 
       const fallbackSize = () => {
         const targetW = (container?.clientWidth ?? 960) - 24;
@@ -393,6 +461,7 @@
       if (!url) {
         fallbackSize();
         ensureQr();
+        ensureDate();
         canvas.renderAll();
         return;
       }
@@ -436,6 +505,7 @@
           textObj.text = textArea.value || 'Texto';
         }
         ensureQr();
+        ensureDate();
         canvas.renderAll();
       };
       imgEl.onerror = () => {
@@ -443,6 +513,7 @@
         drawGuides();
         ensureText();
         ensureQr();
+        ensureDate();
         canvas.renderAll();
       };
       imgEl.src = absoluteUrl;
@@ -528,12 +599,22 @@
         fontFamilySelect.addEventListener('change', () => {
           fontFamilyInput.value = fontFamilySelect.value;
           applyStyle(true);
+          if (dateObj) {
+            dateObj.set('fontFamily', fontFamilyInput.value || 'Arial');
+            updateHidden();
+            canvas.renderAll();
+          }
         });
       }
       if (fontSizeField) {
         fontSizeField.addEventListener('input', () => {
           fontSizeInput.value = fontSizeField.value;
           applyStyle(true);
+          if (dateObj) {
+            dateObj.set('fontSize', parseFloat(fontSizeInput.value) || 22);
+            updateHidden();
+            canvas.renderAll();
+          }
         });
       }
       if (boldBtn) {
@@ -542,6 +623,11 @@
           fontWeightInput.value = next;
           boldBtn.classList.toggle('active', next === 'bold');
           applyStyle(true, { fontWeight: next });
+          if (dateObj) {
+            dateObj.set('fontWeight', next);
+            updateHidden();
+            canvas.renderAll();
+          }
         });
       }
       if (italicBtn) {
@@ -550,6 +636,11 @@
           fontStyleInput.value = next;
           italicBtn.classList.toggle('active', next === 'italic');
           applyStyle(true, { fontStyle: next });
+          if (dateObj) {
+            dateObj.set('fontStyle', next);
+            updateHidden();
+            canvas.renderAll();
+          }
         });
       }
       if (alignButtons && alignButtons.length) {
@@ -591,6 +682,15 @@
         fontStyleInputId: 'layout_frente_font_style',
         alignInputId: 'layout_frente_align',
         stylesInputId: 'layout_frente_styles',
+        dateXInputId: 'layout_frente_date_x',
+        dateYInputId: 'layout_frente_date_y',
+        dateWInputId: 'layout_frente_date_w',
+        dateHInputId: 'layout_frente_date_h',
+        dateFontFamilyInputId: 'layout_frente_date_font_family',
+        dateFontSizeInputId: 'layout_frente_date_font_size',
+        dateFontWeightInputId: 'layout_frente_date_font_weight',
+        dateFontStyleInputId: 'layout_frente_date_font_style',
+        dateAlignInputId: 'layout_frente_date_align',
         toolbar: {
           fontFamilySelect: document.getElementById('front_toolbar_font'),
           fontSizeField: document.getElementById('front_toolbar_size'),
@@ -599,6 +699,7 @@
           alignButtons: Array.from(document.querySelectorAll('[data-front-align]')),
         },
         qrEnabled: false,
+        dateEnabled: true,
         existingUrl: "{{ !empty($modelo?->imagem_frente) ? asset('storage/'.$modelo->imagem_frente) : '' }}",
       });
 

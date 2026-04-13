@@ -198,9 +198,8 @@
         <a href="{{ $evento->link }}" target="_blank" class="btn btn-outline-secondary">Acessar link</a>
         @endif
 
-        {{-- BOTÃO GERAR PDF --}}
-        <a href="{{ route('eventos.planejamento.pdf', $evento) }}" target="_blank" class="btn btn-outline-danger">
-          <i class="fas fa-file-pdf"></i> Gerar PDF do Planejamento
+        <a href="{{ route('eventos.planejamento.pdf', $evento) }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-danger">
+          <i class="fas fa-file-pdf"></i> Ver PDF
         </a>
 
         @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
@@ -278,16 +277,6 @@
     </div>
   </div>
 
-  {{-- Descrição / Objetivo --}}
-  @if($evento->objetivos_especificos)
-  <div class="mb-4">
-    <h2 class="h5 fw-bold mb-2">Objetivos Específicos</h2>
-    <div class="ev-card p-3">
-      <p class="mb-0">{{ $evento->objetivos_especificos }}</p>
-    </div>
-  </div>
-  @endif
-
   @if($evento->objetivos_gerais)
   <div class="mb-4">
     <h2 class="h5 fw-bold mb-2">Objetivos Gerais</h2>
@@ -295,6 +284,16 @@
       <p class="mb-0">{{ $evento->objetivos_gerais }}</p>
     </div>
   </div>
+  @endif
+
+    {{-- Descrição / Objetivo --}}
+  @if($evento->objetivos_especificos)
+      <div class="mb-4">
+          <h2 class="h5 fw-bold mb-2">Objetivos Específicos</h2>
+          <div class="ev-card p-3">
+              <p class="mb-0">{{ $evento->objetivos_especificos }}</p>
+          </div>
+      </div>
   @endif
 
   {{-- Programação --}}
@@ -387,7 +386,7 @@
                 : null;
               $publicoEsperado = $at->publico_esperado;
               $cargaHoraria = $at->carga_horaria;
-              $cargaLabel = !is_null($cargaHoraria) ? number_format($cargaHoraria, 0, ',', '.') . 'h' : null;
+              $cargaLabel = !is_null($cargaHoraria) ? \App\Support\CargaHoraria::formatMinutos((int) $cargaHoraria) : null;
               $minhaPresenca = ($presencasPorAtividade ?? collect())[$at->id] ?? null;
               $primeiraAvaliacao = $at->avaliacoes->first();
               @endphp
@@ -592,11 +591,61 @@
   </div>
 </div>
 
+{{-- Modal de pessoas não encontradas após importação Moodle --}}
+@if(session('usuarios_nao_encontrados') && count(session('usuarios_nao_encontrados')) > 0)
+<div class="modal fade" id="modalUsuariosNaoEncontrados" tabindex="-1" aria-labelledby="modalUsuariosNaoEncontradosLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-warning-subtle">
+        <h5 class="modal-title text-warning-emphasis" id="modalUsuariosNaoEncontradosLabel">⚠️ Pessoas não inseridas na importação</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+        <div class="alert alert-danger mb-3">
+          <strong>{{ count(session('usuarios_nao_encontrados')) }}</strong> pessoa(s) da planilha <strong>NÃO foram inseridas para criação de certificado</strong>
+          pois não possuem cadastro no Engaja.
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 80px;">Linha</th>
+                <th>Nome</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach(session('usuarios_nao_encontrados') as $usuario)
+              <tr>
+                <td>{{ $usuario['linha'] ?? '—' }}</td>
+                <td>{{ $usuario['nome'] }}</td>
+                <td>{{ $usuario['email'] }}</td>
+              </tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+@endif
+
 @endsection
 
 @push('scripts')
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+
+      // Auto-abrir modal de usuários não encontrados após importação Moodle
+      const modalNaoEncontrados = document.getElementById('modalUsuariosNaoEncontrados');
+      if (modalNaoEncontrados) {
+          const modal = new bootstrap.Modal(modalNaoEncontrados);
+          modal.show();
+      }
 
       // Lógica 1: Criação de novo Momento
       const btnConfirmarPreAcao = document.querySelector('.js-checklist-confirm[data-modal="modalChecklistPreAcao"]');

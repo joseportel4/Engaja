@@ -146,6 +146,62 @@
               </select>
               @error('municipio_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
+
+              {{--campo de autorização de imagem--}}
+              <div class="col-md-6">
+                  <style>
+                      /* div externa */
+                      .auth-image-container {
+                          border: 1px solid #bbc1c1;
+                          border-radius: 0.8rem;
+                          padding: 1rem 1.25rem;
+                          transition: all 0.3s ease;
+                          background-color: #fff;
+                          width: 100%;
+                          height: 50px;
+                      }
+                      .auth-image-container.active {
+                          background-color: #f0fdf4;
+                          border-color: #198754;
+                      }
+                      .custom-switch-auth {
+                          width: 3.2em !important;
+                          height: 1.6em !important;
+                          cursor: pointer;
+                      }
+                      .custom-switch-auth:checked {
+                          background-color: #198754 !important;
+                          border-color: #198754 !important;
+                      }
+                      #camera_icon {
+                          transition: color 0.3s ease;
+                      }
+                  </style>
+                  <div class="auth-image-container d-flex align-items-center justify-content-between shadow-sm" id="auth_container">
+
+                      <div class="d-flex align-items-center gap-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-camera text-muted" id="camera_icon" viewBox="0 0 16 16">
+                              <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
+                              <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
+                          </svg>
+
+                          <label class="form-check-label mb-0" for="autorizacao_imagem" style="cursor: pointer; font-size: 1rem;">
+                              Autorização de imagem, voz e nome
+                          </label>
+
+                          <button type="button" class="btn btn-link p-0 border-0 bg-transparent" data-bs-toggle="modal" data-bs-target="#modalTermosImagem" aria-label="Ler termos de uso de imagem" title="Ler termos de uso de imagem">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-question-circle-fill" viewBox="0 0 16 16" style="color: #421944;">
+                                  <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.496 6.033h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286a.237.237 0 0 0 .241.247zm2.325 6.443c.61 0 1.029-.394 1.029-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94 0 .533.425.927 1.009.927z"/>
+                              </svg>
+                          </button>
+                      </div>
+                      {{-- switch --}}
+                      <div class="form-check form-switch m-0 ps-0 d-flex align-items-center">
+                          <input type="hidden" name="autorizacao_imagem" value="0">
+                          <input class="form-check-input custom-switch-auth m-0" type="checkbox" role="switch" id="autorizacao_imagem" name="autorizacao_imagem" value="1" {{ old('autorizacao_imagem', $user->participante->autorizacao_imagem ?? false) ? 'checked' : '' }}>
+                      </div>
+                  </div>
+              </div>
           </div>
         </div>
       </div>
@@ -261,6 +317,42 @@
   </div>
 </form>
 
+
+{{-- Modal para autorização de imagem --}}
+<div class="modal fade" id="modalTermosImagem" tabindex="-1" aria-labelledby="modalTermosImagemLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title text-engaja fw-bold" id="modalTermosImagemLabel">Autorização de Imagem, Voz e Nome</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body text-muted" style="font-size: 0.95rem;">
+                <p>Ao marcar este campo você confirma e possui a ciência da destinação do uso do conteúdo descrito abaixo:</p>
+                <ol type="a" class="ps-3 mb-3" style="line-height: 1.2;">
+                    <li class="mb-2">Utilizar e veicular as fotografias ou vídeos realizados com o registro da imagem para fins de publicidade institucional, sem qualquer limitação de número de inserções e reproduções;</li>
+                    <li class="mb-2">Utilizar e veicular as fotografias ou vídeos captados acima em todos os canais de comunicação do projeto e parcerias, como redes sociais e outros;</li>
+                    <li class="mb-2">Utilizar as fotografias ou vídeos na produção de quaisquer materiais publicitários para fins de divulgação do projeto em canais de comunicação e divulgação;</li>
+                    <li>Utilizar as fotografias ou cortes de vídeos na criação de conteúdo para a produção de materiais publicitários institucionais e afins.</li>
+                </ol>
+                <p class="mb-0"> Autorizo, de forma expressa o uso e a reprodução da minha imagem, nome e voz sem qualquer ônus, no Brasil ou no
+                    exterior, em favor do Projeto ALFA-EJA Brasil, realizado pelo Instituto de Educação e Direitos Humanos Paulo Freire,
+                    com sede na Rua Vespasiano, nº 344, sala F 022 – Vila Romana, São Paulo, SP, CEP 05044-050, com o CNPJ
+                    04.950.603/0001-05.
+                </p>
+            </div>
+            <div class="modal-footer border-0 border-top d-flex justify-content-between align-items-center pt-3 mt-1">
+                <div class="form-check m-0">
+                    <input class="form-check-input" type="checkbox" id="checkConcordoTermos" style="cursor: pointer;">
+                    <label class="form-check-label fw-medium text-dark user-select-none mb-2" for="checkConcordoTermos" style="cursor: pointer;">
+                        Li todos os termos e concordo com a destinação <span class="text-danger">*</span>
+                    </label>
+                </div>
+                <button type="button" class="btn btn-engaja" id="btnEstouCiente" data-bs-dismiss="modal" disabled>Ok</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
   const onlyDigits = s => (s || '').replace(/\D+/g, '');
 
@@ -314,4 +406,40 @@
       e.target.setSelectionRange(e.target.value.length, e.target.value.length);
     });
   }
+
+  //aparecer o modal de autorização de imagem ao ativar o switch
+  function initModalAutorizacaoImagem() {
+      const checkboxImagem = document.getElementById('autorizacao_imagem');
+      const modalTermos = document.getElementById('modalTermosImagem');
+
+      const checkConcordo = document.getElementById('checkConcordoTermos');
+      const btnCiente = document.getElementById('btnEstouCiente');
+
+      if (checkboxImagem && modalTermos) {
+
+          if(checkConcordo && btnCiente) {
+              checkConcordo.addEventListener('change', function() {
+                  btnCiente.disabled = !this.checked;
+              });
+          }
+
+          checkboxImagem.addEventListener('change', function () {
+              if (this.checked) {
+
+                  if(checkConcordo) checkConcordo.checked = false;
+                  if(btnCiente) btnCiente.disabled = true;
+
+                  const modalInstance = new bootstrap.Modal(modalTermos);
+                  modalInstance.show();
+              }
+          });
+
+          modalTermos.addEventListener('hide.bs.modal', function () {
+              if(checkConcordo && !checkConcordo.checked && checkboxImagem.checked) {
+                  checkboxImagem.checked = false;
+              }
+          });
+      }
+  }
+  document.addEventListener('DOMContentLoaded', initModalAutorizacaoImagem);
 </script>

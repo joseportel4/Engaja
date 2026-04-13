@@ -43,6 +43,8 @@
     $layoutVerso  = $modelo->layout_verso ?? [];
     $textoFrente = trim($certificado->texto_frente ?? '');
     $textoVerso  = trim($certificado->texto_verso ?? '');
+    $dataEmissao = ($certificado->created_at ?? now())->locale('pt_BR')->translatedFormat('j \d\e F \d\e Y');
+    $textoDataEmissao = "São Paulo, {$dataEmissao}.";
     $qrLink = $certificado->codigo_validacao ? route('certificados.validacao', $certificado->codigo_validacao) : null;
     $qrBase64 = null;
     $qrColorHex = $layoutVerso['qr_color'] ?? '#811283';
@@ -219,9 +221,32 @@
       ];
       if ($boxW) $styleFront[] = "width:{$boxW}px";
       if ($boxH) $styleFront[] = "height:{$boxH}px";
+      $dateX = $offsetX + ($layoutFrente['date_x'] ?? 0) * $scaleX;
+      $dateY = $offsetY + ($layoutFrente['date_y'] ?? 0) * $scaleY;
+      $dateW = ($layoutFrente['date_w'] ?? 320) * $scaleX;
+      $dateH = ($layoutFrente['date_h'] ?? 0) * $scaleY;
+      $dateFs = ($layoutFrente['font_size'] ?? 20) * min($scaleX, $scaleY);
+      $dateFf = $layoutFrente['font_family'] ?? 'Arial';
+      $dateFw = $layoutFrente['font_weight'] ?? 'normal';
+      $dateFst = $layoutFrente['font_style'] ?? 'normal';
+      $dateAlign = $layoutFrente['date_align'] ?? 'left';
+      $styleDateFront = [
+        "left:{$dateX}px",
+        "top:{$dateY}px",
+        "font-size:{$dateFs}px",
+        "font-family:'{$dateFf}'",
+        "font-weight:{$dateFw}",
+        "font-style:{$dateFst}",
+        "text-align:{$dateAlign}",
+        "width:{$dateW}px",
+      ];
+      if ($dateH > 0) $styleDateFront[] = "height:{$dateH}px";
     @endphp
     <img src="{{ $frenteUrl }}" class="bg" alt="Frente" style="width:{{ $renderW }}px; height:{{ $renderH }}px; left:{{ $offsetX }}px; top:{{ $offsetY }}px;">
     <div class="text-layer" style="{{ implode(';', $styleFront) }}">{!! $renderStyled($textoFrente, $layoutFrente) !!}</div>
+    @if(is_numeric($layoutFrente['date_x'] ?? null) && is_numeric($layoutFrente['date_y'] ?? null))
+      <div class="text-layer" style="{{ implode(';', $styleDateFront) }}">{{ $textoDataEmissao }}</div>
+    @endif
   </div>
 
   @if($versoUrl || $textoVerso)

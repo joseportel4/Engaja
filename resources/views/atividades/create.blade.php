@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('content')
 <div class="container">
@@ -23,7 +23,6 @@
         <div id="hidden-checklist-encerramento"></div>
         @include('atividades._form', [
           'evento' => $evento,
-          'municipios' => $municipios,
           'atividadesCopiaveis' => $atividadesCopiaveis,
           'submitLabel' => 'Salvar momento'
         ])

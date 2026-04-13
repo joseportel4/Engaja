@@ -20,6 +20,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
 use App\Exports\UsersExport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -27,9 +29,8 @@ use Maatwebsite\Excel\Facades\Excel;
 class UserManagementController extends Controller
 {
     private const PROTECTED_ROLES = ['administrador'];
-
     private const LEGACY_ROLES = ['gestor', 'formador'];
-    private const CREATOR_ROLES = ['administrador', 'gerente', 'articulador'];
+    private const CREATOR_ROLES = ['administrador', 'gerente', 'eq_pedagogica', 'articulador'];
     private const EMAIL_SIMILARITY_THRESHOLD = 0.85;
 
     public function index(Request $request): View
@@ -135,6 +136,7 @@ class UserManagementController extends Controller
                     'escola_unidade'   => $data['escola_unidade'] ?? null,
                     'tipo_organizacao' => $data['tipo_organizacao'] ?? null,
                     'tag'              => $data['tag'] ?? null,
+                    'autorizacao_imagem' => $data['autorizacao_imagem'] ?? false,
                 ]
             );
 
@@ -224,6 +226,7 @@ class UserManagementController extends Controller
                 'escola_unidade'   => $data['escola_unidade']   ?? null,
                 'tipo_organizacao' => $data['tipo_organizacao'] ?? null,
                 'tag'              => $data['tag']              ?? null,
+                'autorizacao_imagem' => $data['autorizacao_imagem'] ?? false,
             ]
         );
 
@@ -243,9 +246,49 @@ class UserManagementController extends Controller
             ->with('success', 'Usuario atualizado com sucesso.');
     }
 
+    public function resetPassword(Request $request, User $managedUser): RedirectResponse
+    {
+        abort_unless(auth()->user()?->hasRole('administrador'), 403);
+
+        if ($this->isProtected($managedUser)) {
+            return redirect()
+                ->route('usuarios.index')
+                ->with('error', 'Este usuario nao pode ter a senha redefinida por esta tela.');
+        }
+
+        $validator = Validator::make($request->all(), [
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ], [
+            'password.required' => 'Informe a nova senha.',
+            'password.confirmed' => 'A confirmação da senha não confere.',
+        ], [
+            'password' => 'senha',
+            'password_confirmation' => 'confirmação da senha',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()
+                ->route('usuarios.index')
+                ->withErrors($validator, 'resetPassword')
+                ->with('reset_password_action', route('usuarios.password.reset', $managedUser))
+                ->with('reset_password_user_name', $managedUser->name);
+        }
+
+        $data = $validator->validated();
+
+        $managedUser->update([
+            'password' => Hash::make($data['password']),
+            'force_password_change' => true,
+        ]);
+
+        return redirect()
+            ->route('usuarios.index')
+            ->with('success', "Senha de {$managedUser->name} redefinida com sucesso. O usuario devera troca-la no proximo acesso.");
+    }
+
     private function assignableRoles()
     {
-        $rolesToExclude = array_merge(self::PROTECTED_ROLES, self::LEGACY_ROLES);
+        $rolesToExclude = self::LEGACY_ROLES;
 
         return Role::whereNotIn('name', $rolesToExclude)
             ->orderBy('name')
@@ -257,9 +300,16 @@ class UserManagementController extends Controller
         return $user->hasAnyRole(self::PROTECTED_ROLES);
     }
 
-    public function export()
+    public function export(Request $request)
     {
-        return Excel::download(new UsersExport, 'usuarios.xlsx');
+        $regiaoId = $request->query('regiao');
+        $estadoId = $request->query('estado');
+        $municipioId = $request->query('municipio');
+
+        return Excel::download(
+            new UsersExport($regiaoId, $estadoId, $municipioId),
+            'usuarios.xlsx'
+        );
     }
 
     public function verificarIndex(Request $request): View|RedirectResponse

@@ -230,6 +230,67 @@ class AvaliacaoAtividadeController extends Controller
         return $this->download($relatorio);
     }
 
+    /**
+     * Gera PDF consolidado com todos os relatórios de um momento (atividade).
+     */
+    public function baixarTodosPorAtividade(Atividade $atividade)
+    {
+        abort_unless(
+            auth()->user()?->hasAnyRole(self::REPORT_EDIT_ROLES),
+            403,
+            'Sem permissão para baixar relatórios consolidados.'
+        );
+
+        $atividade->load(['evento', 'municipios']);
+
+        $relatorios = $atividade->avaliacaoAtividades()
+            ->with('user')
+            ->orderBy('nome_educador')
+            ->get();
+
+        abort_if($relatorios->isEmpty(), 404, 'Nenhum relatório encontrado para este momento.');
+
+        $resumoPublico = $this->calcularResumoPublico($atividade, $relatorios->first());
+
+        $respostasPorPergunta = collect(self::REPORT_QUESTION_FIELDS)->map(function ($pergunta, $campo) use ($relatorios) {
+            return [
+                'pergunta' => $pergunta,
+                'respostas' => $relatorios
+                    ->map(function (AvaliacaoAtividade $relatorio) use ($campo) {
+                        $resposta = trim((string) ($relatorio->{$campo} ?? ''));
+
+                        if ($resposta === '') {
+                            return null;
+                        }
+
+                        $nomeResponsavel = $relatorio->user->name ?? $relatorio->nome_educador ?? 'Usuário não identificado';
+
+                        return [
+                            'responsavel_id' => $relatorio->user_id ?? '—',
+                            'responsavel_nome' => $nomeResponsavel,
+                            'resposta' => $resposta,
+                            'atualizado_em' => $relatorio->updated_at,
+                        ];
+                    })
+                    ->filter()
+                    ->values(),
+            ];
+        })->values();
+
+        $pdf = Pdf::loadView('avaliacao-atividade.pdf-consolidado', [
+            'atividade' => $atividade,
+            'relatorios' => $relatorios,
+            'resumoPublico' => $resumoPublico,
+            'camposPerguntas' => self::REPORT_QUESTION_FIELDS,
+            'respostasPorPergunta' => $respostasPorPergunta,
+        ]);
+        $pdf->setPaper('a4', 'portrait');
+
+        $nomeArquivo = 'relatorios-consolidado-' . \Illuminate\Support\Str::slug($atividade->descricao ?? 'momento') . '.pdf';
+
+        return $pdf->download($nomeArquivo);
+    }
+
     private function authorizeRelatorio(AvaliacaoAtividade $relatorio): void
     {
         abort_unless(

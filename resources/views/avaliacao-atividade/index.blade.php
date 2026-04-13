@@ -3,6 +3,50 @@
 @section('content')
 <div class="container py-4">
 
+    <style>
+        .momento-toggle {
+            min-width: 0;
+        }
+        .momento-toggle:focus-visible {
+            outline: 2px solid #421944;
+            outline-offset: 2px;
+            border-radius: .5rem;
+        }
+        .badge-relatorios {
+            background: #0ea5e9;
+            color: #fff;
+            font-weight: 600;
+        }
+        .badge-respostas {
+            background: #f3e8f8;
+            color: #421944;
+            border: 1px solid #d9b7e2;
+            font-weight: 600;
+        }
+        .btn-pdf-geral {
+            border: 1px solid #86efac;
+            color: #166534;
+            background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+            font-weight: 600;
+            border-radius: 999px;
+            padding: .38rem .85rem;
+            line-height: 1.1;
+            box-shadow: 0 1px 2px rgba(22, 101, 52, 0.10);
+            transition: all .15s ease-in-out;
+        }
+        .btn-pdf-geral:hover {
+            background: linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%);
+            color: #14532d;
+            border-color: #4ade80;
+            box-shadow: 0 2px 6px rgba(22, 101, 52, 0.18);
+            transform: translateY(-1px);
+        }
+        .btn-pdf-geral:focus-visible {
+            outline: 2px solid #16a34a;
+            outline-offset: 1px;
+        }
+    </style>
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 fw-bold text-engaja mb-0">Relatórios da Ação</h1>
@@ -48,7 +92,8 @@
                     $collapseId = 'relatorio-momento-' . ($atividade?->id ?? 'x') . '-' . $momentoIndex;
                 @endphp
                 <div class="border rounded-3 p-3 mb-3">
-                    <button class="btn w-100 text-start d-flex flex-wrap justify-content-between align-items-start gap-2 p-0 border-0 bg-transparent"
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                        <button class="btn momento-toggle flex-grow-1 text-start d-flex flex-wrap justify-content-between align-items-start gap-2 p-0 border-0 bg-transparent"
                             type="button"
                             data-bs-toggle="collapse"
                             data-bs-target="#{{ $collapseId }}"
@@ -65,12 +110,20 @@
                             </span>
                         </span>
                         <span class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-                            <span class="badge bg-secondary">{{ $relatoriosMomento->count() }} relatório(s)</span>
-                            <span class="badge rounded-pill" style="background-color:#421944; color:#fff; font-size:.85rem; padding:.45rem .7rem;">
-                                Clique aqui para ver as respostas
+                            <span class="badge rounded-pill badge-relatorios">{{ $relatoriosMomento->count() }} relatório(s)</span>
+                            <span class="badge rounded-pill badge-respostas" style="font-size:.85rem; padding:.45rem .7rem;">
+                                Ver respostas
                             </span>
                         </span>
                     </button>
+                    @if($atividade && auth()->user()?->hasAnyRole(['administrador', 'gerente']))
+                    <a href="{{ route('avaliacao-atividade.download-all', $atividade) }}"
+                       class="btn btn-sm btn-pdf-geral text-nowrap"
+                       title="Baixar PDF consolidado com todos os relatórios deste momento">
+                        📄 PDF Geral
+                    </a>
+                    @endif
+                    </div>
 
                     <div id="{{ $collapseId }}" class="collapse mt-3">
 

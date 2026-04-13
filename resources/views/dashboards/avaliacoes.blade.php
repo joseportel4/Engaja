@@ -146,24 +146,43 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+@endsection
+
+@push('styles')
 <style>
+  @media (min-width: 768px) {
+    #cards-questoes > .col-md-6:only-child,
+    #cards-questoes > .col-md-6:nth-child(odd):nth-last-child(1) {
+      flex: 0 0 100%;
+      max-width: 100%;
+    }
+  }
   @media (max-width: 576px) {
-    #cards-questoes .question-header {
+    #cards-questoes .question-header,
+    #cards-questoes-momento .question-header {
       flex-direction: column;
       align-items: flex-start;
       gap: 0.5rem;
     }
-    #cards-questoes .question-controls {
+    #cards-questoes .question-controls,
+    #cards-questoes-momento .question-controls {
       width: 100%;
       justify-content: flex-start;
     }
-    #cards-questoes .question-controls select {
+    #cards-questoes .question-controls select,
+    #cards-questoes-momento .question-controls select {
       width: 100%;
       max-width: none;
     }
   }
 </style>
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+@vite(['resources/js/avaliacoes-distribuicao-charts.js'])
+@endpush
+
 <script>
 (() => {
   const container = document.getElementById('avaliacoes-dashboard');
@@ -507,3 +526,4 @@
 })();
 </script>
 @endsection
+

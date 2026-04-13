@@ -5,10 +5,16 @@
     <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
         <div>
             <p class="text-uppercase text-muted small mb-1">Administração</p>
-            <h1 class="h4 fw-bold text-engaja mb-0">Gerenciar Usuários</h1>
+            <h1 class="h4 fw-bold text-engaja mb-2">Gerenciar Usuários</h1>
         </div>
-        @hasanyrole('administrador|gerente|articulador')
+        @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-engaja" data-bs-toggle="modal" data-bs-target="#modalExportarUsuarios">
+                Baixar planilha de usuários
+            </button>
+            <a href="{{ route('usuarios.autorizacoes.import') }}" class="btn btn-engaja">Importar Autorizações de Imagem</a>
             <a href="{{ route('usuarios.create') }}" class="btn btn-engaja">Cadastrar Usuário</a>
+        </div>
         @endhasanyrole
     </div>
 
@@ -125,6 +131,16 @@
                     <a href="{{ route('usuarios.edit', $u) }}" class="btn btn-sm btn-engaja">
                       Editar
                     </a>
+                    @role('administrador')
+                      <button type="button"
+                              class="btn btn-sm btn-outline-secondary js-reset-password"
+                              data-bs-toggle="modal"
+                              data-bs-target="#modalRedefinirSenha"
+                              data-action="{{ route('usuarios.password.reset', $u) }}"
+                              data-user-name="{{ $u->name }}">
+                        Redefinir senha
+                      </button>
+                    @endrole
                   </td>
                 </tr>
               @endforeach
@@ -132,24 +148,23 @@
           </table>
         </div>
       </div>
-      <div class="card-footer bg-white d-flex justify-content-between align-items-center">
-        <div class="text-muted small">Selecione participantes e clique em Emitir certificados.</div>
-        {{ $users->links() }}
+        {{--
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+          <div class="text-muted small">Selecione participantes e clique em Emitir certificados.</div>
+          {{ $users->links() }}
+        </div>
+        --}}
       </div>
-    </div>
 
 
-    <div class="mt-3 text-end d-flex flex-wrap justify-content-end gap-2">
-    @can('user.ver')
-      <a href="{{ route('usuarios.export') }}" class="btn btn-engaja">
-        Exportar planilha de usuários
-      </a>
-    @endcan
-    @hasanyrole('administrador|gerente')
-      <button type="button" class="btn btn-outline-secondary" id="btn-select-all-page">Selecionar todos da página</button>
-      <button type="button" class="btn btn-outline-secondary" id="btn-select-all-global">Selecionar todos (todas as páginas)</button>
-      <button type="button" class="btn btn-engaja" id="btn-open-modal">Emitir certificados</button>
-    @endhasanyrole
+      <div class="mt-3 text-end d-flex flex-wrap justify-content-end gap-2">
+      {{--
+      @hasanyrole('administrador|gerente')
+        <button type="button" class="btn btn-outline-secondary" id="btn-select-all-page">Selecionar todos da página</button>
+        <button type="button" class="btn btn-outline-secondary" id="btn-select-all-global">Selecionar todos (todas as páginas)</button>
+        <button type="button" class="btn btn-engaja" id="btn-open-modal">Emitir certificados</button>
+      @endhasanyrole
+      --}}
     </div>
   </form>
 
@@ -182,6 +197,106 @@
       </div>
     </div>
   </div>
+
+  {{-- Modal de Exportação com Filtros --}}
+  <div class="modal fade" id="modalExportarUsuarios" tabindex="-1" aria-labelledby="modalExportarUsuariosLabel" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title" id="modalExportarUsuariosLabel">Baixar Usuários Cadastrados</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+              </div>
+              <form action="{{ route('usuarios.export') }}" method="GET">
+                  <div class="modal-body">
+                      <p class="text-muted small mb-3">Selecione os filtros abaixo para baixar uma listagem específica ou deixe em branco para baixar toda a base de usuários.</p>
+
+                      <div class="mb-3">
+                          <label class="form-label">Região</label>
+                          <select name="regiao" id="export_regiao" class="form-select text-muted">
+                              <option value="">Todas as Regiões</option>
+                              @foreach($regioes as $regiao)
+                                  <option value="{{ $regiao->id }}">{{ $regiao->nome }}</option>
+                              @endforeach
+                          </select>
+                      </div>
+
+                      <div class="mb-3">
+                          <label class="form-label">Estado</label>
+                          <select name="estado" id="export_estado" class="form-select text-muted" disabled>
+                              <option value="">Todos os Estados</option>
+                              @foreach($estados as $estado)
+                                  <option value="{{ $estado->id }}" data-regiao="{{ $estado->regiao_id }}">{{ $estado->nome }}</option>
+                              @endforeach
+                          </select>
+                      </div>
+
+                      <div class="mb-3">
+                          <label class="form-label">Município</label>
+                          <select name="municipio" id="export_municipio" class="form-select text-muted" disabled>
+                              <option value="">Todos os Municípios</option>
+                              @foreach($municipios as $municipio)
+                                  <option value="{{ $municipio->id }}" data-estado="{{ $municipio->estado_id }}">{{ $municipio->nome }}</option>
+                              @endforeach
+                          </select>
+                      </div>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                      <button type="submit" class="btn btn-engaja">Baixar Planilha</button>
+                  </div>
+              </form>
+          </div>
+      </div>
+  </div>
+
+  @role('administrador')
+  <div class="modal fade" id="modalRedefinirSenha" tabindex="-1" aria-labelledby="modalRedefinirSenhaLabel" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title" id="modalRedefinirSenhaLabel">Redefinir senha</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+              </div>
+              <form method="POST" id="form-redefinir-senha" action="{{ session('reset_password_action', '') }}">
+                  @csrf
+                  <div class="modal-body">
+                      <p class="text-muted small mb-3">
+                          A senha será alterada agora. No próximo acesso, o usuário será obrigado a definir uma nova senha.
+                      </p>
+                      <p class="fw-semibold mb-3" id="reset-password-user-name">{{ session('reset_password_user_name') }}</p>
+
+                      <div class="mb-3">
+                          <label for="reset_password" class="form-label">Nova senha</label>
+                          <input id="reset_password"
+                                 type="password"
+                                 name="password"
+                                 class="form-control @error('password', 'resetPassword') is-invalid @enderror"
+                                 required
+                                 autocomplete="new-password">
+                          @error('password', 'resetPassword')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                          @enderror
+                      </div>
+
+                      <div class="mb-3">
+                          <label for="reset_password_confirmation" class="form-label">Confirmar nova senha</label>
+                          <input id="reset_password_confirmation"
+                                 type="password"
+                                 name="password_confirmation"
+                                 class="form-control"
+                                 required
+                                 autocomplete="new-password">
+                      </div>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                      <button type="submit" class="btn btn-engaja">Redefinir senha</button>
+                  </div>
+              </form>
+          </div>
+      </div>
+  </div>
+  @endrole
 @endif
 @endsection
 
@@ -197,6 +312,8 @@
     const btnSelectAllPage = document.getElementById('btn-select-all-page');
     const btnSelectAllGlobal = document.getElementById('btn-select-all-global');
     const selectAllPagesHidden = document.getElementById('select_all_pages_hidden');
+    const resetPasswordForm = document.getElementById('form-redefinir-senha');
+    const resetPasswordUserName = document.getElementById('reset-password-user-name');
 
     if (checkAll) {
       checkAll.addEventListener('change', () => {
@@ -249,6 +366,25 @@
         form.submit();
       });
     }
+
+    document.querySelectorAll('.js-reset-password').forEach(button => {
+      button.addEventListener('click', () => {
+        if (resetPasswordForm) {
+          resetPasswordForm.action = button.dataset.action || '';
+          resetPasswordForm.reset();
+        }
+        if (resetPasswordUserName) {
+          resetPasswordUserName.textContent = button.dataset.userName || '';
+        }
+      });
+    });
+
+    @if($errors->resetPassword->any() && session('reset_password_action'))
+      const resetPasswordModal = document.getElementById('modalRedefinirSenha');
+      if (resetPasswordModal) {
+        new bootstrap.Modal(resetPasswordModal).show();
+      }
+    @endif
   });
 
 
@@ -310,6 +446,36 @@
       } else {
           municipioSelect.disabled = true;
       }
+  }
+
+  //logica para exportação de usuários usando filtragem
+  const expRegiaoSelect = document.getElementById('export_regiao');
+  const expEstadoSelect = document.getElementById('export_estado');
+  const expMunicipioSelect = document.getElementById('export_municipio');
+
+  if (expRegiaoSelect && expEstadoSelect && expMunicipioSelect) {
+      expRegiaoSelect.addEventListener('change', function() {
+          expEstadoSelect.value = '';
+          expMunicipioSelect.value = '';
+          expMunicipioSelect.disabled = true;
+
+          if (this.value) {
+              expEstadoSelect.disabled = false;
+              filterOptions(this, expEstadoSelect, 'data-regiao');
+          } else {
+              expEstadoSelect.disabled = true;
+          }
+      });
+
+      expEstadoSelect.addEventListener('change', function() {
+          expMunicipioSelect.value = '';
+          if (this.value) {
+              expMunicipioSelect.disabled = false;
+              filterOptions(this, expMunicipioSelect, 'data-estado');
+          } else {
+              expMunicipioSelect.disabled = true;
+          }
+      });
   }
 </script>
 @endpush
