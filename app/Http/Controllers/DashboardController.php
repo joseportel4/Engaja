@@ -171,7 +171,6 @@ class DashboardController extends Controller
         $atividades = Atividade::with('evento')
             ->orderByDesc('dia')
             ->orderByDesc('hora_inicio')
-            ->limit(80)
             ->get(['id', 'evento_id', 'descricao', 'dia', 'hora_inicio']);
 
         return view('dashboards.avaliacoes', compact('templates', 'eventos', 'atividades'));

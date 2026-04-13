@@ -6,13 +6,13 @@
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
       <div>
         <p class="text-uppercase small text-muted mb-1">Dashboards</p>
-        <h1 class="h3 fw-bold mb-1">Respostas dos formularios</h1>
-        <p class="text-muted mb-0">Visual limpo, na paleta do projeto, com filtros instantaneos.</p>
+        <h1 class="h3 fw-bold mb-1">Respostas dos formulários</h1>
+        {{-- <p class="text-muted mb-0">Visual limpo, na paleta do projeto, com filtros instantâneos.</p> --}}
       </div>
       <div class="d-flex gap-2">
         <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary">Hub de dashboards</a>
         <a href="{{ route('dashboards.bi') }}" class="btn btn-outline-secondary">Ir para BI</a>
-        <a href="{{ route('dashboards.presencas') }}" class="btn btn-outline-primary">Ir para presencas</a>
+        <a href="{{ route('dashboards.presencas') }}" class="btn btn-outline-primary">Ir para presenças</a>
       </div>
     </div>
   </div>
@@ -30,7 +30,7 @@
           </select>
         </div>
         <div class="col-lg-3 col-md-6">
-          <label class="form-label text-muted small mb-1">Evento</label>
+          <label class="form-label text-muted small mb-1">Ação Pedagógica</label>
           <select class="form-select js-filter" id="f-evento">
             <option value="">Todos</option>
             @foreach($eventos as $evento)
@@ -39,16 +39,15 @@
           </select>
         </div>
         <div class="col-lg-3 col-md-6">
-          <label class="form-label text-muted small mb-1">Atividade / momento</label>
+          <label class="form-label text-muted small mb-1">Momento</label>
           <select class="form-select js-filter" id="f-atividade">
-            <option value="">Todas</option>
+            <option value="">Selecione uma ação pedagógica</option>
             @foreach($atividades as $atividade)
             @php
               $diaFormatado = $atividade->dia ? \Illuminate\Support\Carbon::parse($atividade->dia)->format('d/m') : '';
             @endphp
-            <option value="{{ $atividade->id }}">
+            <option value="{{ $atividade->id }}" data-evento-id="{{ $atividade->evento_id }}">
               {{ $atividade->descricao ?? 'Momento' }} - {{ $diaFormatado }} {{ $atividade->hora_inicio }}
-              @if($atividade->evento) ({{ $atividade->evento->nome }}) @endif
             </option>
             @endforeach
           </select>
@@ -60,7 +59,7 @@
               <input type="date" class="form-control js-filter" id="f-de">
             </div>
             <div class="col-6">
-              <label class="form-label text-muted small mb-1">Ate</label>
+              <label class="form-label text-muted small mb-1">Até</label>
               <input type="date" class="form-control js-filter" id="f-ate">
             </div>
           </div>
@@ -78,7 +77,7 @@
     <div class="col-lg-3 col-sm-6">
       <div class="card shadow-sm border-0 h-100">
         <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1">Submissoes</p>
+          <p class="text-uppercase small text-muted mb-1">Submissões</p>
           <div class="h3 fw-bold mb-0" data-total="submissoes">0</div>
           <small class="text-muted">Respostas completas registradas</small>
         </div>
@@ -87,7 +86,7 @@
     <div class="col-lg-3 col-sm-6">
       <div class="card shadow-sm border-0 h-100">
         <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1">Questoes</p>
+          <p class="text-uppercase small text-muted mb-1">Questões</p>
           <div class="h3 fw-bold mb-0" data-total="questoes">0</div>
           <small class="text-muted">Com alguma resposta</small>
         </div>
@@ -96,7 +95,7 @@
     <div class="col-lg-3 col-sm-6">
       <div class="card shadow-sm border-0 h-100">
         <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1">Eventos</p>
+          <p class="text-uppercase small text-muted mb-1">Ações Pedagógicas</p>
           <div class="h3 fw-bold mb-0" data-total="eventos">0</div>
           <small class="text-muted">Com respostas vinculadas</small>
         </div>
@@ -105,9 +104,9 @@
     <div class="col-lg-3 col-sm-6">
       <div class="card shadow-sm border-0 h-100">
         <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1">Ultima resposta</p>
+          <p class="text-uppercase small text-muted mb-1">Última resposta</p>
           <div class="h3 fw-bold mb-0" data-total="ultima">-</div>
-          <small class="text-muted">Horario da ultima entrada</small>
+          <small class="text-muted">Horário da última entrada</small>
         </div>
       </div>
     </div>
@@ -116,14 +115,14 @@
   <div class="row g-3">
     <div class="col-12">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 class="h5 fw-bold mb-0">Distribuicao por questao</h2>
+        <h2 class="h5 fw-bold mb-0">Distribuição por questão</h2>
         <span class="badge bg-primary-subtle text-primary">Interativo</span>
       </div>
       <div class="row g-3" id="cards-questoes">
         <div class="col-12" id="placeholder-card">
           <div class="card border-0 shadow-sm">
             <div class="card-body text-center text-muted">
-              Carregando graficos...
+              Carregando gráficos...
             </div>
           </div>
         </div>
@@ -189,6 +188,10 @@
   const chartInstances = new Map();
   const chartPreferences = new Map();
   let cachedPerguntas = [];
+  const atividadePlaceholder = filters.atividade?.querySelector('option[value=""]');
+  const atividadeOptions = filters.atividade
+    ? Array.from(filters.atividade.options).filter((option) => option.value !== '')
+    : [];
   const textModalEl = document.getElementById('textAnswersModal');
   const textModalTitle = textModalEl?.querySelector('.js-text-modal-title');
   const textModalList = textModalEl?.querySelector('.js-text-modal-list');
@@ -204,6 +207,34 @@
     if (filters.de.value) params.set('de', filters.de.value);
     if (filters.ate.value) params.set('ate', filters.ate.value);
     return params.toString();
+  }
+
+  function updateAtividadeFilter() {
+    if (!filters.evento || !filters.atividade) return;
+
+    const eventoId = filters.evento.value;
+    const hasEvento = eventoId !== '';
+
+    filters.atividade.disabled = !hasEvento;
+
+    if (atividadePlaceholder) {
+      atividadePlaceholder.textContent = hasEvento ? 'Todas' : 'Selecione uma ação pedagógica';
+    }
+
+    let selectedOptionVisible = !filters.atividade.value;
+    atividadeOptions.forEach((option) => {
+      const belongsToEvento = option.dataset.eventoId === eventoId;
+      option.hidden = !hasEvento || !belongsToEvento;
+      option.disabled = !hasEvento || !belongsToEvento;
+
+      if (option.selected && belongsToEvento) {
+        selectedOptionVisible = true;
+      }
+    });
+
+    if (!hasEvento || !selectedOptionVisible) {
+      filters.atividade.value = '';
+    }
   }
 
   function setLoading(state) {
@@ -460,8 +491,15 @@
     }
   }
 
+  updateAtividadeFilter();
+
   document.querySelectorAll('.js-filter').forEach((input) => {
+    if (input === filters.evento) return;
     input.addEventListener('change', loadData);
+  });
+  filters.evento?.addEventListener('change', () => {
+    updateAtividadeFilter();
+    loadData();
   });
   refreshBtn.addEventListener('click', loadData);
 
