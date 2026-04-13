@@ -51,14 +51,39 @@ class InscricaoController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('momentos');
 
-        $sheet->setCellValue('A1', 'momento');
-        $sheet->setCellValue('B1', 'horas');
-        $sheet->setCellValue('C1', 'minutos');
+        // Cabecalho no mesmo formato visual da planilha-modelo.
+        $sheet->mergeCells('A1:A2');
+        $sheet->mergeCells('B1:C1');
 
-        $sheet->getStyle('A1:C1')->getFont()->setBold(true);
-        $sheet->getColumnDimension('A')->setAutoSize(true);
-        $sheet->getColumnDimension('B')->setWidth(18);
-        $sheet->getColumnDimension('C')->setWidth(18);
+        $sheet->setCellValue('A1', 'MOMENTOS');
+        $sheet->setCellValue('B1', 'Carga Horaria');
+        $sheet->setCellValue('B2', 'Horas');
+        $sheet->setCellValue('C2', 'Minutos');
+
+        $sheet->getStyle('A1:C2')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle('A1:C2')->getAlignment()
+            ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)
+            ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
+        $sheet->getStyle('A1:C2')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('963D79');
+
+        $sheet->getColumnDimension('A')->setWidth(95);
+        $sheet->getColumnDimension('B')->setWidth(13);
+        $sheet->getColumnDimension('C')->setWidth(13);
+
+        // Mantem varias linhas em branco com grade para preenchimento manual.
+        $lastRow = 26;
+        $sheet->getStyle("A1:C{$lastRow}")->getBorders()->getAllBorders()
+            ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN)
+            ->getColor()->setRGB('C7C7C7');
+
+        for ($row = 3; $row <= $lastRow; $row++) {
+            $sheet->setCellValue("A{$row}", '');
+            $sheet->setCellValue("B{$row}", '');
+            $sheet->setCellValue("C{$row}", '');
+            $sheet->getRowDimension($row)->setRowHeight(18);
+        }
 
         $fileName = 'modelo_momentos_moodle.xlsx';
 
