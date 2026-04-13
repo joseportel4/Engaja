@@ -148,24 +148,24 @@
           </table>
         </div>
       </div>
-        {{--
-        <div class="card-footer bg-white d-flex justify-content-between align-items-center">
-          <div class="text-muted small">Selecione participantes e clique em Emitir certificados.</div>
-          {{ $users->links() }}
-        </div>
-        --}}
-      </div>
-
+        @if($users->hasPages())
+            <div class="card-footer bg-white d-flex justify-content-center overflow-auto py-3 border-top-0">
+                <div class="m-0">
+                    {{ $users->links() }}
+                </div>
+            </div>
+        @endif
+    </div>
 
       <div class="mt-3 text-end d-flex flex-wrap justify-content-end gap-2">
-      {{--
-      @hasanyrole('administrador|gerente')
-        <button type="button" class="btn btn-outline-secondary" id="btn-select-all-page">Selecionar todos da página</button>
-        <button type="button" class="btn btn-outline-secondary" id="btn-select-all-global">Selecionar todos (todas as páginas)</button>
-        <button type="button" class="btn btn-engaja" id="btn-open-modal">Emitir certificados</button>
-      @endhasanyrole
-      --}}
-    </div>
+          {{--
+          @hasanyrole('administrador|gerente')
+            <button type="button" class="btn btn-outline-secondary" id="btn-select-all-page">Selecionar todos da página</button>
+            <button type="button" class="btn btn-outline-secondary" id="btn-select-all-global">Selecionar todos (todas as páginas)</button>
+            <button type="button" class="btn btn-engaja" id="btn-open-modal">Emitir certificados</button>
+          @endhasanyrole
+          --}}
+      </div>
   </form>
 
   <input type="hidden" name="select_all_pages" id="select_all_pages_hidden" form="form-emitir-certificados" value="">

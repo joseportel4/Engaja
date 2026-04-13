@@ -49,7 +49,7 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 fw-bold text-engaja mb-0">Relatórios da Ação</h1>
+            <h1 class="h3 fw-bold text-engaja mb-0">Relatórios dos Momentos</h1>
             <small class="text-muted">
                 {{ auth()->user()?->hasAnyRole(['administrador', 'gerente'])
                     ? 'Relatórios pós-ação preenchidos por utilizadores do sistema'

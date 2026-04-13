@@ -130,16 +130,20 @@
         </span>
         <span class="admin-nav-text">Avaliações</span>
       </a>
-      @hasanyrole('administrador|gerente')
-        <a class="admin-nav-link {{ request()->routeIs('avaliacao-atividade.*') ? 'active' : '' }}" href="{{ route('avaliacao-atividade.index') }}">
-          <span class="admin-nav-icon" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M3 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6.5L8.5 2zM8 3.5V7a1 1 0 0 0 1 1h3.5"/>
-            </svg>
-          </span>
-          <span class="admin-nav-text">Relatórios da ação</span>
-        </a>
-      @endhasanyrole
+    </div>
+  @endhasanyrole
+
+  @hasanyrole('administrador|gerente')
+    <div class="admin-sidebar__section">
+      <p class="admin-sidebar__label">Relatórios</p>
+      <a class="admin-nav-link {{ request()->routeIs('avaliacao-atividade.*') ? 'active' : '' }}" href="{{ route('avaliacao-atividade.index') }}">
+        <span class="admin-nav-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M3 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6.5L8.5 2zM8 3.5V7a1 1 0 0 0 1 1h3.5"/>
+          </svg>
+        </span>
+        <span class="admin-nav-text">Relatórios do Momento</span>
+      </a>
     </div>
   @endhasanyrole
 

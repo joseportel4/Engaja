@@ -41,7 +41,10 @@ class UserManagementController extends Controller
         $municipioId = $request->query('municipio');
 
         $users = User::with(['roles', 'participante.municipio.estado.regiao'])
-            ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', self::PROTECTED_ROLES))
+            ->when(!auth()->user()->hasRole('administrador'), function ($q) {
+                //nao sendo administrador, oculta os administradores
+                $q->whereDoesntHave('roles', fn($sub) => $sub->whereIn('name', self::PROTECTED_ROLES));
+            })
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($sub) use ($search) {
                     $sub->where('name', 'ilike', "%{$search}%")
@@ -156,7 +159,7 @@ class UserManagementController extends Controller
     {
         abort_unless(auth()->user()?->can('user.editar'), 403);
 
-        if ($this->isProtected($managedUser)) {
+        if ($this->isProtected($managedUser) && !auth()->user()->hasRole('administrador')) {
             return redirect()
                 ->route('usuarios.index')
                 ->with('error', 'Este usuario nao pode ser editado.');
@@ -186,7 +189,7 @@ class UserManagementController extends Controller
     {
         abort_unless(auth()->user()?->can('user.editar'), 403);
 
-        if ($this->isProtected($managedUser)) {
+        if ($this->isProtected($managedUser) && !auth()->user()->hasRole('administrador')) {
             return redirect()
                 ->route('usuarios.index')
                 ->with('error', 'Este usuario nao pode ser editado.');

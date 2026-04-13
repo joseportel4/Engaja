@@ -193,42 +193,80 @@
         @endif
       </ul>
 
+      @php
+        $mostrarMenuGerenciar = auth()->user()?->hasAnyRole(['administrador', 'gerente', 'eq_pedagogica', 'articulador'])
+          || auth()->user()?->can('update', $evento);
+      @endphp
+
       <div class="d-flex gap-2 flex-wrap">
         @if($evento->link)
         <a href="{{ $evento->link }}" target="_blank" class="btn btn-outline-secondary">Acessar link</a>
         @endif
 
-        <a href="{{ route('eventos.planejamento.pdf', $evento) }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-danger">
+        <a href="{{ route('eventos.planejamento.pdf', $evento) }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary">
           <i class="fas fa-file-pdf"></i> Ver PDF
         </a>
 
         @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
-          <a href="{{ route('inscricoes.selecionar', $evento)}}" class="btn btn-engaja">Selecionar participantes</a>
-          <a href="{{ route('inscricoes.import', $evento)}}" class="btn btn-outline-primary">Importar planilha</a>
-          <a href="{{ route('inscricoes.moodle.import', $evento)}}" class="btn btn-warning fw-semibold">Importação Moodle</a>
+          <a href="{{ route('inscricoes.selecionar', $evento)}}" class="btn btn-engaja">Inscrever participantes</a>
         @endhasanyrole
 
         @can('participante.ver')
-          <a href="{{ route('inscricoes.inscritos', $evento) }}" class="btn btn-outline-primary">Ver inscritos</a>
+          <a href="{{ route('inscricoes.inscritos', $evento) }}" class="btn btn-outline-secondary">Ver inscritos</a>
         @endcan
 
-        @role('administrador|gerente')
-          <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
-            data-bs-target="#modalRelatoriosEvento">
-            Relatórios
-          </button>
-        @endrole
+        @if($mostrarMenuGerenciar)
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="dropdownGerenciarEvento"
+              data-bs-toggle="dropdown" aria-expanded="false">
+              Gerenciar
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownGerenciarEvento">
+              @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+                <li>
+                  <a class="dropdown-item" href="{{ route('inscricoes.import', $evento)}}">Importar participantes</a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{ route('inscricoes.moodle.import', $evento)}}">Importação Moodle</a>
+                </li>
+              @endhasanyrole
 
-        @can('update', $evento)
-          <a href="{{ route('eventos.edit', $evento) }}" class="btn btn-outline-secondary">Editar</a>
-          @role('administrador')
-          <form action="{{ route('eventos.destroy', $evento) }}" method="POST"
-            class="d-flex m-0 p-0" data-confirm="Tem certeza que deseja excluir esta ação pedagógica?">
-            @csrf @method('DELETE')
-            <button class="btn btn-outline-danger">Excluir</button>
-          </form>
-          @endrole
-        @endcan
+              @role('administrador|gerente')
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <button type="button" class="dropdown-item" data-bs-toggle="modal"
+                    data-bs-target="#modalRelatoriosEvento">
+                    Relatórios
+                  </button>
+                </li>
+              @endrole
+
+              @hasanyrole('administrador|gerente')
+                <li>
+                  <a class="dropdown-item" href="{{ route('certificados.emitidos', ['evento_id' => $evento->id, 'contexto' => 'evento']) }}">
+                    Certificados
+                  </a>
+                </li>
+              @endhasanyrole
+
+              @can('update', $evento)
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item" href="{{ route('eventos.edit', $evento) }}">Editar</a>
+                </li>
+                @role('administrador')
+                  <li>
+                    <form action="{{ route('eventos.destroy', $evento) }}" method="POST"
+                      class="m-0" data-confirm="Tem certeza que deseja excluir esta ação pedagógica?">
+                      @csrf @method('DELETE')
+                      <button type="submit" class="dropdown-item text-danger">Excluir</button>
+                    </form>
+                  </li>
+                @endrole
+              @endcan
+            </ul>
+          </div>
+        @endif
       </div>
     </div>
   </div>

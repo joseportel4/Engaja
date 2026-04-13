@@ -2,41 +2,33 @@
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8">
-    <title>Relatório da Ação</title>
+    <title>Relatório do Momento</title>
     <style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #1f2937; background: #ffffff; margin: 0; padding: 0; }
         .sheet { background: #ffffff; border: 0; border-radius: 0; overflow: hidden; }
         .content { padding: 20px 18px 16px 18px; }
 
-        .brand-header { background: #ffffff; color: #481d42; padding: 0 18px 10px 18px; border-bottom: 1px solid #e5e7eb; }
-        .brand-top-accent { height: 6px; background: #481d42; margin: 0 -18px 12px -18px; }
-        .brand-title { text-align: center; margin-bottom: 8px; }
-        .brand-title img { height: 38px; }
-        .brand-subtitle { text-align: center; font-size: 11px; color: #6b7280; margin-top: 4px; }
-        .brand-line { border-top: 1px solid #e5e7eb; margin: 10px 0 12px 0; }
-        .brand-partners { width: 100%; border-collapse: collapse; }
-        .brand-partners td { border: 0; text-align: center; vertical-align: middle; }
-        .brand-label { font-size: 10px; color: #6b7280; margin-bottom: 6px; }
-        .brand-logo-ipf { height: 34px; }
-        .brand-logo-petro { height: 29px; }
+        .report-header { background: #963d79; color: #ffffff; padding: 14px 18px; }
+        .report-header-title { font-size: 24px; font-weight: 700; margin: 0; }
+        .report-header-subtitle { font-size: 11px; opacity: 0.92; margin-top: 4px; }
 
-        .title-row { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+        .title-row { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
         .title-row td { border: 0; vertical-align: bottom; }
-        .report-title { font-size: 28px; font-weight: 700; margin: 0 0 3px 0; color: #111827; }
+        .report-title { font-size: 16px; font-weight: 700; margin: 0 0 3px 0; color: #111827; }
         .author { color: #6b7280; font-size: 12px; }
-        .author-name { color: #481d42; font-weight: 700; }
+        .author-name { color: #963d79; font-weight: 700; }
 
         .card { border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; margin-bottom: 18px; }
         .table-clean { width: 100%; border-collapse: collapse; }
         .table-clean td, .table-clean th { border: 1px solid #e5e7eb; padding: 10px 12px; vertical-align: top; }
-        .table-clean th { text-align: left; background: #f8fafc; color: #374151; font-weight: 700; }
+        .table-clean th { text-align: left; background: #963d79; color: #ffffff; font-weight: 700; }
         .table-clean .value { background: #ffffff; color: #4b5563; }
-        .table-clean .value-number { text-align: right; color: #481d42; font-weight: 700; background: #f8fafc; width: 90px; }
+        .table-clean .value-number { text-align: right; color: #963d79; font-weight: 700; background: #f8fafc; width: 90px; }
 
-        .section-title { font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 10px 0; border-left: 6px solid #481d42; padding-left: 10px; }
+        .section-title { font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 10px 0; border-left: 6px solid #963d79; padding-left: 10px; }
         .qa-item { margin-bottom: 14px; }
         .qa-question { font-size: 12px; font-weight: 700; color: #111827; margin: 0 0 6px 2px; }
-        .qa-answer { border: 1px solid #e5e7eb; border-left: 4px solid #481d42; background: #f8fafc; border-radius: 0 10px 10px 3px; padding: 10px; color: #374151; }
+        .qa-answer { border: 1px solid #e5e7eb; border-left: 4px solid #963d79; background: #f8fafc; border-radius: 0 10px 10px 3px; padding: 10px; color: #374151; }
 
         .checklist-wrap { border-top: 1px solid #e5e7eb; padding-top: 14px; margin-top: 6px; }
         .checklist-list { margin: 0; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; list-style: none; }
@@ -45,7 +37,14 @@
         .check-bullet { display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: #22c55e; }
         .muted { color: #6b7280; }
 
-        .footer-note { background: #ffffff; border-top: 1px solid #e5e7eb; padding: 12px 20px; text-align: center; color: #6b7280; font-size: 10px; }
+        .pdf-footer { border-top: 1px solid #e9d5e0; padding: 12px 20px; text-align: center; color: #6b7280; font-size: 10px; }
+        .pdf-footer-subtitle { font-size: 15px; color: #2f1230; font-weight: 700; margin-bottom: 10px; text-align: left; }
+        .pdf-footer-partners { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        .pdf-footer-partners td { border: 0; text-align: center; vertical-align: middle; width: 50%; }
+        .brand-label { font-size: 11px; color: #5a2a56; font-weight: 700; margin-bottom: 6px; }
+        .brand-logo-ipf { height: 32px; }
+        .brand-logo-petro { height: 28px; }
+        .footer-note { font-size: 9px; color: #6b7280; }
     </style>
 </head>
 <body>
@@ -86,42 +85,20 @@
 @endphp
 
 <div class="sheet">
-    <div class="brand-header">
-        <div class="brand-top-accent"></div>
-        <div class="brand-title">
-            @if($logoEngaja)
-                <img src="{{ $logoEngaja }}" alt="Engaja">
-            @endif
-            <div class="brand-subtitle">Sistema de Gestão de Participação e Engajamento.</div>
-        </div>
-        <div class="brand-line"></div>
-        <table class="brand-partners">
-            <tr>
-                <td>
-                    <div class="brand-label">Realização</div>
-                    @if($logoIpf)
-                        <img src="{{ $logoIpf }}" class="brand-logo-ipf" alt="Instituto Paulo Freire">
-                    @endif
-                </td>
-                <td>
-                    <div class="brand-label">Parceria</div>
-                    @if($logoPetrobras)
-                        <img src="{{ $logoPetrobras }}" class="brand-logo-petro" alt="Petrobras">
-                    @endif
-                </td>
-            </tr>
-        </table>
+    <div class="report-header">
+        <h1 class="report-header-title">Relatório do Momento</h1>
+        <div class="report-header-subtitle">Documento institucional</div>
     </div>
 
     <div class="content">
         <table class="title-row">
             <tr>
                 <td>
-                    <h1 class="report-title">Relatório da Ação</h1>
+                    <h1 class="report-title">Dados do Relatório</h1>
                     <div class="author">Preenchido por: <span class="author-name">{{ $nomeResponsavel }}</span></div>
                 </td>
                 <td style="text-align: right; color: #9ca3af; font-size: 10px;">
-                    Documento institucional
+                    {{ now()->format('d/m/Y H:i') }}
                 </td>
             </tr>
         </table>
@@ -181,7 +158,26 @@
         </div>
     </div>
 
-    <div class="footer-note">INSTITUTO DE EDUCACAO E DIREITOS HUMANOS PAULO FREIRE | CNPJ 04.950.603/0001-05</div>
+    <div class="pdf-footer">
+        <div class="pdf-footer-subtitle">Sistema de Gestão de Participação e Engajamento.</div>
+        <table class="pdf-footer-partners">
+            <tr>
+                <td>
+                    <div class="brand-label">Realização</div>
+                    @if($logoIpf)
+                        <img src="{{ $logoIpf }}" class="brand-logo-ipf" alt="Instituto Paulo Freire">
+                    @endif
+                </td>
+                <td>
+                    <div class="brand-label">Parceria</div>
+                    @if($logoPetrobras)
+                        <img src="{{ $logoPetrobras }}" class="brand-logo-petro" alt="Petrobras">
+                    @endif
+                </td>
+            </tr>
+        </table>
+        <div class="footer-note">INSTITUTO DE EDUCACAO E DIREITOS HUMANOS PAULO FREIRE | CNPJ 04.950.603/0001-05</div>
+    </div>
 </div>
 
 </body>

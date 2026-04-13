@@ -399,12 +399,48 @@ class CertificadoController extends Controller
     {
         $filtroParticipante = trim($request->query('participante', ''));
         $filtroAcao = trim($request->query('acao', ''));
+        $filtroEventoId = $request->query('evento_id');
+        $contextoEvento = $request->query('contexto') === 'evento';
 
         $query = Certificado::with(['participante.user', 'modelo']);
 
         if ($filtroParticipante) {
-            $query->whereHas('participante.user', function ($q) use ($filtroParticipante) {
-                $q->where('name', 'ilike', "%{$filtroParticipante}%");
+            $termoParticipante = $this->normalizarBuscaTexto($filtroParticipante);
+            $cpfParticipante = preg_replace('/\D+/', '', $filtroParticipante);
+
+            $query->whereHas('participante', function ($q) use ($termoParticipante, $cpfParticipante) {
+                $q->where(function ($participanteQuery) use ($termoParticipante, $cpfParticipante) {
+                    if ($termoParticipante !== '') {
+                        $participanteQuery->whereHas('user', function ($userQuery) use ($termoParticipante) {
+                            $userQuery->whereRaw(
+                                "translate(lower(name), 'áàâãäåéèêëíìîïóòôõöúùûüçñ', 'aaaaaaeeeeiiiiooooouuuucn') like ?",
+                                ['%'.$termoParticipante.'%']
+                            );
+                        });
+                    }
+
+                    if ($cpfParticipante !== '') {
+                        $method = $termoParticipante !== '' ? 'orWhereRaw' : 'whereRaw';
+                        $participanteQuery->{$method}(
+                            "regexp_replace(coalesce(cpf, ''), '[^0-9]', '', 'g') like ?",
+                            ['%'.$cpfParticipante.'%']
+                        );
+                    }
+                });
+            });
+        }
+
+        if ($filtroEventoId) {
+            $eventoFiltro = Evento::find((int) $filtroEventoId);
+            $query->where(function ($q) use ($filtroEventoId, $eventoFiltro) {
+                $q->where('evento_id', (int) $filtroEventoId);
+
+                if ($eventoFiltro) {
+                    $q->orWhere(function ($sub) use ($eventoFiltro) {
+                        $sub->whereNull('evento_id')
+                            ->where('evento_nome', $eventoFiltro->nome);
+                    });
+                }
             });
         }
 
@@ -412,14 +448,32 @@ class CertificadoController extends Controller
             $query->where('evento_nome', 'ilike', "%{$filtroAcao}%");
         }
 
+        $acoesCertificado = Evento::query()
+            ->orderBy('nome')
+            ->get(['id', 'nome']);
+
         $certificados = $query->latest()
             ->paginate(20)
             ->appends([
                 'participante' => $filtroParticipante,
                 'acao' => $filtroAcao,
+                'evento_id' => $filtroEventoId,
+                'contexto' => $contextoEvento ? 'evento' : null,
             ]);
 
-        return view('certificados.emitidos', compact('certificados', 'filtroParticipante', 'filtroAcao'));
+        return view('certificados.emitidos', compact('certificados', 'filtroParticipante', 'filtroAcao', 'filtroEventoId', 'contextoEvento', 'acoesCertificado'));
+    }
+
+    private function normalizarBuscaTexto(string $valor): string
+    {
+        $valor = mb_strtolower(trim($valor));
+        $normalizado = iconv('UTF-8', 'ASCII//TRANSLIT', $valor);
+
+        if ($normalizado !== false) {
+            $valor = $normalizado;
+        }
+
+        return trim(preg_replace('/[^a-z0-9\s]+/', ' ', $valor) ?? $valor);
     }
 
     public function edit(Certificado $certificado)
