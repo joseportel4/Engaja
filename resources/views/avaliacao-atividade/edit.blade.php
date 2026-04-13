@@ -5,7 +5,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h4 fw-bold text-engaja mb-0">
-                Relatório da Ação
+                Relatório do Momento
             </h1>
             <small class="text-muted">Seu relatório individual para {{ $atividade->evento->nome ?? '' }} — {{ $atividade->descricao }}</small>
         </div>

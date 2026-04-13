@@ -20,7 +20,7 @@
 <div class="container py-4">
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
         <div>
-            <h1 class="h4 fw-bold text-engaja mb-1">Visualização do Relatório da Ação</h1>
+            <h1 class="h4 fw-bold text-engaja mb-1">Visualização do Relatório do Momento</h1>
             <p class="text-muted mb-0">
                 Relatório preenchido por {{ $nomeResponsavel }}
             </p>
