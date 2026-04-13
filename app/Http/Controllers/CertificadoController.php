@@ -487,7 +487,7 @@ class CertificadoController extends Controller
         $certificado->texto_frente = strtr($modelo->texto_frente ?? '', $map);
         $certificado->texto_verso = strtr($modelo->texto_verso ?? '', $map);
         $certificado->evento_nome = $eventoNome;
-        $certificado->codigo_validacao = null;
+        $certificado->codigo_validacao = Str::uuid()->toString();
         $certificado->carga_horaria = 600;
 
         $pdf = app('dompdf.wrapper');
