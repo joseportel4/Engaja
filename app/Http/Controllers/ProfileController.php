@@ -39,6 +39,29 @@ class ProfileController extends Controller
         ]);
     }
 
+    public function storeProfilePhotoPrompt(Request $request): RedirectResponse
+    {
+        $request->validateWithBag('photoPrompt', [
+            'profile_photo' => ['required', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
+        ], [
+            'profile_photo.required' => 'Selecione uma imagem para enviar.',
+            'profile_photo.image' => 'O arquivo deve ser uma imagem.',
+            'profile_photo.mimes' => 'Use JPG, PNG, GIF ou WEBP.',
+            'profile_photo.max' => 'A imagem deve ter no máximo 5 MB.',
+        ]);
+
+        $user = $request->user();
+        $user->profile_photo_path = $this->storeProfilePhoto($request, $user);
+        $user->save();
+
+        return Redirect::back()->with('status', 'profile-photo-updated');
+    }
+
+    public function skipProfilePhotoPrompt(Request $request): RedirectResponse
+    {
+        return Redirect::back();
+    }
+
     public function completeDemographics(Request $request): RedirectResponse
     {
         $data = $request->validate([
