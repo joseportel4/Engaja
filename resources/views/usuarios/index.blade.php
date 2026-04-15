@@ -1,5 +1,13 @@
 ﻿@extends('layouts.app')
 
+@push('styles')
+<style>
+  .usuarios-actions-dropdown .dropdown-menu {
+    position: fixed !important;
+  }
+</style>
+@endpush
+
 @section('content')
 <div class="mb-4">
     <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
@@ -128,8 +136,8 @@
                   <td>{{ $cpfFmt }}</td>
                   <td>{{ $telFmt }}</td>
                   <td class="text-end pe-4">
-                    <div class="dropdown d-inline-block">
-                      <button class="btn btn-sm btn-engaja dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div class="dropdown d-inline-block usuarios-actions-dropdown">
+                      <button class="btn btn-sm btn-engaja dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
                         Gerenciar
                       </button>
                       <ul class="dropdown-menu dropdown-menu-end shadow-sm">
