@@ -560,6 +560,10 @@
       </div>
     </div>
   </div>
+
+  @if (empty($exibirModalCompletarPerfil) && (!empty($showProfilePhotoPromptModal) || $errors->getBag('photoPrompt')->isNotEmpty()))
+    @include('layouts.partials.profile-photo-prompt-modal')
+  @endif
   
   @livewireScripts
 </body>

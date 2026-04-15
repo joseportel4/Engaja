@@ -48,6 +48,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::post('/profile/demographics', [ProfileController::class, 'completeDemographics'])->name('profile.complete-demographics');
+    Route::post('/profile/photo-prompt', [ProfileController::class, 'storeProfilePhotoPrompt'])->name('profile.photo-prompt.store');
+    Route::post('/profile/photo-prompt/skip', [ProfileController::class, 'skipProfilePhotoPrompt'])->name('profile.photo-prompt.skip');
 
     Route::post('/eventos/{evento}/inscrever', [InscricaoController::class, 'inscrever'])->name('inscricoes.inscrever');
     Route::delete('/eventos/{evento}/cancelar', [InscricaoController::class, 'cancelar'])->name('inscricoes.cancelar');

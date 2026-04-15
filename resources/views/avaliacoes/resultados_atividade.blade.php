@@ -115,44 +115,6 @@
             <script type="application/json" id="avaliacoes-perguntas-json">@json($perguntas ?? [])</script>
             <div class="vstack gap-4" id="cards-questoes-momento"></div>
         </div>
-
-        <div class="card shadow-sm">
-            <div class="card-header fw-semibold" style="background:#f3eaf5; color:#421944;">
-                Lista de submissões ({{ $submissoes->count() }} no total)
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>#</th>
-                                <th>Data / Hora de envio</th>
-                                <th>Respostas fornecidas</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($submissoes as $idx => $sub)
-                            <tr>
-                                <td class="text-muted">{{ $idx + 1 }}</td>
-                                <td>{{ $sub->created_at->format('d/m/Y H:i') }}</td>
-                                <td>
-                                    @forelse($sub->respostas as $resp)
-                                    <span class="badge bg-light text-dark border me-1 mb-1"
-                                          style="font-size:.75rem; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block;"
-                                          title="{{ $resp->avaliacaoQuestao?->texto }}: {{ $resp->resposta }}">
-                                        {{ Str::limit((string) $resp->resposta, 40) }}
-                                    </span>
-                                    @empty
-                                    <span class="text-muted small">Nenhuma resposta nesta submissão</span>
-                                    @endforelse
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
     @endif
 
 </div>
