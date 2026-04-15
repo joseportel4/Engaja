@@ -55,7 +55,7 @@
         <h1 class="h3 fw-bold text-engaja mb-0">Editar ação pedagógica</h1>
         <div class="d-flex gap-2">
             <a href="{{ route('eventos.planejamento.pdf', $evento) }}"
-               class="btn btn-outline-primary" target="_blank" rel="noopener noreferrer">Ver PDF</a>
+               class="btn btn-outline-primary" target="_blank" rel="noopener noreferrer">Ver Planejamento da Ação</a>
             <a href="{{ route('eventos.index') }}" class="btn btn-outline-secondary">Voltar</a>
         </div>
     </div>

@@ -204,7 +204,7 @@
         @endif
 
         <a href="{{ route('eventos.planejamento.pdf', $evento) }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary">
-          <i class="fas fa-file-pdf"></i> Ver PDF
+          <i class="fas fa-file-pdf"></i> Ver Planejamento da Ação
         </a>
 
         @hasanyrole('administrador|gerente|eq_pedagogica|articulador')

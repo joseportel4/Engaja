@@ -105,7 +105,7 @@
                                         Ver
                                     </a>
 
-                                    <a href="{{ route('eventos.planejamento.pdf', $ev) }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-danger" title="Ver PDF">PDF</a>
+                                    <a href="{{ route('eventos.planejamento.pdf', $ev) }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-danger" title="Ver Planejamento da Ação">Ver Planejamento da Ação</a>
 
                                     @can('update', $ev)
                                         @hasanyrole('administrador|gerente|eq_pedagogica')

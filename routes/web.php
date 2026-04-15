@@ -19,6 +19,7 @@ use App\Http\Controllers\IndicadorController;
 use App\Http\Controllers\InscricaoController;
 use App\Http\Controllers\ModeloCertificadoController;
 use App\Http\Controllers\MunicipioController;
+use App\Http\Controllers\ParticipantesExclusivosController;
 use App\Http\Controllers\PresencaController;
 use App\Http\Controllers\PresencaImportController;
 use App\Http\Controllers\ProfileController;
@@ -177,6 +178,11 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
         Route::get('verificar', [UserManagementController::class, 'verificarIndex'])->name('verificar.index');
         Route::post('verificar', [UserManagementController::class, 'verificarProcessar'])->name('verificar.processar');
         Route::get('verificar/exportar/{format}', [UserManagementController::class, 'verificarExportar'])->name('verificar.exportar');
+        Route::middleware('role:administrador|gerente')->group(function () {
+            Route::get('participantes-exclusivos', [ParticipantesExclusivosController::class, 'index'])->name('participantes-exclusivos.index');
+            Route::get('participantes-exclusivos/resultado', [ParticipantesExclusivosController::class, 'resultado'])->name('participantes-exclusivos.resultado');
+            Route::get('participantes-exclusivos/exportar', [ParticipantesExclusivosController::class, 'exportar'])->name('participantes-exclusivos.exportar');
+        });
         Route::get('{managedUser}/editar', [UserManagementController::class, 'edit'])->name('edit');
         Route::put('{managedUser}', [UserManagementController::class, 'update'])->name('update');
         Route::post('{managedUser}/redefinir-senha', [UserManagementController::class, 'resetPassword'])
