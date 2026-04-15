@@ -40,7 +40,13 @@ class UserManagementController extends Controller
         $estadoId = $request->query('estado');
         $municipioId = $request->query('municipio');
 
-        $users = User::with(['roles', 'participante.municipio.estado.regiao'])
+        $users = User::with([
+            'roles',
+            'participante.municipio.estado.regiao',
+            'participante.inscricoes.evento',
+            'participante.inscricoes.atividade.evento',
+            'participante.inscricoes.presencas',
+        ])
             ->when(!auth()->user()->hasRole('administrador'), function ($q) {
                 //nao sendo administrador, oculta os administradores
                 $q->whereDoesntHave('roles', fn($sub) => $sub->whereIn('name', self::PROTECTED_ROLES));
