@@ -14,6 +14,7 @@ use App\Support\CargaHoraria;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class AtividadeController extends Controller
@@ -520,5 +521,61 @@ class AtividadeController extends Controller
         return response($pdf->Output('S'), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'attachment; filename="'.$fileName.'"');
+    }
+
+    public function diario(Atividade $atividade)
+    {
+        //carrega as inscrições do evento com os dados do usuário para listar na tela
+        $inscricoes = $atividade->evento->inscricoes()
+            ->with(['participante.user', 'participante.municipio.estado'])
+            ->get()
+            ->sortBy(function ($inscricao) {
+                return $inscricao->participante->user->name ?? '';
+            });
+
+        //pega apenas os IDs das inscrições que já estão marcadas como "presente" nesta atividade
+        $presencasAtuais = $atividade->presencas()
+            ->where('status', 'presente')
+            ->pluck('inscricao_id')
+            ->toArray();
+
+        return view('atividades.diario', compact('atividade', 'inscricoes', 'presencasAtuais'));
+    }
+
+    public function salvarDiario(Request $request, Atividade $atividade)
+    {
+        $request->validate([
+            'inscricoes'   => 'nullable|array',
+            'inscricoes.*' => 'exists:inscricaos,id',
+        ]);
+
+        //array com os IDs das inscrições que foram confirmadas na tela
+        $presentes = $request->input('inscricoes', []);
+
+        DB::transaction(function () use ($atividade, $presentes) {
+            foreach ($presentes as $inscricaoId) {
+                $atividade->presencas()->updateOrCreate(
+                    ['inscricao_id' => $inscricaoId],
+                    ['status' => 'presente']
+                );
+            }
+
+            //quem estava como presente no banco, mas NÃO veio no array atual, significa que foi desmarcado.
+            //atualizo para ausente
+            if (!empty($presentes)) {
+                $atividade->presencas()
+                    ->whereNotIn('inscricao_id', $presentes)
+                    ->where('status', 'presente')
+                    ->update(['status' => 'ausente']);
+            } else {
+                //se o array veio vazio,todos viram ausentes
+                $atividade->presencas()
+                    ->where('status', 'presente')
+                    ->update(['status' => 'ausente']);
+            }
+        });
+
+        return redirect()->route('atividades.show', $atividade)
+            ->with('success', 'Diário de presenças salvo com sucesso!');
     }
 }
