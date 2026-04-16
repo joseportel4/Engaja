@@ -23,12 +23,12 @@ class ListaPresencaOficinaPdf extends Fpdi
     {
         if ($this->PageNo() == 1) {
             $this->useTemplate($this->templatePage1, 0, 0, null, null, true);
-            $this->SetFont('Helvetica', 'B', 10);
+            $this->SetFont('Helvetica', 'B', 9.5);
 
             $this->SetLineWidth(0.4);
 
-            $this->Text(37.6, 65.7, utf8_decode($this->municipioLabel));
-            $this->Text(254, 65.7, utf8_decode($this->dataLabel));
+            $this->Text(37.6, 65.5, utf8_decode($this->municipioLabel));
+                $this->Text(240, 65.5, utf8_decode($this->dataLabel));
 
             //posição Y onde começa a tabela na pagina 1
             $this->SetY(82);
