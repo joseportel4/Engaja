@@ -501,7 +501,7 @@ class AtividadeController extends Controller
                 }
 
                 // formatando o CPF
-                $cpfSujo = $inscricao->participante->cpf ?? '';
+                $cpfSujo = $participante->cpf ?? '';
                 $cpfLimpo = preg_replace('/[^0-9]/', '', $cpfSujo);
                 if (strlen($cpfLimpo) === 11) {
                     $cpfFormatado = preg_replace("/(\d{3})(\d{3})(\d{3})(\d{2})/", '$1.$2.$3-$4', $cpfLimpo);
