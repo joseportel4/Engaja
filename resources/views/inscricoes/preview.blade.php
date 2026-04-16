@@ -2,17 +2,37 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+  $modoTodosMomentos = $modoTodosMomentos ?? false;
+  $atividadesEscopo = $atividadesEscopo ?? collect();
+@endphp
 <div class="container py-4">
   <h1 class="h4 mb-3">Pré-visualização da Importação - {{ $evento->nome }}</h1>
-  <div class="text-muted mb-3">
-    Momento selecionado:
-    <strong>{{ $atividade->descricao ?: 'Momento' }}</strong>
-    —
-    {{ \Carbon\Carbon::parse($atividade->dia)->format('d/m/Y') }}
-    @if($atividade->hora_inicio)
-      às {{ \Carbon\Carbon::parse($atividade->hora_inicio)->format('H:i') }}
-    @endif
-  </div>
+  @if($modoTodosMomentos)
+    <div class="text-muted mb-3">
+      Escopo: <strong>todos os {{ $atividadesEscopo->count() }} momento(s)</strong> desta ação.
+      Cada participante será inscrito em cada momento (inscrições já existentes em um momento são mantidas).
+    </div>
+    <ul class="small text-muted mb-3">
+      @foreach($atividadesEscopo as $at)
+        @php
+          $diaAt = \Carbon\Carbon::parse($at->dia)->format('d/m/Y');
+          $horaAt = $at->hora_inicio ? \Carbon\Carbon::parse($at->hora_inicio)->format('H:i') : null;
+        @endphp
+        <li>{{ $at->descricao ?: 'Momento' }} — {{ $diaAt }}{{ $horaAt ? ' às '.$horaAt : '' }}</li>
+      @endforeach
+    </ul>
+  @else
+    <div class="text-muted mb-3">
+      Momento selecionado:
+      <strong>{{ $atividade->descricao ?: 'Momento' }}</strong>
+      —
+      {{ \Carbon\Carbon::parse($atividade->dia)->format('d/m/Y') }}
+      @if($atividade->hora_inicio)
+        às {{ \Carbon\Carbon::parse($atividade->hora_inicio)->format('H:i') }}
+      @endif
+    </div>
+  @endif
 
   <div class="text-muted mb-3">
     Na importação:
@@ -46,7 +66,9 @@
       <form method="POST" action="{{ route('inscricoes.confirmar', $evento) }}">
         @csrf
         <input type="hidden" name="session_key" value="{{ $sessionKey }}">
+        @unless($modoTodosMomentos)
         <input type="hidden" name="atividade_id" value="{{ $atividade->id }}">
+        @endunless
         <button class="btn btn-primary">Confirmar e salvar (todas as páginas)</button>
       </form>
     </div>
@@ -54,15 +76,17 @@
 
   {{-- Salvar alterações da página atual na sessão --}}
   <form id="form-save-page" method="POST"
-    action="{{ route('inscricoes.preview.save', [
+    action="{{ route('inscricoes.preview.save', array_filter([
             'evento' => $evento,
             'page' => $rows->currentPage(),
             'per_page' => $rows->perPage(),
-            'atividade_id' => $atividade->id,
-        ]) }}">
+            'atividade_id' => $modoTodosMomentos ? null : $atividade->id,
+        ])) }}">
     @csrf
     <input type="hidden" name="session_key" value="{{ $sessionKey }}">
+    @unless($modoTodosMomentos)
     <input type="hidden" name="atividade_id" value="{{ $atividade->id }}">
+    @endunless
 
     <div class="table-responsive">
       @php $tagOptions = $participanteTags ?? config('engaja.participante_tags', \App\Models\Participante::TAGS); @endphp
@@ -151,7 +175,7 @@
     <div class="d-flex align-items-center justify-content-between">
       <div>
         {{-- mantém session_key e per_page definidos pelo controller --}}
-        {{ $rows->appends(['session_key' => $sessionKey, 'per_page' => $rows->perPage(), 'atividade_id' => $atividade->id])->links() }}
+        {{ $rows->appends(array_filter(['session_key' => $sessionKey, 'per_page' => $rows->perPage(), 'atividade_id' => $modoTodosMomentos ? null : $atividade->id]))->links() }}
       </div>
       <div class="d-flex gap-2">
         <button class="btn btn-outline-primary btn-sm">Salvar alterações desta página</button>

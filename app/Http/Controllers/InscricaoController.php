@@ -17,11 +17,15 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class InscricaoController extends Controller
@@ -760,12 +764,14 @@ class InscricaoController extends Controller
                 if (! $temPartes && $temCargaLegada) {
                     if (! is_numeric($cargaRaw) || (int) $cargaRaw < 0) {
                         $errors[] = "Linha {$line}: carga horária inválida para o momento '{$momento}'.";
+
                         continue;
                     }
 
                     $totalMinutos = ((int) $cargaRaw) * 60;
                     $workloadsMap[$momento] = $totalMinutos;
                     $moments[] = $momento;
+
                     continue;
                 }
 
@@ -775,6 +781,7 @@ class InscricaoController extends Controller
                 if ($horasRaw !== '') {
                     if (! is_numeric($horasRaw) || (int) $horasRaw < 0) {
                         $errors[] = "Linha {$line}: horas inválidas para o momento '{$momento}'.";
+
                         continue;
                     }
                     $horas = (int) $horasRaw;
@@ -783,11 +790,13 @@ class InscricaoController extends Controller
                 if ($minutosRaw !== '') {
                     if (! is_numeric($minutosRaw) || (int) $minutosRaw < 0) {
                         $errors[] = "Linha {$line}: minutos inválidos para o momento '{$momento}'.";
+
                         continue;
                     }
                     $minutos = (int) $minutosRaw;
                     if ($minutos > 59) {
                         $errors[] = "Linha {$line}: minutos devem estar entre 0 e 59 para o momento '{$momento}'.";
+
                         continue;
                     }
                 }
@@ -796,12 +805,14 @@ class InscricaoController extends Controller
             } else {
                 if ($cargaRaw === '' || ! is_numeric($cargaRaw)) {
                     $errors[] = "Linha {$line}: carga horária inválida para o momento '{$momento}'.";
+
                     continue;
                 }
 
                 $carga = (int) $cargaRaw;
                 if ($carga < 0) {
                     $errors[] = "Linha {$line}: carga horária negativa para o momento '{$momento}'.";
+
                     continue;
                 }
 
@@ -963,6 +974,7 @@ class InscricaoController extends Controller
 
         return $participantes->mapWithKeys(function ($participante) {
             $cpf = $this->normalizeCpf((string) ($participante->cpf ?? ''));
+
             return $cpf !== '' ? [$cpf => $participante] : [];
         });
     }
@@ -997,47 +1009,269 @@ class InscricaoController extends Controller
      */
     public function cadastro(Request $request, Evento $evento)
     {
+        if ($request->input('atividade_id') === '' || $request->input('atividade_id') === null) {
+            $request->merge(['atividade_id' => null]);
+        }
+
         $validated = $request->validate([
             'your_file' => 'required|file|mimes:xlsx,xls,csv|max:20480',
             'atividade_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('atividades', 'id')->where('evento_id', $evento->id),
             ],
         ]);
 
-        $atividade = $evento->atividades()
-            ->whereKey($validated['atividade_id'])
-            ->first();
+        $modoTodosMomentos = $validated['atividade_id'] === null;
 
-        if (! $atividade) {
+        $atividadesEvento = $evento->atividades()
+            ->orderBy('dia')
+            ->orderBy('hora_inicio')
+            ->get();
+
+        if ($modoTodosMomentos && $atividadesEvento->isEmpty()) {
             return back()
-                ->withErrors(['atividade_id' => 'Momento inválido para este evento.'])
-                ->withInput();
+                ->withInput()
+                ->withErrors(['atividade_id' => 'Este evento não possui momentos cadastrados.']);
+        }
+
+        if (! $modoTodosMomentos) {
+            $atividade = $atividadesEvento->firstWhere('id', (int) $validated['atividade_id']);
+            if (! $atividade) {
+                return back()
+                    ->withErrors(['atividade_id' => 'Momento inválido para este evento.'])
+                    ->withInput();
+            }
         }
 
         try {
-            $import = new ParticipantesPreviewImport;
-            Excel::import($import, $request->file('your_file'));
+            $uploadedFile = $request->file('your_file');
+            $extension = $uploadedFile?->getClientOriginalExtension() ?: 'xlsx';
+            $tmpRelativePath = $uploadedFile->storeAs(
+                'tmp/imports',
+                'inscricoes_'.Str::uuid().'.'.$extension
+            );
+            $tmpAbsolutePath = Storage::path($tmpRelativePath);
 
-            $rows = $import->rows->values()->all();
+            $bestRows = collect();
+            $bestScore = -1;
 
-            $sessionKey = "import_preview_evento_{$evento->id}_atividade_{$atividade->id}";
+            for ($headerRow = 1; $headerRow <= 30; $headerRow++) {
+                $attempt = new ParticipantesPreviewImport($headerRow);
+                Excel::import($attempt, $tmpAbsolutePath);
+
+                $candidateRows = collect($attempt->rows)->values();
+                $score = $candidateRows->filter(function ($row) {
+                    $nome = trim((string) ($row['nome'] ?? ''));
+                    $email = trim((string) ($row['email'] ?? ''));
+                    $cpf = trim((string) ($row['cpf'] ?? ''));
+                    $telefone = trim((string) ($row['telefone'] ?? ''));
+
+                    return $nome !== '' || $email !== '' || $cpf !== '' || $telefone !== '';
+                })->count();
+
+                if ($score > $bestScore) {
+                    $bestScore = $score;
+                    $bestRows = $candidateRows;
+                }
+            }
+
+            $rows = $bestRows
+                ->filter(function ($row) {
+                    $nome = trim((string) ($row['nome'] ?? ''));
+                    $email = trim((string) ($row['email'] ?? ''));
+                    $cpf = trim((string) ($row['cpf'] ?? ''));
+                    $telefone = trim((string) ($row['telefone'] ?? ''));
+                    $municipio = trim((string) ($row['municipio'] ?? ''));
+
+                    return $nome !== '' || $email !== '' || $cpf !== '' || $telefone !== '' || $municipio !== '';
+                })
+                ->values()
+                ->all();
+
+            if (empty($rows)) {
+                $rows = $this->parseParticipantesSpreadsheetFallback($tmpAbsolutePath)->all();
+            }
+
+            if (empty($rows)) {
+                Storage::delete($tmpRelativePath);
+
+                return back()
+                    ->withErrors(['your_file' => 'Não foi possível ler linhas da planilha. Verifique se os dados estão em células (não imagem), com cabeçalhos como nome, email, cpf, telefone e municipio.'])
+                    ->withInput();
+            }
+
+            Storage::delete($tmpRelativePath);
+
+            $sessionKey = $modoTodosMomentos
+                ? "import_preview_evento_{$evento->id}_todos"
+                : "import_preview_evento_{$evento->id}_atividade_{$validated['atividade_id']}";
+
             session([$sessionKey => [
-                'atividade_id' => $atividade->id,
+                'modo_todos_momentos' => $modoTodosMomentos,
+                'atividade_id' => $modoTodosMomentos ? null : $validated['atividade_id'],
                 'rows' => $rows,
             ]]);
 
-            return redirect()->route('inscricoes.preview', [
+            return redirect()->route('inscricoes.preview', array_filter([
                 'evento' => $evento,
                 'session_key' => $sessionKey,
-                'atividade_id' => $atividade->id,
-            ]);
+                'atividade_id' => $modoTodosMomentos ? null : $validated['atividade_id'],
+            ]));
         } catch (\Throwable $e) {
+            if (! empty($tmpRelativePath ?? null)) {
+                Storage::delete($tmpRelativePath);
+            }
+
             return back()
                 ->withErrors(['your_file' => 'Falha ao processar o arquivo: '.$e->getMessage()])
                 ->withInput();
         }
+    }
+
+    private function parseParticipantesSpreadsheetFallback(string $absolutePath): Collection
+    {
+        $aliases = [
+            'nome' => ['nome', 'name'],
+            'email' => ['email', 'e mail', 'e_mail', 'mail'],
+            'cpf' => ['cpf', 'documento'],
+            'telefone' => ['telefone', 'celular', 'fone', 'telefone celular', 'telefone_celular'],
+            'municipio' => ['municipio', 'município', 'cidade'],
+            'tipo_organizacao' => ['tipo de organizacao', 'tipo_da_organizacao', 'tipo organizacao', 'tipoorganizacao'],
+            'organizacao' => ['organizacao', 'organização', 'escola_unidade', 'escola unidade', 'organizacao_nome'],
+            'tag' => ['tag'],
+            'data_entrada' => ['data_entrada', 'data entrada', 'data de entrada'],
+        ];
+
+        $aliasLookup = [];
+        foreach ($aliases as $field => $terms) {
+            foreach ($terms as $term) {
+                $aliasLookup[$this->normalizeSpreadsheetHeader($term)] = $field;
+            }
+        }
+
+        $municipiosLookup = Municipio::query()
+            ->select('id', 'nome')
+            ->get()
+            ->mapWithKeys(fn ($m) => [mb_strtolower(trim((string) $m->nome)) => (int) $m->id])
+            ->all();
+
+        $spreadsheet = IOFactory::load($absolutePath);
+        $bestRows = collect();
+        $bestScore = -1;
+
+        foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
+            $highestRow = (int) $sheet->getHighestDataRow();
+            if ($highestRow < 1) {
+                continue;
+            }
+
+            $highestColumnIndex = Coordinate::columnIndexFromString((string) $sheet->getHighestDataColumn());
+            $maxHeaderRow = min(30, $highestRow);
+
+            for ($headerRow = 1; $headerRow <= $maxHeaderRow; $headerRow++) {
+                $fieldToColumn = [];
+
+                for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                    $rawHeader = trim((string) $sheet->getCell([$col, $headerRow])->getCalculatedValue());
+                    if ($rawHeader === '') {
+                        continue;
+                    }
+
+                    $field = $aliasLookup[$this->normalizeSpreadsheetHeader($rawHeader)] ?? null;
+                    if ($field && ! isset($fieldToColumn[$field])) {
+                        $fieldToColumn[$field] = $col;
+                    }
+                }
+
+                if (! isset($fieldToColumn['nome']) && ! isset($fieldToColumn['email'])) {
+                    continue;
+                }
+
+                $rows = collect();
+
+                for ($rowNumber = $headerRow + 1; $rowNumber <= $highestRow; $rowNumber++) {
+                    $nome = $this->sheetCellValue($sheet, $fieldToColumn['nome'] ?? null, $rowNumber);
+                    $email = $this->sheetCellValue($sheet, $fieldToColumn['email'] ?? null, $rowNumber);
+                    $cpfRaw = $this->sheetCellValue($sheet, $fieldToColumn['cpf'] ?? null, $rowNumber);
+                    $telefoneRaw = $this->sheetCellValue($sheet, $fieldToColumn['telefone'] ?? null, $rowNumber);
+                    $municipioNome = $this->sheetCellValue($sheet, $fieldToColumn['municipio'] ?? null, $rowNumber);
+                    $tipoOrganizacao = $this->sheetCellValue($sheet, $fieldToColumn['tipo_organizacao'] ?? null, $rowNumber);
+                    $organizacao = $this->sheetCellValue($sheet, $fieldToColumn['organizacao'] ?? null, $rowNumber);
+                    $tag = $this->sheetCellValue($sheet, $fieldToColumn['tag'] ?? null, $rowNumber);
+                    $dataEntrada = $this->sheetCellValue($sheet, $fieldToColumn['data_entrada'] ?? null, $rowNumber);
+
+                    if (
+                        $nome === '' &&
+                        $email === '' &&
+                        $cpfRaw === '' &&
+                        $telefoneRaw === '' &&
+                        $municipioNome === '' &&
+                        $tipoOrganizacao === '' &&
+                        $organizacao === '' &&
+                        $tag === ''
+                    ) {
+                        continue;
+                    }
+
+                    $municipioId = $municipioNome !== ''
+                        ? ($municipiosLookup[mb_strtolower($municipioNome)] ?? null)
+                        : null;
+
+                    if ($tipoOrganizacao === '' && $organizacao !== '') {
+                        $tipoOrganizacao = $organizacao;
+                        $organizacao = '';
+                    }
+
+                    $rows->push([
+                        'nome' => $nome,
+                        'email' => $email,
+                        'cpf' => preg_replace('/\D+/', '', $cpfRaw) ?: null,
+                        'telefone' => preg_replace('/\D+/', '', $telefoneRaw) ?: null,
+                        'municipio' => $municipioNome,
+                        'municipio_id' => $municipioId,
+                        'tipo_organizacao' => $tipoOrganizacao,
+                        'tipo_organizacao_ok' => true,
+                        'escola_unidade' => $organizacao,
+                        'tag' => $tag !== '' ? $tag : null,
+                        'tag_ok' => true,
+                        'data_entrada' => $dataEntrada,
+                    ]);
+                }
+
+                $score = $rows->filter(fn ($row) => trim((string) ($row['nome'] ?? '')) !== '' || trim((string) ($row['email'] ?? '')) !== '')->count();
+                if ($score > $bestScore) {
+                    $bestScore = $score;
+                    $bestRows = $rows;
+                }
+            }
+        }
+
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+
+        return $bestRows->values();
+    }
+
+    private function normalizeSpreadsheetHeader(string $value): string
+    {
+        $normalized = Str::of($value)
+            ->lower()
+            ->ascii()
+            ->replaceMatches('/[^a-z0-9]+/', ' ')
+            ->trim()
+            ->value();
+
+        return preg_replace('/\s+/', ' ', $normalized) ?: '';
+    }
+
+    private function sheetCellValue(Worksheet $sheet, ?int $column, int $row): string
+    {
+        if (! $column) {
+            return '';
+        }
+
+        return trim((string) $sheet->getCell([$column, $row])->getCalculatedValue());
     }
 
     /**
@@ -1053,20 +1287,38 @@ class InscricaoController extends Controller
                 ->withErrors(['your_file' => 'Sessão de importação vazia/expirada. Envie o arquivo novamente.']);
         }
 
-        $atividadeId = $request->query('atividade_id') ?? ($sessionPayload['atividade_id'] ?? null);
+        $modoTodosMomentos = ! empty($sessionPayload['modo_todos_momentos']);
 
-        if (! $atividadeId) {
-            return redirect()->route('inscricoes.import', $evento)
-                ->withErrors(['atividade_id' => 'Momento da importação não encontrado. Inicie o processo novamente.']);
-        }
+        if ($modoTodosMomentos) {
+            $atividadesEscopo = $evento->atividades()
+                ->orderBy('dia')
+                ->orderBy('hora_inicio')
+                ->get();
 
-        $atividade = $evento->atividades()
-            ->whereKey($atividadeId)
-            ->first();
+            if ($atividadesEscopo->isEmpty()) {
+                return redirect()->route('inscricoes.import', $evento)
+                    ->withErrors(['atividade_id' => 'Este evento não possui momentos cadastrados.']);
+            }
 
-        if (! $atividade) {
-            return redirect()->route('inscricoes.import', $evento)
-                ->withErrors(['atividade_id' => 'Momento informado não pertence a este evento.']);
+            $atividade = null;
+        } else {
+            $atividadeId = $request->query('atividade_id') ?? ($sessionPayload['atividade_id'] ?? null);
+
+            if (! $atividadeId) {
+                return redirect()->route('inscricoes.import', $evento)
+                    ->withErrors(['atividade_id' => 'Momento da importação não encontrado. Inicie o processo novamente.']);
+            }
+
+            $atividade = $evento->atividades()
+                ->whereKey($atividadeId)
+                ->first();
+
+            if (! $atividade) {
+                return redirect()->route('inscricoes.import', $evento)
+                    ->withErrors(['atividade_id' => 'Momento informado não pertence a este evento.']);
+            }
+
+            $atividadesEscopo = collect([$atividade]);
         }
 
         $allRows = collect($sessionPayload['rows']);
@@ -1079,6 +1331,12 @@ class InscricaoController extends Controller
 
         $slice = $allRows->slice(($page - 1) * $perPage, $perPage)->values();
 
+        $queryPreview = array_filter([
+            'session_key' => $sessionKey,
+            'per_page' => $perPage,
+            'atividade_id' => $modoTodosMomentos ? null : $atividade->id,
+        ], fn ($v) => $v !== null && $v !== '');
+
         $rowsPaginator = new LengthAwarePaginator(
             $slice,
             $total,
@@ -1086,11 +1344,7 @@ class InscricaoController extends Controller
             $page,
             [
                 'path' => route('inscricoes.preview', $evento),
-                'query' => [
-                    'session_key' => $sessionKey,
-                    'per_page' => $perPage,
-                    'atividade_id' => $atividade->id,
-                ],
+                'query' => $queryPreview,
             ]
         );
 
@@ -1104,6 +1358,8 @@ class InscricaoController extends Controller
         return view('inscricoes.preview', [
             'evento' => $evento,
             'atividade' => $atividade,
+            'atividadesEscopo' => $atividadesEscopo,
+            'modoTodosMomentos' => $modoTodosMomentos,
             'rows' => $rowsPaginator,
             'globalOffset' => $globalOffset,
             'sessionKey' => $sessionKey,
@@ -1176,8 +1432,10 @@ class InscricaoController extends Controller
             return back()->withErrors(['rows' => 'Sessão expirada. Reenvie o arquivo.']);
         }
 
+        $modoTodosMomentos = ! empty($sessionPayload['modo_todos_momentos']);
         $atividadeId = $sessionPayload['atividade_id'] ?? $request->input('atividade_id');
-        if (! $atividadeId) {
+
+        if (! $modoTodosMomentos && ! $atividadeId) {
             return back()->withErrors(['atividade_id' => 'Momento da importação não encontrado. Inicie novamente.']);
         }
 
@@ -1192,7 +1450,8 @@ class InscricaoController extends Controller
 
         session([
             $sessionKey => [
-                'atividade_id' => $atividadeId,
+                'modo_todos_momentos' => $modoTodosMomentos,
+                'atividade_id' => $modoTodosMomentos ? null : $atividadeId,
                 'rows' => $allRows->values()->all(),
             ],
         ]);
@@ -1200,13 +1459,13 @@ class InscricaoController extends Controller
         $page = (int) $request->query('page', 1);
         $perPage = (int) $request->query('per_page', 50);
 
-        return redirect()->route('inscricoes.preview', [
+        return redirect()->route('inscricoes.preview', array_filter([
             'evento' => $evento,
             'session_key' => $sessionKey,
             'page' => $page,
             'per_page' => $perPage,
-            'atividade_id' => $atividadeId,
-        ])->with('success', 'Alterações desta página salvas.');
+            'atividade_id' => $modoTodosMomentos ? null : $atividadeId,
+        ]))->with('success', 'Alterações desta página salvas.');
     }
 
     /**
@@ -1214,40 +1473,66 @@ class InscricaoController extends Controller
      */
     public function confirmar(Request $request, Evento $evento)
     {
-        $validated = $request->validate([
+        if ($request->input('atividade_id') === '' || $request->input('atividade_id') === null) {
+            $request->merge(['atividade_id' => null]);
+        }
+
+        $validatedBase = $request->validate([
             'session_key' => 'required|string',
-            'atividade_id' => [
-                'required',
-                'integer',
-                Rule::exists('atividades', 'id')->where('evento_id', $evento->id),
-            ],
         ]);
 
-        $sessionKey = $validated['session_key'];
+        $sessionKey = $validatedBase['session_key'];
         $sessionPayload = session($sessionKey);
 
         if (! is_array($sessionPayload) || empty($sessionPayload['rows'] ?? [])) {
             return back()->withErrors(['rows' => 'Sessão de importação vazia/expirada. Reenvie o arquivo.']);
         }
 
-        $atividadeId = $validated['atividade_id'];
-        $sessionAtividade = $sessionPayload['atividade_id'] ?? null;
+        $modoTodosMomentos = ! empty($sessionPayload['modo_todos_momentos']);
 
-        if ($sessionAtividade && (int) $sessionAtividade !== (int) $atividadeId) {
-            return back()->withErrors(['atividade_id' => 'Momento informado não corresponde ao processo em andamento. Refaça a importação.']);
-        }
+        if ($modoTodosMomentos) {
+            $atividadesAlvo = $evento->atividades()
+                ->orderBy('dia')
+                ->orderBy('hora_inicio')
+                ->get();
 
-        $atividade = $evento->atividades()
-            ->whereKey($atividadeId)
-            ->first();
+            if ($atividadesAlvo->isEmpty()) {
+                return back()->withErrors(['atividade_id' => 'Este evento não possui momentos cadastrados.']);
+            }
 
-        if (! $atividade) {
-            return back()->withErrors(['atividade_id' => 'Momento informado não pertence a este evento.']);
+            if ($request->input('atividade_id') !== null) {
+                return back()->withErrors(['atividade_id' => 'Modo da importação não corresponde ao processo em andamento.']);
+            }
+        } else {
+            $validated = $request->validate([
+                'atividade_id' => [
+                    'required',
+                    'integer',
+                    Rule::exists('atividades', 'id')->where('evento_id', $evento->id),
+                ],
+            ]);
+
+            $atividadeId = $validated['atividade_id'];
+            $sessionAtividade = $sessionPayload['atividade_id'] ?? null;
+
+            if ($sessionAtividade && (int) $sessionAtividade !== (int) $atividadeId) {
+                return back()->withErrors(['atividade_id' => 'Momento informado não corresponde ao processo em andamento. Refaça a importação.']);
+            }
+
+            $atividade = $evento->atividades()
+                ->whereKey($atividadeId)
+                ->first();
+
+            if (! $atividade) {
+                return back()->withErrors(['atividade_id' => 'Momento informado não pertence a este evento.']);
+            }
+
+            $atividadesAlvo = collect([$atividade]);
         }
 
         $rows = collect($sessionPayload['rows']);
 
-        DB::transaction(function () use ($rows, $evento, $atividade) {
+        DB::transaction(function () use ($rows, $evento, $atividadesAlvo) {
             $ids = [];
 
             $emails = collect($rows)->pluck('email')->map(fn ($e) => strtolower(trim((string) $e)))->unique()->filter()->values();
@@ -1401,36 +1686,11 @@ class InscricaoController extends Controller
 
             $participanteIds = collect($ids)->filter()->unique()->values();
 
-            foreach ($participanteIds as $participanteId) {
-                $inscricao = Inscricao::withTrashed()
-                    ->where('participante_id', $participanteId)
-                    ->where('atividade_id', $atividade->id)
-                    ->first();
+            $participantes = Participante::whereIn('id', $participanteIds->all())->get();
 
-                if (! $inscricao) {
-                    $inscricao = Inscricao::withTrashed()
-                        ->where('participante_id', $participanteId)
-                        ->where('evento_id', $evento->id)
-                        ->whereNull('atividade_id')
-                        ->first();
-                }
-
-                if ($inscricao) {
-                    $inscricao->fill([
-                        'evento_id' => $evento->id,
-                        'atividade_id' => $atividade->id,
-                        'participante_id' => $participanteId,
-                        'ouvinte' => false,
-                    ]);
-                    $inscricao->deleted_at = null;
-                    $inscricao->save();
-                } else {
-                    Inscricao::create([
-                        'evento_id' => $evento->id,
-                        'atividade_id' => $atividade->id,
-                        'participante_id' => $participanteId,
-                        'ouvinte' => false,
-                    ]);
+            foreach ($participantes as $participante) {
+                foreach ($atividadesAlvo as $atividade) {
+                    $this->inscreverParticipanteNoMomento($evento, $atividade, $participante);
                 }
             }
         });
