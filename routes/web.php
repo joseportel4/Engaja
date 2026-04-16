@@ -78,6 +78,9 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
 
     Route::get('/atividades/{atividade}/lista-autorizacao-pdf', [AtividadeController::class, 'downloadListaAutorizacaoImagemPdf'])
         ->name('atividades.lista-autorizacao.pdf');
+
+    Route::get('/atividades/{atividade}/diario', [AtividadeController::class, 'diario'])->name('atividades.diario');
+    Route::post('/atividades/{atividade}/diario', [AtividadeController::class, 'salvarDiario'])->name('atividades.diario.salvar');
 });
 
 Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {
