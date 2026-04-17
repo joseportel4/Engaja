@@ -526,7 +526,7 @@ class AtividadeController extends Controller
     public function diario(Atividade $atividade)
     {
         //carrega as inscrições do evento com os dados do usuário para listar na tela
-        $inscricoes = $atividade->evento->inscricoes()
+        $inscricoes = $atividade->inscricoes()
             ->with(['participante.user', 'participante.municipio.estado'])
             ->get()
             ->sortBy(function ($inscricao) {
