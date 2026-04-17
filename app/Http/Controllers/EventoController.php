@@ -262,7 +262,7 @@ class EventoController extends Controller
 
     public function gerarPdfPlanejamento(Evento $evento): Response
     {
-        $this->authorize('update', $evento);
+        $this->authorize('view', $evento);
 
         $evento->load(['situacoesDesafiadoras', 'matrizes', 'sequenciasDidaticas']);
         $matrizesOrdenadas = $evento->matrizes

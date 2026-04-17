@@ -231,7 +231,7 @@
                 </li>
               @endhasanyrole
 
-              @role('administrador|gerente')
+              @role('administrador|gerente|eq_pedagogica|articulador')
                 <li><hr class="dropdown-divider"></li>
                 <li>
                   <button type="button" class="dropdown-item" data-bs-toggle="modal"
@@ -487,7 +487,7 @@
                       @endhasanyrole
                       --}}
 
-                      @hasanyrole('administrador|gerente')
+                      @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
                         <a href="{{ $at->avaliacaoAtividade
                               ? route('avaliacao-atividade.edit',   $at)
                               : route('avaliacao-atividade.create', $at) }}"
