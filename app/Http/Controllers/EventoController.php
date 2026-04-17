@@ -275,6 +275,7 @@ class EventoController extends Controller
                 'acoesGerais'    => Evento::ACOES_GERAIS,
                 'checklistItems' => array_values(Evento::CHECKLIST_PLANEJAMENTO_ITEMS),
             ])
+            ->setOptions(['isHtml5ParserEnabled' => true])
             ->setPaper('a4', 'portrait');
 
         return $pdf->stream('planejamento-'.Str::slug($evento->nome).'.pdf');
