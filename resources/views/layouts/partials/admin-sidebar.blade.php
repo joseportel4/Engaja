@@ -133,7 +133,7 @@
     </div>
   @endhasanyrole
 
-  @hasanyrole('administrador|gerente')
+  @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
     <div class="admin-sidebar__section">
       <p class="admin-sidebar__label">Relatórios</p>
       <a class="admin-nav-link {{ request()->routeIs('avaliacao-atividade.*') ? 'active' : '' }}" href="{{ route('avaliacao-atividade.index') }}">

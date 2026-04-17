@@ -21,7 +21,7 @@ class EventoPolicy
      */
     public function view(User $user, Evento $evento): bool
     {
-        return false;
+        return $user->can('evento.ver');
     }
 
     /**
