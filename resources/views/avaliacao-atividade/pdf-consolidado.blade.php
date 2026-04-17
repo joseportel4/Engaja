@@ -1,80 +1,41 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="utf-8">
-    <title>Relatórios do Momento — {{ $atividade->descricao ?? 'Momento' }}</title>
-    <style>
-        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #1f2937; background: #ffffff; margin: 0; padding: 0; }
-        .sheet { background: #ffffff; border: 0; border-radius: 0; overflow: hidden; }
-        .content { padding: 20px 18px 16px 18px; }
+@extends('layouts.pdf-alfa-eja')
 
-        .report-header { background: #963d79; color: #ffffff; padding: 14px 18px; }
-        .report-header-title { font-size: 24px; font-weight: 700; margin: 0; }
-        .report-header-subtitle { font-size: 11px; opacity: 0.92; margin-top: 4px; }
+@section('title', 'Relatórios do Momento — ' . ($atividade->descricao ?? 'Momento'))
 
-        .title-row { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
-        .title-row td { border: 0; vertical-align: bottom; }
-        .report-title { font-size: 16px; font-weight: 700; margin: 0 0 3px 0; color: #111827; }
-        .author { color: #6b7280; font-size: 12px; }
+@section('styles')
+    body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #1f2937; background: #ffffff; margin: 0; padding: 0; }
+    .sheet { background: #ffffff; border: 0; border-radius: 0; overflow: hidden; }
+    .content { padding: 20px 18px 16px 18px; }
 
-        .card { border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; margin-bottom: 18px; }
-        .table-clean { width: 100%; border-collapse: collapse; }
-        .table-clean td, .table-clean th { border: 1px solid #e5e7eb; padding: 10px 12px; vertical-align: top; }
-        .table-clean th { text-align: left; background: #963d79; color: #ffffff; font-weight: 700; }
-        .table-clean .value { background: #ffffff; color: #4b5563; }
-        .table-clean .value-number { text-align: right; color: #963d79; font-weight: 700; background: #f8fafc; width: 90px; }
+    .report-header { background: #963d79; color: #ffffff; padding: 14px 18px; }
+    .report-header-title { font-size: 24px; font-weight: 700; margin: 0; }
+    .report-header-subtitle { font-size: 11px; opacity: 0.92; margin-top: 4px; }
 
-        .section-title { font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 10px 0; border-left: 6px solid #963d79; padding-left: 10px; }
-        .section-subtitle { color: #6b7280; margin: 0 0 10px 0; }
-        .qa-item { margin-bottom: 14px; }
-        .qa-question { font-size: 12px; font-weight: 700; color: #111827; margin: 0 0 6px 2px; }
-        .answer { border: 1px solid #e5e7eb; border-left: 4px solid #963d79; background: #f8fafc; border-radius: 0 10px 10px 3px; padding: 10px; color: #374151; }
-        .answer-meta { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
-        .separator { margin: 14px 0; border-top: 1px dashed #cbd5e1; }
-        .muted { color: #6b7280; }
+    .title-row { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+    .title-row td { border: 0; vertical-align: bottom; }
+    .report-title { font-size: 16px; font-weight: 700; margin: 0 0 3px 0; color: #111827; }
+    .author { color: #6b7280; font-size: 12px; }
 
-        .pdf-footer { border-top: 1px solid #e9d5e0; padding: 12px 20px; text-align: center; color: #6b7280; font-size: 10px; }
-        .pdf-footer-subtitle { font-size: 15px; color: #2f1230; font-weight: 700; margin-bottom: 10px; text-align: left; }
-        .pdf-footer-partners { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        .pdf-footer-partners td { border: 0; text-align: center; vertical-align: middle; width: 50%; }
-        .brand-label { font-size: 11px; color: #5a2a56; font-weight: 700; margin-bottom: 6px; }
-        .brand-logo-ipf { height: 32px; }
-        .brand-logo-petro { height: 28px; }
-        .footer-note { font-size: 9px; color: #6b7280; }
-    </style>
-</head>
-<body>
+    .card { border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; margin-bottom: 18px; }
+    .table-clean { width: 100%; border-collapse: collapse; }
+    .table-clean td, .table-clean th { border: 1px solid #e5e7eb; padding: 10px 12px; vertical-align: top; }
+    .table-clean th { text-align: left; background: #963d79; color: #ffffff; font-weight: 700; }
+    .table-clean .value { background: #ffffff; color: #4b5563; }
+    .table-clean .value-number { text-align: right; color: #963d79; font-weight: 700; background: #f8fafc; width: 90px; }
+
+    .section-title { font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 10px 0; border-left: 6px solid #963d79; padding-left: 10px; }
+    .section-subtitle { color: #6b7280; margin: 0 0 10px 0; }
+    .qa-item { margin-bottom: 14px; }
+    .qa-question { font-size: 12px; font-weight: 700; color: #111827; margin: 0 0 6px 2px; }
+    .answer { border: 1px solid #e5e7eb; border-left: 4px solid #963d79; background: #f8fafc; border-radius: 0 10px 10px 3px; padding: 10px; color: #374151; }
+    .answer-meta { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
+    .separator { margin: 14px 0; border-top: 1px dashed #cbd5e1; }
+    .muted { color: #6b7280; }
+@endsection
+
+@section('content')
 @php
     $evento = $atividade->evento;
-    $logoDataUri = function (string $relativePath): ?string {
-        $fullPath = public_path($relativePath);
-
-        if (!is_file($fullPath)) {
-            return null;
-        }
-
-        $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
-        $mime = match ($ext) {
-            'png' => 'image/png',
-            'jpg', 'jpeg' => 'image/jpeg',
-            'webp' => 'image/webp',
-            'svg' => 'image/svg+xml',
-            default => 'application/octet-stream',
-        };
-
-        return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($fullPath));
-    };
-
-    $logoEngaja = $logoDataUri('images/engaja-bg.png');
-    $logoIpf = $logoDataUri('images/ipf.png');
-    $logoPetrobras = $logoDataUri('images/petrobras.png');
-
-    $checklistLabels = [
-        'upload_evidencias'       => 'Fez o upload das evidências (fotos, vídeos com depoimentos) na pasta correspondente a essa ação dentro do Drive',
-        'lista_presenca_digital'  => 'Conferiu as listas de presença digital (link acima), garantindo que todos os campos estejam devidamente preenchidos',
-        'lista_presenca_impressa' => 'Conferiu as listas de presença impressa, garantindo que todos os campos estejam devidamente preenchidos',
-        'upload_lista_impressa'   => 'Fez o upload das listas de presença impressas na pasta dentro do Drive, depois de devidamente conferida e ajustada',
-    ];
 @endphp
 
 <div class="sheet">
@@ -156,27 +117,5 @@
             @endif
         @endforeach
     </div>
-
-    <div class="pdf-footer">
-        <div class="pdf-footer-subtitle">Sistema de Gestão de Participação e Engajamento.</div>
-        <table class="pdf-footer-partners">
-            <tr>
-                <td>
-                    <div class="brand-label">Realização</div>
-                    @if($logoIpf)
-                        <img src="{{ $logoIpf }}" class="brand-logo-ipf" alt="Instituto Paulo Freire">
-                    @endif
-                </td>
-                <td>
-                    <div class="brand-label">Parceria</div>
-                    @if($logoPetrobras)
-                        <img src="{{ $logoPetrobras }}" class="brand-logo-petro" alt="Petrobras">
-                    @endif
-                </td>
-            </tr>
-        </table>
-        <div class="footer-note">INSTITUTO DE EDUCACAO E DIREITOS HUMANOS PAULO FREIRE | CNPJ 04.950.603/0001-05</div>
-    </div>
 </div>
-</body>
-</html>
+@endsection

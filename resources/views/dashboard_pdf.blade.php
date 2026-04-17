@@ -1,49 +1,46 @@
 {{-- resources/views/dashboard_pdf.blade.php --}}
-@php
-    use Carbon\Carbon;
-@endphp
-<!doctype html>
-<html lang="pt-br">
-<head>
-    <meta charset="utf-8">
-    <title>Dashboard - Lista de Presencas</title>
-    <style>
-        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color:#222; }
-        .pdf-header { display:flex; align-items:center; gap:16px; padding:12px 16px; border:1px solid #edd7fc; border-radius:6px; background:#f9f4ff; margin-bottom:18px; }
-        .pdf-header img { height:48px; }
-        .header-text h1 { font-size:18px; margin:0; color:#681170; }
-        .header-text .subtitle { font-size:13px; font-weight:600; letter-spacing:0.3px; text-transform:uppercase; margin-top:4px; color:#681170; }
-        .meta { font-size: 11px; color:#555; margin-bottom: 12px; }
-        .header-text .meta { margin:6px 0 0; }
-        .atividade-card { border:1px solid #edd7fc; border-radius:6px; padding:12px 16px; margin-bottom:18px; background:#fff; }
-        .atividade-header { display:flex; flex-wrap:wrap; gap:12px 24px; margin-bottom:12px; }
-        .atividade-header .item { min-width:120px; max-width:240px; }
-        .atividade-header .label { font-size:10px; text-transform:uppercase; letter-spacing:0.4px; color:#6b7a99; margin-bottom:2px; }
-        .atividade-header .value { font-size:13px; font-weight:600; color:#14213d; word-break:break-word; }
-        .metrics { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
-        .metric { border:1px solid #edd7fc; background:#f9f4ff; border-radius:4px; padding:6px 10px; min-width:110px; }
-        .metric-label { font-size:10px; text-transform:uppercase; letter-spacing:0.4px; color:#6b7a99; display:block; }
-        .metric-value { font-size:16px; font-weight:700; color:#681170; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 12px; page-break-inside:auto; }
-        thead { display: table-header-group; }
-        th, td { border: 1px solid #ccc; padding: 6px 8px; vertical-align: top; }
-        th { background: #f0f0f0; }
-        .subtable th { background: #fafafa; }
-        .muted { color:#777; }
-        .mb-6 { margin-bottom: 6px; }
-        .mb-10 { margin-bottom: 10px; }
-        .fw-bold { font-weight: bold; }
-        .text-right { text-align: right; }
-        .small { font-size: 11px; }
-        .section-title { background:#f7f7f7; padding:6px 8px; border:1px solid #ccc; margin:10px 0 6px; }
-        .empty-state { border:1px dashed #d0d7e6; padding:16px; border-radius:6px; text-align:center; color:#6b7a99; margin-top:20px; }
-        .filters-applied { border:1px dashed #d8c3f7; background:#fcfaff; padding:10px 12px; border-radius:6px; margin-bottom:18px; font-size:11px; }
-        .filters-applied .title { display:block; font-weight:700; color:#681170; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px; font-size:10px; }
-        .filters-applied .chip { display:inline-block; margin:0 6px 6px 0; padding:4px 8px; border-radius:4px; border:1px solid #edd7fc; background:#fff; color:#4a1768; font-size:11px; }
-        .filters-applied .chip strong { margin-right:4px; }
-    </style>
-</head>
-<body>
+@php use Carbon\Carbon; @endphp
+@extends('layouts.pdf-alfa-eja')
+
+@section('title', 'Dashboard - Lista de Presenças')
+
+@section('styles')
+    body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color:#222; }
+    .pdf-header { display:flex; align-items:center; gap:16px; padding:12px 16px; border:1px solid #edd7fc; border-radius:6px; background:#f9f4ff; margin-bottom:18px; }
+    .pdf-header img { height:48px; }
+    .header-text h1 { font-size:18px; margin:0; color:#681170; }
+    .header-text .subtitle { font-size:13px; font-weight:600; letter-spacing:0.3px; text-transform:uppercase; margin-top:4px; color:#681170; }
+    .meta { font-size: 11px; color:#555; margin-bottom: 12px; }
+    .header-text .meta { margin:6px 0 0; }
+    .atividade-card { border:1px solid #edd7fc; border-radius:6px; padding:12px 16px; margin-bottom:18px; background:#fff; }
+    .atividade-header { display:flex; flex-wrap:wrap; gap:12px 24px; margin-bottom:12px; }
+    .atividade-header .item { min-width:120px; max-width:240px; }
+    .atividade-header .label { font-size:10px; text-transform:uppercase; letter-spacing:0.4px; color:#6b7a99; margin-bottom:2px; }
+    .atividade-header .value { font-size:13px; font-weight:600; color:#14213d; word-break:break-word; }
+    .metrics { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
+    .metric { border:1px solid #edd7fc; background:#f9f4ff; border-radius:4px; padding:6px 10px; min-width:110px; }
+    .metric-label { font-size:10px; text-transform:uppercase; letter-spacing:0.4px; color:#6b7a99; display:block; }
+    .metric-value { font-size:16px; font-weight:700; color:#681170; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; page-break-inside:auto; }
+    thead { display: table-header-group; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; vertical-align: top; }
+    th { background: #f0f0f0; }
+    .subtable th { background: #fafafa; }
+    .muted { color:#777; }
+    .mb-6 { margin-bottom: 6px; }
+    .mb-10 { margin-bottom: 10px; }
+    .fw-bold { font-weight: bold; }
+    .text-right { text-align: right; }
+    .small { font-size: 11px; }
+    .section-title { background:#f7f7f7; padding:6px 8px; border:1px solid #ccc; margin:10px 0 6px; }
+    .empty-state { border:1px dashed #d0d7e6; padding:16px; border-radius:6px; text-align:center; color:#6b7a99; margin-top:20px; }
+    .filters-applied { border:1px dashed #d8c3f7; background:#fcfaff; padding:10px 12px; border-radius:6px; margin-bottom:18px; font-size:11px; }
+    .filters-applied .title { display:block; font-weight:700; color:#681170; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px; font-size:10px; }
+    .filters-applied .chip { display:inline-block; margin:0 6px 6px 0; padding:4px 8px; border-radius:4px; border:1px solid #edd7fc; background:#fff; color:#4a1768; font-size:11px; }
+    .filters-applied .chip strong { margin-right:4px; }
+@endsection
+
+@section('content')
     <header class="pdf-header">
         <div class="header-logo">
             <img src="{{ public_path('images/engaja-bg.png') }}" alt="Logo Engaja">
@@ -186,5 +183,4 @@
     @empty
         <div class="empty-state">Nenhuma atividade encontrada.</div>
     @endforelse
-</body>
-</html>
+@endsection
