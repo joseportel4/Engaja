@@ -23,7 +23,7 @@ class ListaPresencaOficinaStrategy implements ListaPresencaStrategyInterface
 
         //preenche o cabeçalho do template
         $municipioAtividade = $atividade->municipio;
-        $pdf->municipioLabel = $municipioAtividade ? ($municipioAtividade->nome . ' - ' . ($municipioAtividade->estado->sigla ?? '')) : '—';
+        $pdf->municipioLabel = $municipioAtividade ? ($municipioAtividade->nome . ' - ' . ($municipioAtividade->estado->sigla ?? '')) : ' ';
         $pdf->dataLabel = \Carbon\Carbon::parse($atividade->dia)->format('d/m/Y');
 
         //margens

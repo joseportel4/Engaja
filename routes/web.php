@@ -48,6 +48,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::post('/profile/demographics', [ProfileController::class, 'completeDemographics'])->name('profile.complete-demographics');
+    Route::post('/profile/photo-prompt', [ProfileController::class, 'storeProfilePhotoPrompt'])->name('profile.photo-prompt.store');
+    Route::post('/profile/photo-prompt/skip', [ProfileController::class, 'skipProfilePhotoPrompt'])->name('profile.photo-prompt.skip');
 
     Route::post('/eventos/{evento}/inscrever', [InscricaoController::class, 'inscrever'])->name('inscricoes.inscrever');
     Route::delete('/eventos/{evento}/cancelar', [InscricaoController::class, 'cancelar'])->name('inscricoes.cancelar');
@@ -76,6 +78,9 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
 
     Route::get('/atividades/{atividade}/lista-autorizacao-pdf', [AtividadeController::class, 'downloadListaAutorizacaoImagemPdf'])
         ->name('atividades.lista-autorizacao.pdf');
+
+    Route::get('/atividades/{atividade}/diario', [AtividadeController::class, 'diario'])->name('atividades.diario');
+    Route::post('/atividades/{atividade}/diario', [AtividadeController::class, 'salvarDiario'])->name('atividades.diario.salvar');
 });
 
 Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {
@@ -201,7 +206,7 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
         ->name('eventos.relatorios');
 });
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {
     Route::controller(AvaliacaoAtividadeController::class)
         ->prefix('atividades/{atividade}/relatorio')
         ->name('avaliacao-atividade.')
@@ -217,7 +222,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('avaliacao-atividade.download');
 });
 
-Route::middleware(['auth', 'role:administrador|gerente'])->group(function () {
+Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {
     Route::get('/relatorios-avaliacao', [AvaliacaoAtividadeController::class, 'index'])
         ->name('avaliacao-atividade.index');
 

@@ -22,7 +22,7 @@ class ListaAutorizacaoImagem extends Fpdi
             $this->useTemplate($this->templatePage1, 0, 0, null, null, true);
             $this->SetFont('Helvetica', 'B', 11);
 
-            $this->SetY(188);
+            $this->SetY(200);
 
         } else {
             $this->useTemplate($this->templatePage2, 0, 0, null, null, true);
