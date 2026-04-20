@@ -42,7 +42,7 @@ class LimeSurveyDashboardService
             ->unique()
             ->values();
 
-        $perguntas = $this->buildPerguntas($questionList, $responsesCollection, $excludedColumns);
+        $perguntas = $this->buildPerguntas($questionList, $responsesCollection, $excludedColumns, $request, $tokenMunicipioMap);
         $questionBlocks = $this->buildQuestionBlocks(
             $questionList,
             $perguntas,
@@ -487,9 +487,10 @@ class LimeSurveyDashboardService
     /**
      * @param Collection<int, array<string, mixed>> $responses
      * @param Collection<int, string> $excludedColumns
+     * @param array<string, string> $tokenMunicipioMap
      * @return Collection<int, array<string, mixed>>
      */
-    private function buildPerguntas(Collection $questionList, Collection $responses, Collection $excludedColumns): Collection
+    private function buildPerguntas(Collection $questionList, Collection $responses, Collection $excludedColumns, Request $request, array $tokenMunicipioMap = []): Collection
     {
         if ($responses->isEmpty()) {
             return collect();
@@ -507,13 +508,16 @@ class LimeSurveyDashboardService
             'startdate',
         ];
 
+        $firstRow = is_array($responses->first()) ? $responses->first() : [];
+        $municipioField = $this->resolveMunicipioField($request, $questionList, $firstRow);
+
         $columns = collect($responses->first())->keys()
             ->reject(fn (string $column) => in_array(strtolower($column), $metadataColumns, true))
             ->reject(fn (string $column) => $excludedColumns->contains($column))
             ->reject(fn (string $column) => $this->parseMatrixColumnKey($column) !== null)
             ->reject(fn (string $column) => $this->shouldIgnoreQuestionColumn($column, $questionList));
 
-        return $columns->map(function (string $column) use ($responses, $questionList) {
+        return $columns->map(function (string $column) use ($responses, $questionList, $municipioField, $tokenMunicipioMap) {
             $respostas = $responses
                 ->pluck($column)
                 ->map(fn ($value) => trim((string) $value))
@@ -537,8 +541,22 @@ class LimeSurveyDashboardService
             ];
 
             if ($tipo === 'texto') {
-                $bloco['respostas'] = $respostas->take(200)->all();
-                $bloco['exemplos'] = $respostas->take(5)->all();
+                $respostasComMunicipio = $responses
+                    ->map(function (array $row) use ($column, $municipioField, $tokenMunicipioMap) {
+                        $texto = trim((string) ($row[$column] ?? ''));
+                        if ($texto === '') {
+                            return null;
+                        }
+                        $municipio = $this->resolveMunicipioFromResponse($row, $municipioField, $tokenMunicipioMap);
+                        return ['texto' => $texto, 'municipio' => $municipio];
+                    })
+                    ->filter()
+                    ->take(200)
+                    ->values()
+                    ->all();
+
+                $bloco['respostas'] = $respostasComMunicipio;
+                $bloco['exemplos'] = array_slice($respostasComMunicipio, 0, 5);
                 return $bloco;
             }
 

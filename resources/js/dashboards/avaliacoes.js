@@ -117,6 +117,27 @@ function buildYearDatasets(yearsMap, anos, municipios) {
   }));
 }
 
+// ─── Text Answers helpers ───────────────────────────────────
+
+function extractResposta(item) {
+  if (item && typeof item === 'object') {
+    return { texto: cleanText(item.texto || ''), municipio: cleanText(item.municipio || '') };
+  }
+  return { texto: cleanText(item || ''), municipio: '' };
+}
+
+function buildRespostaItem(item) {
+  const { texto, municipio } = extractResposta(item);
+  const el = document.createElement('div');
+  el.className = 'p-2 rounded border bg-light';
+  if (municipio && municipio !== 'Nao informado') {
+    el.innerHTML = `<div class="mb-1"><span class="badge bg-secondary-subtle text-secondary" style="font-size:.75em">${municipio}</span></div>${texto}`;
+  } else {
+    el.textContent = texto;
+  }
+  return el;
+}
+
 // ─── Text Answers Modal ─────────────────────────────────────
 
 function createTextModal() {
@@ -134,7 +155,7 @@ function createTextModal() {
       const titulo = cleanText(pergunta?.texto || 'Respostas');
 
       if (!window.bootstrap?.Modal) {
-        alert(`${titulo}\n\n${lista.map((r) => `- ${cleanText(r)}`).join('\n') || 'Sem respostas abertas.'}`);
+        alert(`${titulo}\n\n${lista.map((r) => `- ${extractResposta(r).texto}`).join('\n') || 'Sem respostas abertas.'}`);
         return;
       }
 
@@ -147,12 +168,7 @@ function createTextModal() {
         if (!lista.length) {
           listEl.innerHTML = '<div class="text-muted">Sem respostas abertas.</div>';
         } else {
-          lista.forEach((resp) => {
-            const item = document.createElement('div');
-            item.className = 'p-2 rounded border bg-light';
-            item.textContent = cleanText(resp);
-            listEl.appendChild(item);
-          });
+          lista.forEach((resp) => listEl.appendChild(buildRespostaItem(resp)));
         }
       }
 
@@ -182,12 +198,7 @@ function renderTextQuestion(body, pergunta, listaFonte, modal) {
   if (!itens.length) {
     list.innerHTML = '<div class="text-muted">Sem respostas abertas.</div>';
   } else {
-    itens.forEach((resp) => {
-      const item = document.createElement('div');
-      item.className = 'p-2 rounded border bg-light';
-      item.textContent = cleanText(resp);
-      list.appendChild(item);
-    });
+    itens.forEach((resp) => list.appendChild(buildRespostaItem(resp)));
   }
 
   if (listaFonte.length > PREVIEW) {
