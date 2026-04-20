@@ -209,7 +209,6 @@ function renderTextQuestion(body, pergunta, listaFonte, modal) {
 }
 
 function renderGenericChart(body, controls, pergunta, chartInstances, chartPreferences, rerender) {
-  const canvas = createCanvas(body);
   destroyChart(chartInstances, pergunta.id);
 
   const labels = (pergunta.labels || []).map(cleanText);
@@ -221,6 +220,11 @@ function renderGenericChart(body, controls, pergunta, chartInstances, chartPrefe
 
   const userPref = chartPreferences.get(pergunta.id);
   const chartType = resolveChartType(pergunta, labels, userPref);
+  const base = chartType === 'bar-horizontal' ? 'bar' : chartType;
+  const isCircular = base === 'doughnut' || base === 'polarArea';
+
+  const canvas = createCanvas(body, isCircular ? 320 : 120);
+  if (isCircular) canvas.style.height = '320px';
 
   if (controls) {
     controls.appendChild(makeSelect(
@@ -233,7 +237,6 @@ function renderGenericChart(body, controls, pergunta, chartInstances, chartPrefe
     ));
   }
 
-  const base = chartType === 'bar-horizontal' ? 'bar' : chartType;
   const data = {
     labels,
     datasets: [{
@@ -248,13 +251,14 @@ function renderGenericChart(body, controls, pergunta, chartInstances, chartPrefe
 
   const options = {
     responsive: true,
+    maintainAspectRatio: !isCircular,
     plugins: { legend: { display: false } },
     scales: {
       x: { ticks: { color: '#64748b' } },
       y: { ticks: { color: '#64748b', precision: 0 } },
     },
   };
-  if (base === 'doughnut' || base === 'polarArea') delete options.scales;
+  if (isCircular) delete options.scales;
   const autoH = !userPref && base === 'bar' && labels.length > 4;
   if (base === 'bar' && (chartType === 'bar-horizontal' || autoH)) options.indexAxis = 'y';
 
@@ -440,6 +444,13 @@ function renderSimpleQuestionCard(pergunta, titleOverride, ctx) {
   const { wrapper, body, controls } = buildCardShell(titulo, pergunta.total || 0, resumo);
   const rerender = () => ctx.renderBlocks(ctx.cachedBlocks);
 
+  const isGenericType = !['municipio_level', 'municipio_multiselect', 'municipio_series', 'texto'].includes(pergunta.tipo);
+  if (isGenericType) {
+    const labels = (pergunta.labels || []).map(cleanText);
+    const type = resolveChartType(pergunta, labels, ctx.prefs.get(pergunta.id));
+    if (type === 'doughnut' || type === 'polarArea') wrapper.className = 'col-12 col-lg-6';
+  }
+
   const respostas = Array.isArray(pergunta.respostas) ? pergunta.respostas : [];
   const exemplos = Array.isArray(pergunta.exemplos) ? pergunta.exemplos : [];
 
@@ -535,7 +546,7 @@ function renderLegacyCharts(perguntas, ctx) {
   perguntas.forEach((pergunta) => {
     const titulo = cleanText(pergunta.texto);
     const resumo = cleanText(pergunta.resumo || '');
-    const { wrapper, body, controls } = buildCardShellHalf(titulo, pergunta.total || 0, resumo);
+    const { wrapper, body, controls } = buildCardShell(titulo, pergunta.total || 0, resumo);
 
     const respostas = Array.isArray(pergunta.respostas) ? pergunta.respostas : [];
     const exemplos = Array.isArray(pergunta.exemplos) ? pergunta.exemplos : [];
