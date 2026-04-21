@@ -16,7 +16,7 @@
 
   @if($erro)
     <div class="alert alert-danger border-0 shadow-sm">
-      Nao foi possivel carregar as leituras do LimeSurvey: {{ $erro }}
+      Não foi possível carregar as leituras do LimeSurvey: {{ $erro }}
     </div>
   @endif
 
@@ -29,9 +29,9 @@
               <th scope="col">SID</th>
               <th scope="col">Leitura do mundo</th>
               <th scope="col">Status</th>
-              <th scope="col">Inicio</th>
+              <th scope="col">Início</th>
               <th scope="col">Expira</th>
-              <th scope="col" class="text-end">Acao</th>
+              <th scope="col" class="text-end">Ação</th>
             </tr>
           </thead>
           <tbody>

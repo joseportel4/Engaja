@@ -130,7 +130,7 @@ function buildRespostaItem(item) {
   const { texto, municipio } = extractResposta(item);
   const el = document.createElement('div');
   el.className = 'p-2 rounded border bg-light';
-  if (municipio && municipio !== 'Nao informado') {
+  if (municipio && municipio !== 'Não informado') {
     el.innerHTML = `<div class="mb-1"><span class="badge bg-secondary-subtle text-secondary" style="font-size:.75em">${municipio}</span></div>${texto}`;
   } else {
     el.textContent = texto;
@@ -276,6 +276,15 @@ function renderGenericChart(body, controls, pergunta, chartInstances, chartPrefe
   chartInstances.set(pergunta.id, new Chart(canvas, { type: base, data, options }));
 }
 
+function renderNivelLegend(body, opcoes) {
+  if (!Array.isArray(opcoes) || !opcoes.length) return;
+  const legend = document.createElement('div');
+  legend.className = 'mt-3 small text-muted';
+  const rows = opcoes.map((o) => `<span class="me-3"><strong>${o.nivel}</strong> — ${cleanText(o.label)}</span>`).join('');
+  legend.innerHTML = `<div class="fw-semibold mb-1">Legenda dos níveis:</div><div class="d-flex flex-wrap gap-1">${rows}</div>`;
+  body.appendChild(legend);
+}
+
 function renderMunicipioLevel(body, controls, pergunta, chartInstances, chartPreferences, rerender) {
   const chartKey = `${pergunta.id}::level`;
   const prefKey = `${pergunta.id}::level_type`;
@@ -283,7 +292,7 @@ function renderMunicipioLevel(body, controls, pergunta, chartInstances, chartPre
   const values = (pergunta.municipio_levels || []).map((v) => Number(v || 0));
 
   if (!labels.length) {
-    body.innerHTML = '<div class="text-muted">Sem dados para esta questao.</div>';
+    body.innerHTML = '<div class="text-muted">Sem dados para esta questão.</div>';
     return;
   }
 
@@ -305,11 +314,11 @@ function renderMunicipioLevel(body, controls, pergunta, chartInstances, chartPre
     type: base,
     data: {
       labels,
-      datasets: [{ label: 'Nivel', data: values, backgroundColor: PALETTE[1], borderColor: PALETTE[1], tension: 0.25, fill: base === 'line' }],
+      datasets: [{ label: 'Nível', data: values, backgroundColor: PALETTE[1], borderColor: PALETTE[1], tension: 0.25, fill: base === 'line' }],
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false }, title: { display: true, text: 'Nivel de acompanhamento por municipio' } },
+      plugins: { legend: { display: false }, title: { display: true, text: 'Nível de acompanhamento por município' } },
       scales: {
         x: { ticks: { color: '#64748b', maxRotation: 50, minRotation: 25 } },
         y: { ticks: { color: '#64748b', precision: 0 } },
@@ -317,6 +326,8 @@ function renderMunicipioLevel(body, controls, pergunta, chartInstances, chartPre
       indexAxis: selected === 'bar-horizontal' ? 'y' : 'x',
     },
   }));
+
+  renderNivelLegend(body, pergunta.opcoes_nivel);
 }
 
 function renderMunicipioMultiselect(body, controls, pergunta, chartInstances, chartPreferences, rerender) {
@@ -328,7 +339,7 @@ function renderMunicipioMultiselect(body, controls, pergunta, chartInstances, ch
   if (controls) {
     controls.appendChild(makeSelect(
       'form-select form-select-sm', '170px',
-      [['stacked', 'Composicao empilhada'], ['grouped', 'Composicao agrupada']],
+      [['stacked', 'Composição empilhada'], ['grouped', 'Composição agrupada']],
       stackMode,
       (e) => { chartPreferences.set(prefKey, e.target.value); rerender(); },
     ));
@@ -345,7 +356,7 @@ function renderMunicipioMultiselect(body, controls, pergunta, chartInstances, ch
   rawSeries.forEach((s) => { if (!orderedSeries.includes(s)) orderedSeries.push(s); });
 
   if (!municipioLabels.length || !orderedSeries.length) {
-    body.innerHTML = '<div class="text-muted">Sem dados para esta questao.</div>';
+    body.innerHTML = '<div class="text-muted">Sem dados para esta questão.</div>';
     return;
   }
 
@@ -356,12 +367,12 @@ function renderMunicipioMultiselect(body, controls, pergunta, chartInstances, ch
     body.appendChild(el);
   };
 
-  addSection('Numero de municipios por opcao');
+  addSection('Número de municípios por opção');
   const totalsCanvas = createCanvas(body, 110);
 
   body.appendChild(Object.assign(document.createElement('div'), { className: 'my-3' }));
 
-  addSection('Composicao por municipio');
+  addSection('Composição por município');
   const munCanvas = createCanvas(body, 130);
 
   destroyChart(chartInstances, totalsKey);
@@ -372,7 +383,7 @@ function renderMunicipioMultiselect(body, controls, pergunta, chartInstances, ch
     data: {
       labels: totaisLabels.length ? totaisLabels : orderedSeries.map((s) => cleanText(s.label || s.code || '')),
       datasets: [{
-        label: 'Municipios',
+        label: 'Municípios',
         data: totaisValues.length ? totaisValues : orderedSeries.map((s) => (Array.isArray(s.data) ? s.data.reduce((a, c) => a + Number(c || 0), 0) : 0)),
         backgroundColor: (totaisLabels.length ? totaisLabels : orderedSeries).map((_, i) => bg(i)),
       }],
@@ -388,7 +399,7 @@ function renderMunicipioMultiselect(body, controls, pergunta, chartInstances, ch
   }));
 
   const datasets = orderedSeries.map((s, i) => ({
-    label: cleanText(s.label || s.code || `Serie ${i + 1}`),
+    label: cleanText(s.label || s.code || `Série ${i + 1}`),
     data: Array.isArray(s.data) ? s.data.map((v) => Number(v || 0)) : [],
     backgroundColor: bg(i),
     borderColor: bg(i),
@@ -416,7 +427,7 @@ function renderMunicipioSeries(body, controls, pergunta, chartInstances, chartPr
   if (controls) {
     controls.appendChild(makeSelect(
       'form-select form-select-sm', '170px',
-      [['stacked', 'Composicao empilhada'], ['grouped', 'Composicao agrupada']],
+      [['stacked', 'Composição empilhada'], ['grouped', 'Composição agrupada']],
       mode,
       (e) => { chartPreferences.set(prefKey, e.target.value); rerender(); },
     ));
@@ -427,7 +438,7 @@ function renderMunicipioSeries(body, controls, pergunta, chartInstances, chartPr
 
   const labels = (pergunta.municipio_labels || []).map(cleanText);
   const datasets = (pergunta.municipio_series || []).map((s, i) => ({
-    label: cleanText(s.label || s.code || `Serie ${i + 1}`),
+    label: cleanText(s.label || s.code || `Série ${i + 1}`),
     data: Array.isArray(s.data) ? s.data.map((n) => Number(n || 0)) : [],
     backgroundColor: bg(i),
     borderColor: bg(i),
@@ -494,10 +505,10 @@ function renderMatrixBlockCard(block, ctx) {
 
   const titulo = cleanText(block.title || matriz.texto || block.id);
   const { wrapper, body, controls } = buildCardShell(titulo, 0, '');
-  body.closest('.card-body').querySelector('.text-muted').textContent = 'Questao matriz';
+  body.closest('.card-body').querySelector('.text-muted').textContent = 'Questão matriz';
 
   const linhaSelect = makeSelect('form-select form-select-sm', '220px',
-    [['__ALL__', 'Todas as subquestoes'], ...(matriz.linhas || []).map((l) => [l.codigo, cleanText(l.label || l.codigo)])],
+    [['__ALL__', 'Todas as subquestões'], ...(matriz.linhas || []).map((l) => [l.codigo, cleanText(l.label || l.codigo)])],
     state.linhaCodigo || '__ALL__', draw);
 
   const medidaSelect = makeSelect('form-select form-select-sm', '170px',
@@ -533,7 +544,7 @@ function renderMatrixBlockCard(block, ctx) {
     }
 
     const linhaLabel = state.linhaCodigo === '__ALL__'
-      ? 'Todas as subquestoes'
+      ? 'Todas as subquestões'
       : cleanText((matriz.linhas || []).find((i) => i.codigo === state.linhaCodigo)?.label || state.linhaCodigo);
 
     ctx.charts.set(blockId, new Chart(canvas, {
@@ -548,7 +559,7 @@ function renderMatrixBlockCard(block, ctx) {
         },
       },
     }));
-    meta.textContent = `Campo de municipio: ${matriz.municipio_field || 'nao identificado'} | Municipios exibidos: ${municipios.length}`;
+    meta.textContent = `Campo de município: ${matriz.municipio_field || 'não identificado'} | Municípios exibidos: ${municipios.length}`;
   }
 
   draw();
@@ -601,11 +612,11 @@ function renderBiMatrizes(matrizes, ctx) {
       <div class="card-body">
         <div class="row g-2 align-items-end mb-3">
           <div class="col-lg-5 col-md-6">
-            <label class="form-label text-muted small mb-1">Questao matriz</label>
+            <label class="form-label text-muted small mb-1">Questão matriz</label>
             <select class="form-select form-select-sm" id="bi-matriz-select"></select>
           </div>
           <div class="col-lg-3 col-md-6">
-            <label class="form-label text-muted small mb-1">Subquestao (linha)</label>
+            <label class="form-label text-muted small mb-1">Subquestão (linha)</label>
             <select class="form-select form-select-sm" id="bi-matriz-linha"></select>
           </div>
           <div class="col-lg-4 col-md-6">
@@ -691,7 +702,7 @@ function renderBiMatrizes(matrizes, ctx) {
 
     const municipios = extractMunicipios(yearsMap, anos);
     const linhaLabel = st.linhaCodigo === '__ALL__'
-      ? 'Todas as subquestoes'
+      ? 'Todas as subquestões'
       : cleanText((matriz.linhas || []).find((i) => i.codigo === st.linhaCodigo)?.label || st.linhaCodigo);
 
     ctx.charts.set('__bi_matriz__', new Chart(canvas, {
@@ -706,7 +717,7 @@ function renderBiMatrizes(matrizes, ctx) {
         },
       },
     }));
-    metaEl.textContent = `Campo de municipio: ${matriz.municipio_field || 'nao identificado'} | Municipios exibidos: ${municipios.length}`;
+    metaEl.textContent = `Campo de município: ${matriz.municipio_field || 'não identificado'} | Municípios exibidos: ${municipios.length}`;
   }
 
   matrizSelect.addEventListener('change', () => { popularFiltros(); renderGrafico(); });
@@ -782,7 +793,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function setLoading(on) {
     if (on) {
-      cardsQuestoes.innerHTML = '<div class="col-12"><div class="card border-0 shadow-sm"><div class="card-body text-center text-muted">Carregando graficos...</div></div></div>';
+      cardsQuestoes.innerHTML = '<div class="col-12"><div class="card border-0 shadow-sm"><div class="card-body text-center text-muted">Carregando gráficos...</div></div></div>';
     }
   }
 
