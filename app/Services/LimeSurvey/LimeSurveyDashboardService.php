@@ -35,6 +35,7 @@ class LimeSurveyDashboardService
         $responsesCollection = collect($this->applyDateFilter($responses, $request));
         $questionList = $this->normalizeQuestions($questions);
         $tokenMunicipioMap = $this->buildTokenMunicipioMap($surveyId);
+        $answerOptionsMap = $this->buildAnswerOptionsMap($questionList, $surveyId, $cacheMinutes);
         $biMatrizes = $this->buildBiMatrizes($questionList, $responsesCollection, $request, $tokenMunicipioMap);
 
         $excludedColumns = collect($biMatrizes)
@@ -49,7 +50,8 @@ class LimeSurveyDashboardService
             $biMatrizes,
             $responsesCollection,
             $request,
-            $tokenMunicipioMap
+            $tokenMunicipioMap,
+            $answerOptionsMap
         );
 
         return [
@@ -72,6 +74,7 @@ class LimeSurveyDashboardService
      * @param Collection<int, array<string, mixed>> $questionList
      * @param Collection<int, array<string, mixed>> $perguntas
      * @param array<int, array<string, mixed>> $biMatrizes
+     * @param array<string, list<array{nivel: int, label: string}>> $answerOptionsMap
      * @return array<int, array<string, mixed>>
      */
     private function buildQuestionBlocks(
@@ -80,7 +83,8 @@ class LimeSurveyDashboardService
         array $biMatrizes,
         Collection $responses,
         Request $request,
-        array $tokenMunicipioMap
+        array $tokenMunicipioMap,
+        array $answerOptionsMap = []
     ): array
     {
         $simpleByCode = $perguntas->keyBy('id');
@@ -131,7 +135,7 @@ class LimeSurveyDashboardService
             }
 
             if ($rootType === 'L') {
-                $listRadio = $this->buildMunicipioLevelQuestion($root, $responses, $request, $tokenMunicipioMap, $questionList);
+                $listRadio = $this->buildMunicipioLevelQuestion($root, $responses, $request, $tokenMunicipioMap, $questionList, $answerOptionsMap);
                 if (is_array($listRadio)) {
                     $blocks[] = [
                         'id' => $code,
@@ -236,6 +240,7 @@ class LimeSurveyDashboardService
 
     /**
      * @param array<string, mixed> $root
+     * @param array<string, list<array{nivel: int, label: string}>> $answerOptionsMap
      * @return array<string, mixed>|null
      */
     private function buildMunicipioLevelQuestion(
@@ -243,7 +248,8 @@ class LimeSurveyDashboardService
         Collection $responses,
         Request $request,
         array $tokenMunicipioMap,
-        Collection $questionList
+        Collection $questionList,
+        array $answerOptionsMap = []
     ): ?array
     {
         $rootCode = (string) ($root['code'] ?? '');
@@ -287,6 +293,8 @@ class LimeSurveyDashboardService
             return round(((float) ($sumByMunicipio[$municipio] ?? 0)) / $count, 2);
         }, $municipios);
 
+        $opcoes = $answerOptionsMap[$rootCode] ?? [];
+
         return [
             'id' => $rootCode,
             'texto' => $root['text'] ?? $rootCode,
@@ -300,6 +308,7 @@ class LimeSurveyDashboardService
             'respostas' => [],
             'municipio_labels' => $municipios,
             'municipio_levels' => $levels,
+            'opcoes_nivel' => $opcoes,
         ];
     }
 
@@ -1109,6 +1118,72 @@ class LimeSurveyDashboardService
     {
         $text = trim((string) $value);
         return $text !== '' ? $text : 'Nao informado';
+    }
+
+    /**
+     * Busca as opções de resposta (código → label, nível) para questões do tipo L (List Radio).
+     * Retorna um mapa indexado pelo código da questão: ['Q1' => [{nivel: 1, label: 'Texto'}]].
+     *
+     * @param Collection<int, array<string, mixed>> $questionList
+     * @return array<string, list<array{nivel: int, label: string}>>
+     */
+    private function buildAnswerOptionsMap(Collection $questionList, int $surveyId, int $cacheMinutes): array
+    {
+        $lTypeQuestions = $questionList->filter(
+            fn (array $q) => strtoupper((string) ($q['type'] ?? '')) === 'L' && $q['parent_qid'] === '0'
+        );
+
+        if ($lTypeQuestions->isEmpty()) {
+            return [];
+        }
+
+        $map = [];
+
+        foreach ($lTypeQuestions as $question) {
+            $code = (string) ($question['code'] ?? '');
+            $qid = (int) ($question['qid'] ?? 0);
+            if ($code === '' || $qid <= 0) {
+                continue;
+            }
+
+            $props = Cache::remember(
+                "limesurvey:{$surveyId}:answer_options:{$qid}",
+                now()->addMinutes($cacheMinutes),
+                function () use ($qid) {
+                    try {
+                        return $this->client->getQuestionProperties($qid);
+                    } catch (\Throwable) {
+                        return [];
+                    }
+                }
+            );
+
+            $rawOptions = $props['answeroptions'] ?? null;
+            if (!is_array($rawOptions) || empty($rawOptions)) {
+                continue;
+            }
+
+            $opcoes = [];
+            foreach ($rawOptions as $optionCode => $optionData) {
+                if (!is_array($optionData)) {
+                    continue;
+                }
+                $label = trim((string) ($optionData['answer'] ?? $optionCode));
+                $nivel = $this->toLikertLevel($optionCode);
+                if ($nivel === null) {
+                    $nivel = $this->toLikertLevel($optionData['assessment_value'] ?? null) ?? count($opcoes) + 1;
+                }
+                $opcoes[] = ['nivel' => (int) $nivel, 'label' => $label];
+            }
+
+            usort($opcoes, fn (array $a, array $b) => $a['nivel'] <=> $b['nivel']);
+
+            if (!empty($opcoes)) {
+                $map[$code] = $opcoes;
+            }
+        }
+
+        return $map;
     }
 
     /**

@@ -74,6 +74,18 @@ class LimeSurveyClient
         });
     }
 
+    public function getQuestionProperties(int $questionId): array
+    {
+        return $this->withSessionKey(function (string $sessionKey) use ($questionId) {
+            $result = $this->call('get_question_properties', [
+                $sessionKey,
+                $questionId,
+                ['answeroptions'],
+            ]);
+            return is_array($result) ? $result : [];
+        });
+    }
+
     public function listSurveys(?string $username = null, ?int $groupId = null): array
     {
         return $this->withSessionKey(function (string $sessionKey) use ($username, $groupId) {
