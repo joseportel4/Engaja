@@ -453,7 +453,11 @@ function renderSimpleQuestionCard(pergunta, titleOverride, ctx) {
   const titulo = cleanText(titleOverride || pergunta.texto);
   const resumo = cleanText(pergunta.resumo || '');
   const { wrapper, body, controls } = buildCardShell(titulo, pergunta.total || 0, resumo);
-  const rerender = () => ctx.renderBlocks(ctx.cachedBlocks);
+  const rerender = () => {
+    const scrollY = window.scrollY;
+    ctx.renderBlocks(ctx.cachedBlocks);
+    requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: 'instant' }));
+  };
 
   const isGenericType = !['municipio_level', 'municipio_multiselect', 'municipio_series', 'texto'].includes(pergunta.tipo);
   if (isGenericType) {
@@ -552,7 +556,11 @@ function renderMatrixBlockCard(block, ctx) {
 }
 
 function renderLegacyCharts(perguntas, ctx) {
-  const rerender = () => renderLegacyCharts(ctx.cachedPerguntas, ctx);
+  const rerender = () => {
+    const scrollY = window.scrollY;
+    renderLegacyCharts(ctx.cachedPerguntas, ctx);
+    requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: 'instant' }));
+  };
 
   perguntas.forEach((pergunta) => {
     const titulo = cleanText(pergunta.texto);
