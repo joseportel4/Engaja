@@ -768,16 +768,27 @@ class LimeSurveyDashboardService
      */
     private function parseMatrixColumnKey(string $column): ?array
     {
-        if (!preg_match('/^([A-Za-z0-9]+)\[([A-Za-z0-9]+)_([A-Za-z0-9]+)\]$/', $column, $matches)) {
-            return null;
+        // Format: QUESTION[ROW_COL] — standard array questions
+        if (preg_match('/^([A-Za-z0-9]+)\[([A-Za-z0-9]+)_([A-Za-z0-9]+)\]$/', $column, $matches)) {
+            return [
+                'column' => $column,
+                'question_code' => $matches[1],
+                'row_code' => $matches[2],
+                'column_code' => $matches[3],
+            ];
         }
 
-        return [
-            'column' => $column,
-            'question_code' => $matches[1],
-            'row_code' => $matches[2],
-            'column_code' => $matches[3],
-        ];
+        // Format: QUESTION[SUBQ][SCALE] — Array Dual Scale (type "1") questions
+        if (preg_match('/^([A-Za-z0-9]+)\[([A-Za-z0-9]+)\]\[([A-Za-z0-9]+)\]$/', $column, $matches)) {
+            return [
+                'column' => $column,
+                'question_code' => $matches[1],
+                'row_code' => $matches[2],
+                'column_code' => $matches[3],
+            ];
+        }
+
+        return null;
     }
 
     /**
@@ -1102,6 +1113,14 @@ class LimeSurveyDashboardService
     {
         $text = mb_strtolower(trim((string) ($question['text'] ?? '')));
         if ($text === '') {
+            return false;
+        }
+
+        // Array and multiple-choice question types are never administrative identifier questions
+        // (e.g. "which municipality are you from?"), so skip the keyword filter for them.
+        $type = strtoupper((string) ($question['type'] ?? ''));
+        $complexTypes = ['1', 'B', 'C', 'E', 'F', 'H', 'K', 'M', 'P', 'Q', 'R'];
+        if (in_array($type, $complexTypes, true)) {
             return false;
         }
 
