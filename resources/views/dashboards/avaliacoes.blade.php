@@ -18,10 +18,19 @@
   </div>
 
   @if(request('fonte') === 'limesurvey')
-    <div class="alert alert-info border-0 shadow-sm py-2">
-      Fonte ativa: <strong>LimeSurvey</strong>
-      @if(request('survey_id'))
-        (survey_id={{ request('survey_id') }})
+    <div class="alert alert-info border-0 shadow-sm py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <span>
+        Fonte ativa: <strong>LimeSurvey</strong>
+        @if(request('survey_id'))
+          (survey_id={{ request('survey_id') }})
+        @endif
+      </span>
+      @if(!empty($cachedAt))
+        <span class="text-muted small">
+          Dados atualizados em: <strong>{{ $cachedAt }}</strong>
+        </span>
+      @else
+        <span class="text-muted small">Dados ao vivo (sem cache)</span>
       @endif
     </div>
   @endif

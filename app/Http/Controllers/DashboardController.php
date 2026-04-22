@@ -14,6 +14,7 @@ use App\Models\RespostaAvaliacao;
 use App\Models\SubmissaoAvaliacao;
 use App\Models\TemplateAvaliacao;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
@@ -57,12 +58,15 @@ class DashboardController extends Controller
                     $start = $this->formatSurveyDate($item['startdate'] ?? null);
                     $expires = $this->formatSurveyDate($item['expires'] ?? null);
 
+                    $cachedAt = Cache::get("limesurvey:{$sid}:cached_at");
+
                     return [
                         'sid' => $sid,
                         'titulo' => $titulo !== '' ? $titulo : "Survey {$sid}",
                         'ativo' => $ativo,
                         'startdate' => $start,
                         'expires' => $expires,
+                        'cached_at' => $cachedAt ? $cachedAt->format('d/m/Y H:i') : null,
                     ];
                 })
                 ->sortBy('titulo', SORT_NATURAL | SORT_FLAG_CASE)
@@ -213,7 +217,16 @@ class DashboardController extends Controller
             ->limit(80)
             ->get(['id', 'evento_id', 'descricao', 'dia', 'hora_inicio']);
 
-        return view('dashboards.avaliacoes', compact('templates', 'eventos', 'atividades'));
+        $cachedAt = null;
+        if ($request->query('fonte') === 'limesurvey') {
+            $surveyId = (int) ($request->integer('survey_id') ?: config('services.limesurvey.survey_id'));
+            if ($surveyId > 0) {
+                $ts = Cache::get("limesurvey:{$surveyId}:cached_at");
+                $cachedAt = $ts ? $ts->format('d/m/Y H:i') : null;
+            }
+        }
+
+        return view('dashboards.avaliacoes', compact('templates', 'eventos', 'atividades', 'cachedAt'));
     }
 
     public function avaliacoesData(Request $request)

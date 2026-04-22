@@ -29,8 +29,7 @@
               <th scope="col">SID</th>
               <th scope="col">Leitura do mundo</th>
               <th scope="col">Status</th>
-              <th scope="col">Início</th>
-              <th scope="col">Expira</th>
+              <th scope="col">Dados atualizados em:</th>
               <th scope="col" class="text-end">Ação</th>
             </tr>
           </thead>
@@ -46,8 +45,13 @@
                     <span class="badge text-bg-secondary">Inativo</span>
                   @endif
                 </td>
-                <td>{{ $survey['startdate'] ?? '-' }}</td>
-                <td>{{ $survey['expires'] ?? '-' }}</td>
+                <td>
+                  @if($survey['cached_at'])
+                    <span class="text-success small">{{ $survey['cached_at'] }}</span>
+                  @else
+                    <span class="text-muted small">Sem registros</span>
+                  @endif
+                </td>
                 <td class="text-end">
                   <a
                     href="{{ route('dashboards.avaliacoes', ['fonte' => 'limesurvey', 'survey_id' => $survey['sid']]) }}"
@@ -58,7 +62,7 @@
               </tr>
             @empty
               <tr>
-                <td colspan="6" class="text-center text-muted py-4">Nenhuma leitura encontrada.</td>
+                <td colspan="7" class="text-center text-muted py-4">Nenhuma leitura encontrada.</td>
               </tr>
             @endforelse
           </tbody>

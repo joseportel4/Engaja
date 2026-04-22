@@ -32,6 +32,8 @@ class LimeSurveyDashboardService
             fn () => $this->client->exportResponses($surveyId)
         );
 
+        Cache::rememberForever("limesurvey:{$surveyId}:cached_at", fn () => now());
+
         $responsesCollection = collect($this->applyDateFilter($responses, $request));
         $questionList = $this->normalizeQuestions($questions);
         $tokenMunicipioMap = $this->buildTokenMunicipioMap($surveyId);
