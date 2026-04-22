@@ -35,6 +35,11 @@ php artisan migrate:fresh --seed
 # Tests
 php artisan test
 php artisan test --filter TestClassName   # Run single test
+
+# Scheduling & Cache
+php artisan schedule:list                 # List all scheduled tasks
+php artisan schedule:run                  # Simulate scheduler (runs due tasks)
+php artisan limesurvey:importar-dados     # Import LimeSurvey data to cache (24h TTL)
 ```
 
 ## Architecture
@@ -61,7 +66,8 @@ Permissions follow the pattern `resource.action` (e.g., `evento.criar`, `presenc
 ### Key Patterns
 
 - **Repositories:** `app/Repositories/` — currently only `BiValorRepository` for BI queries.
-- **Services:** `app/Services/` — `AvaliacaoRespostasDashboardService`, `ParticipantesExclusivosService`, and BI services.
+- **Services:** `app/Services/` — `LimeSurveyDashboardService`, `ParticipantesExclusivosService`, and BI services.
+- **Console Commands:** `app/Console/Commands/` — `ImportLimeSurveyData` (daily cache warm-up), `ImportBiGeral` (CSV import).
 - **Livewire:** `app/Livewire/Dashboards/` and `app/Livewire/Graficos/` — interactive dashboard components.
 - **Imports:** `app/Imports/` — Excel importers via maatwebsite/excel with tolerant header parsing.
 - **Exports:** `app/Exports/` — Excel exports.
@@ -80,14 +86,36 @@ Imports follow a multi-step preview/confirm pattern:
 
 `RolesPermissionsSeeder` sets up all roles and permissions. `DatabaseSeeder` creates a default admin user (`admin@engaja.local`) with sample events/activities. Always run `--seed` on fresh installs.
 
-### Avaliacoes Dashboard (LimeSurvey integration)
+### LimeSurvey Integration & Avaliacoes Dashboard
 
-Entry: `resources/views/dashboards/leitura-mundo.blade.php` → links to `dashboards.avaliacoes` with `?fonte=limesurvey&survey_id=`.
+**Routes & Views:**
+- `GET /dashboards/leitura-mundo` (`dashboards.leitura-mundo`) — survey list via `DashboardController::leituraMundo()`.
+- `GET /dashboards/avaliacoes?fonte=limesurvey&survey_id=X` (`dashboards.avaliacoes`) — dashboard entry point.
+- `GET /dashboards/avaliacoes/dados?...` (`dashboards.avaliacoes.data`) — AJAX endpoint returning `{totais, perguntas, bi_matrizes, question_blocks, recentes}`.
+- View partials in `resources/views/dashboards/avaliacoes/`: `_filtros`, `_cards-totais`, `_bi-matriz`, `_modal-respostas`.
 
-View partials in `resources/views/dashboards/avaliacoes/`: `_filtros`, `_cards-totais`, `_bi-matriz`, `_modal-respostas`.
+**Data Flow:**
+1. Frontend JS (`resources/js/dashboards/avaliacoes.js`) fetches `/dashboards/avaliacoes/dados` with filters.
+2. `DashboardController::avaliacoesDataLimeSurvey()` → `LimeSurveyDashboardService::buildPayload($request)`.
+3. Service returns structured payload with questions, responses, matrix analyses, organized blocks.
 
-The JS module `resources/js/dashboards/avaliacoes.js` renders all charts client-side via Chart.js (not ApexCharts, which is used only in Livewire `app/Livewire/Graficos/` components). Two rendering paths:
-- **New path** (`question_blocks` in API payload): uses `renderSimpleQuestionCard` / `renderMatrixBlockCard` — full-width cards (`col-12`); circular charts (doughnut, polarArea) automatically reduced to `col-12 col-lg-6`.
-- **Legacy path** (`perguntas` in API payload): uses `renderLegacyCharts` — full-width cards (`col-12`).
+**Caching & Scheduling:**
+- Service uses `Cache::remember()` with **database driver** (configurable TTL via `LIMESURVEY_CACHE_MINUTES`, default 5 min).
+- **Cache keys:** `limesurvey:{surveyId}:questions`, `limesurvey:{surveyId}:responses`, `limesurvey:{surveyId}:answer_options:{qid}` (type-L questions only).
+- **Daily warm-up:** `php artisan limesurvey:importar-dados` runs at 00:00 UTC (see `routes/console.php` for schedule), caching all active surveys for 24 hours. Fallback to on-demand fetch if scheduler fails.
+- Manual trigger: `php artisan limesurvey:importar-dados` or `php artisan limesurvey:importar-dados --survey_id=X`.
 
-**Chart.js sizing constraint:** circular chart types default to aspect ratio 1:1 — always use `maintainAspectRatio: false` + `canvas.style.height` for doughnut/polarArea, otherwise they expand to fill the full column height and become huge.
+**LimeSurvey Client** (`app/Services/LimeSurvey/LimeSurveyClient.php`):
+- JSON-RPC 2.0 client; session-based (auto-acquired/released per call).
+- Methods: `listQuestions(surveyId)`, `exportResponses(surveyId)` (CSV base64), `listParticipants()`, `getQuestionProperties(qid)`, `listSurveys()`.
+- Config via `config/services.php` (env: `LIMESURVEY_URL`, `USERNAME`, `PASSWORD`, `SURVEY_ID`, `CACHE_MINUTES`, `VERIFY_SSL`, `TIMEOUT`).
+
+**Service** (`app/Services/LimeSurvey/LimeSurveyDashboardService.php`):
+- Normalizes questions, builds simple questions and matrix blocks.
+- Supports município-level aggregation (email-to-município mapping).
+- Infers question types: `texto`, `boolean`, `escala`, `numero`.
+- Date filters from `de` / `ate` request params applied post-cache.
+
+**Frontend Rendering** (Chart.js, not ApexCharts):
+- Two paths: **new** (`question_blocks`) uses `renderSimpleQuestionCard`/`renderMatrixBlockCard`; **legacy** (`perguntas`/`bi_matrizes`) uses `renderLegacyCharts`.
+- Circular charts (doughnut, polarArea): use `maintainAspectRatio: false` + `canvas.style.height` to prevent excessive height.
