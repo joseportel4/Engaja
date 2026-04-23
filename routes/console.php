@@ -9,7 +9,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('limesurvey:importar-dados')
-    ->dailyAt('00:00')
+    ->hourly()
     ->runInBackground()
     ->withoutOverlapping()
     ->onFailure(fn () => \Illuminate\Support\Facades\Log::error('Falha na importação diária do LimeSurvey'));
