@@ -1,132 +1,96 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>Planejamento – {{ $evento->nome }}</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'DejaVu Sans', sans-serif;
-            font-size: 10.5px;
-            color: #111;
-            line-height: 1.5;
-        }
+@extends('layouts.pdf-alfa-eja')
 
-        /* ── Cabeçalho ── */
-        .page-header {
-            background-color: #421944;
-            padding: 12px 30px;
-            margin-bottom: 0;
-        }
-        .page-header img { height: 34px; }
-        .page-header-txt {
-            color: #fff;
-            font-size: 18px;
-            font-weight: bold;
-            letter-spacing: 0.03em;
-        }
+@section('title')
+    Planejamento – {{ $evento->nome ?? 'Evento' }}
+@endsection
 
-        /* ── Área de conteúdo ── */
-        .content { padding: 24px 40px 32px; }
+@section('styles')
+    body {
+        font-family: 'DejaVu Sans', sans-serif;
+        font-size: 10.5px;
+        color: #111;
+        line-height: 1.5;
+    }
 
-        .doc-title {
-            font-size: 14px;
-            font-weight: bold;
-            color: #421944;
-            margin-bottom: 2px;
-        }
-        .doc-subtitle {
-            font-size: 9.5px;
-            color: #6b7280;
-            border-bottom: 2px solid #421944;
-            padding-bottom: 8px;
-            margin-bottom: 20px;
-        }
+    .content { padding: 24px 16px 32px; }
 
-        /* ── Seções ── */
-        .section { margin-bottom: 18px; }
-        .section-title {
-            font-size: 10px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #421944;
-            border-bottom: 1px solid #c9a0d0;
-            padding-bottom: 3px;
-            margin-bottom: 9px;
-        }
+    .doc-title {
+        font-size: 14px;
+        font-weight: bold;
+        color: #421944;
+        margin-bottom: 2px;
+    }
+    .doc-subtitle {
+        font-size: 9.5px;
+        color: #6b7280;
+        border-bottom: 2px solid #421944;
+        padding-bottom: 8px;
+        margin-bottom: 20px;
+    }
 
-        /* ── Campos ── */
-        .field { margin-bottom: 7px; }
-        .field-label {
-            font-size: 9px;
-            font-weight: bold;
-            text-transform: uppercase;
-            color: #6b7280;
-            margin-bottom: 1px;
-        }
-        .cols { width: 100%; }
-        .cols td { vertical-align: top; padding-right: 16px; width: 50%; }
+    .section { margin-bottom: 18px; }
+    .section-title {
+        font-size: 10px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #421944;
+        border-bottom: 1px solid #c9a0d0;
+        padding-bottom: 3px;
+        margin-bottom: 9px;
+    }
 
-        /* ── Listas simples ── */
-        .list-item {
-            padding: 3px 0;
-            border-bottom: 1px dotted #e5e7eb;
-        }
-        .ods-item { padding: 2px 0 2px 10px; }
+    .field { margin-bottom: 7px; }
+    .field-label {
+        font-size: 9px;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: #6b7280;
+        margin-bottom: 1px;
+    }
+    .cols { width: 100%; }
+    .cols td { vertical-align: top; padding-right: 16px; width: 50%; }
 
-        /* ── Sequência Didática (table layout para DomPDF) ── */
-        .seq-wrap { border: 1px solid #d1d5db; margin-bottom: 8px; width: 100%; }
-        .seq-inner { width: 100%; border-collapse: collapse; }
-        .seq-inner td { vertical-align: top; padding: 6px 10px; }
-        .seq-period {
-            background-color: #f3eaf5;
-            width: 90px;
-            font-weight: bold;
-            color: #421944;
-            border-right: 1px solid #d1d5db;
-            white-space: nowrap;
-        }
+    .list-item {
+        padding: 3px 0;
+        border-bottom: 1px dotted #e5e7eb;
+    }
+    .ods-item { padding: 2px 0 2px 10px; }
 
-        /* ── Checklist ── */
-        .check-table { width: 100%; border-collapse: collapse; }
-        .check-table td { vertical-align: top; padding: 4px 3px; border-bottom: 1px dotted #e5e7eb; }
-        .check-icon { width: 16px; text-align: center; }
-        .icon-ok  { color: #16a34a; font-size: 13px; }
-        .icon-no  { color: #9ca3af; font-size: 13px; }
+    .seq-wrap { border: 1px solid #d1d5db; margin-bottom: 8px; width: 100%; }
+    .seq-inner { width: 100%; border-collapse: collapse; }
+    .seq-inner td { vertical-align: top; padding: 6px 10px; }
+    .seq-period {
+        background-color: #f3eaf5;
+        width: 90px;
+        font-weight: bold;
+        color: #421944;
+        border-right: 1px solid #d1d5db;
+        white-space: nowrap;
+    }
 
-        /* ── Rodapé ── */
-        .footer {
-            margin-top: 28px;
-            padding-top: 8px;
-            border-top: 1px solid #e5e7eb;
-            font-size: 8.5px;
-            color: #9ca3af;
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
+    .check-table { width: 100%; border-collapse: collapse; }
+    .check-table td { vertical-align: top; padding: 4px 3px; border-bottom: 1px dotted #e5e7eb; }
+    .check-icon { width: 16px; text-align: center; }
+    .icon-ok  { color: #16a34a; font-size: 13px; }
+    .icon-no  { color: #9ca3af; font-size: 13px; }
 
-@php
-    $logoPath = public_path('images/engaja-bg-white.png');
-@endphp
+    .footer {
+        margin-top: 28px;
+        padding-top: 8px;
+        border-top: 1px solid #e5e7eb;
+        font-size: 8.5px;
+        color: #9ca3af;
+        text-align: center;
+    }
+@endsection
 
-{{-- ── Cabeçalho roxo com logo ── --}}
-<div class="page-header">
-    @if (file_exists($logoPath))
-        <img src="{{ $logoPath }}" alt="Engaja">
-    @else
-        <span class="page-header-txt">Engaja</span>
-    @endif
-</div>
-
+@section('content')
 <div class="content">
 
     <div class="doc-title">Planejamento de Ação Pedagógica</div>
     <div class="doc-subtitle">Projeto Engaja &middot; Gerado em {{ now()->format('d/m/Y \à\s H:i') }}</div>
 
-    {{-- ── Dados da Ação ── --}}
     <div class="section">
         <div class="section-title">Dados da Ação</div>
 
@@ -198,7 +162,6 @@
         @endif
     </div>
 
-    {{-- ── Objetivos ── --}}
     @if ($evento->objetivos_gerais || $evento->objetivos_especificos)
     <div class="section">
         <div class="section-title">Objetivos</div>
@@ -217,7 +180,6 @@
     </div>
     @endif
 
-    {{-- ── Situações Desafiadoras ── --}}
     @if ($evento->situacoesDesafiadoras->isNotEmpty())
     <div class="section">
         <div class="section-title">Situações Desafiadoras da EJA a serem enfrentadas</div>
@@ -227,7 +189,6 @@
     </div>
     @endif
 
-    {{-- ── Matriz de Aprendizagens ── --}}
     @php $matrizesPlanejamento = $matrizesOrdenadas ?? $evento->matrizes; @endphp
     @if ($matrizesPlanejamento->isNotEmpty())
     <div class="section">
@@ -238,7 +199,6 @@
     </div>
     @endif
 
-    {{-- ── ODS ── --}}
     @if (!empty($evento->ods_selecionados))
     <div class="section">
         <div class="section-title">Interfaces com os Objetivos de Desenvolvimento Sustentável (ODS)</div>
@@ -248,7 +208,6 @@
     </div>
     @endif
 
-    {{-- ── Sequência Didática (table layout para compatibilidade DomPDF) ── --}}
     @if ($evento->sequenciasDidaticas->isNotEmpty())
     <div class="section">
         <div class="section-title">Sequência Didática das Atividades</div>
@@ -269,7 +228,6 @@
     </div>
     @endif
 
-    {{-- ── Informações Complementares ── --}}
     @if ($evento->recursos_materiais_necessarios || $evento->providencias_sme_parceria || $evento->observacoes_complementares)
     <div class="section">
         <div class="section-title">Informações Complementares</div>
@@ -294,7 +252,6 @@
     </div>
     @endif
 
-    {{-- ── Checklist do Planejamento ── --}}
     <div class="section">
         <div class="section-title">Checklist do Planejamento</div>
         @php
@@ -322,5 +279,4 @@
     </div>
 
 </div>
-</body>
-</html>
+@endsection
