@@ -46,7 +46,7 @@ class UserManagementController extends Controller
             'participante.municipio.estado.regiao',
             'participante.inscricoes.evento',
             'participante.inscricoes.atividade.evento',
-            'participante.inscricoes.presencas',
+            'participante.inscricoes.presencas.atividade.evento',
         ])
             ->when(!auth()->user()->hasRole('administrador'), function ($q) {
                 //nao sendo administrador, oculta os administradores

@@ -200,16 +200,63 @@
     @php
       $participante = $u->participante;
       $todasInscricoes = $participante?->inscricoes ?? collect();
-      $inscricoes = $todasInscricoes
-          ->filter(function ($inscricao) {
-            return $inscricao->atividade && ($inscricao->evento || $inscricao->atividade->evento);
-          })
-          ->sortBy([
-            fn ($a, $b) => strcmp((string) ($a->evento->nome ?? $a->atividade?->evento?->nome ?? ''), (string) ($b->evento->nome ?? $b->atividade?->evento?->nome ?? '')),
-            fn ($a, $b) => strcmp((string) ($a->atividade->dia ?? ''), (string) ($b->atividade->dia ?? '')),
-            fn ($a, $b) => strcmp((string) ($a->atividade->hora_inicio ?? ''), (string) ($b->atividade->hora_inicio ?? '')),
-          ])
-          ->values();
+      $participacoes = collect();
+
+      foreach ($todasInscricoes as $inscricao) {
+        $atividadeInscricao = $inscricao->atividade;
+        $eventoInscricao = $inscricao->evento ?? $atividadeInscricao?->evento;
+        $temPresencaEmMomentoValido = $inscricao->presencas->contains(function ($presenca) use ($inscricao) {
+          $atividadePresenca = $presenca->atividade;
+          $eventoPresenca = $atividadePresenca?->evento ?? $inscricao->evento;
+
+          return $atividadePresenca && $eventoPresenca;
+        });
+
+        if ($eventoInscricao && ($atividadeInscricao || ! $temPresencaEmMomentoValido)) {
+          $presencaDaInscricao = $inscricao->presencas
+            ->first(fn ($item) => (int) $item->atividade_id === (int) ($inscricao->atividade_id ?? 0));
+
+          $participacoes->push([
+            'key' => 'inscricao-' . $inscricao->id,
+            'evento' => $eventoInscricao,
+            'atividade' => $atividadeInscricao,
+            'inscricao' => $inscricao,
+            'presenca' => $presencaDaInscricao,
+            'ouvinte' => (bool) $inscricao->ouvinte,
+          ]);
+        }
+
+        foreach ($inscricao->presencas as $presenca) {
+          $atividadePresenca = $presenca->atividade;
+          $eventoPresenca = $atividadePresenca?->evento ?? $inscricao->evento;
+
+          if (! $eventoPresenca || ($presenca->atividade_id && ! $atividadePresenca)) {
+            continue;
+          }
+
+          if ($inscricao->atividade_id && (int) $presenca->atividade_id === (int) $inscricao->atividade_id) {
+            continue;
+          }
+
+          $participacoes->push([
+            'key' => 'presenca-' . $presenca->id,
+            'evento' => $eventoPresenca,
+            'atividade' => $atividadePresenca,
+            'inscricao' => $inscricao,
+            'presenca' => $presenca,
+            'ouvinte' => (bool) $inscricao->ouvinte,
+          ]);
+        }
+      }
+
+      $participacoes = $participacoes
+        ->unique('key')
+        ->sortBy([
+          fn ($a, $b) => strcmp((string) ($a['evento']->nome ?? ''), (string) ($b['evento']->nome ?? '')),
+          fn ($a, $b) => strcmp((string) ($a['atividade']->dia ?? ''), (string) ($b['atividade']->dia ?? '')),
+          fn ($a, $b) => strcmp((string) ($a['atividade']->hora_inicio ?? ''), (string) ($b['atividade']->hora_inicio ?? '')),
+        ])
+        ->values();
 
       $primeiraInscricao = $todasInscricoes->sortBy('created_at')->first();
       $dataInscricaoSistema = $u->created_at
@@ -239,14 +286,14 @@
               </div>
               <div class="col-12 col-md-4">
                 <div class="border rounded p-3 h-100 bg-light">
-                  <div class="text-muted small">Total de inscrições em momentos</div>
-                  <div class="fw-semibold">{{ $inscricoes->count() }}</div>
+                  <div class="text-muted small">Total de participações</div>
+                  <div class="fw-semibold">{{ $participacoes->count() }}</div>
                 </div>
               </div>
               <div class="col-12 col-md-4">
                 <div class="border rounded p-3 h-100 bg-light">
                   <div class="text-muted small">Participações como ouvinte</div>
-                  <div class="fw-semibold">{{ $inscricoes->where('ouvinte', true)->count() }}</div>
+                  <div class="fw-semibold">{{ $participacoes->where('ouvinte', true)->count() }}</div>
                 </div>
               </div>
             </div>
@@ -264,12 +311,12 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @forelse($inscricoes as $inscricao)
+                  @forelse($participacoes as $participacao)
                     @php
-                      $atividade = $inscricao->atividade;
-                      $presenca = $inscricao->presencas
-                        ->first(fn ($item) => (int) $item->atividade_id === (int) ($inscricao->atividade_id ?? 0))
-                        ?? $inscricao->presencas->first();
+                      $evento = $participacao['evento'];
+                      $atividade = $participacao['atividade'];
+                      $inscricao = $participacao['inscricao'];
+                      $presenca = $participacao['presenca'];
                       $statusPresenca = $presenca?->status;
                       $statusLabel = match ($statusPresenca) {
                         'presente' => 'Presente',
@@ -288,7 +335,7 @@
                         : null;
                     @endphp
                     <tr>
-                      <td>{{ $inscricao->evento->nome ?? $atividade?->evento?->nome ?? '-' }}</td>
+                      <td>{{ $evento->nome ?? '-' }}</td>
                       <td>{{ $atividade->descricao ?? '-' }}</td>
                       <td>
                         {{ $momentoData ?? '-' }}

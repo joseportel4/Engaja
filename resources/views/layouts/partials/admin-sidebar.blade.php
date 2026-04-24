@@ -206,6 +206,14 @@
           </span>
           <span class="admin-nav-text">Participantes exclusivos</span>
         </a>
+        <a class="admin-nav-link {{ request()->routeIs('usuarios.sem-vinculo.*') ? 'active' : '' }}" href="{{ route('usuarios.sem-vinculo.index') }}">
+          <span class="admin-nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1m0 3a.75.75 0 0 1 .75.75v3.69l1.78 1.78a.75.75 0 1 1-1.06 1.06L7.47 9.28A.75.75 0 0 1 7.25 8.75v-4A.75.75 0 0 1 8 4"/>
+            </svg>
+          </span>
+          <span class="admin-nav-text">Usuários sem vínculo</span>
+        </a>
       @endhasanyrole
     </div>
   @endhasanyrole

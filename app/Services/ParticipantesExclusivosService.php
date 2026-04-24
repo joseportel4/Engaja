@@ -65,12 +65,20 @@ class ParticipantesExclusivosService
     {
         return $sub
             ->from('inscricaos as i_sel')
+            ->leftJoin('eventos as e_sel', 'e_sel.id', '=', 'i_sel.evento_id')
             ->leftJoin('atividades as a_sel', 'a_sel.id', '=', 'i_sel.atividade_id')
+            ->leftJoin('eventos as ae_sel', 'ae_sel.id', '=', 'a_sel.evento_id')
             ->whereColumn('i_sel.participante_id', 'participantes.id')
             ->whereNull('i_sel.deleted_at')
             ->where(function (Builder $q) use ($eventoIds) {
-                $q->whereIn('i_sel.evento_id', $eventoIds)
-                    ->orWhereIn('a_sel.evento_id', $eventoIds);
+                $q->where(function (Builder $direct) use ($eventoIds) {
+                    $direct->whereIn('e_sel.id', $eventoIds)
+                        ->whereNull('e_sel.deleted_at');
+                })->orWhere(function (Builder $byActivity) use ($eventoIds) {
+                    $byActivity->whereIn('ae_sel.id', $eventoIds)
+                        ->whereNull('a_sel.deleted_at')
+                        ->whereNull('ae_sel.deleted_at');
+                });
             })
             ->selectRaw('1');
     }
@@ -81,15 +89,17 @@ class ParticipantesExclusivosService
             ->from('presencas as p_sel')
             ->join('inscricaos as ip_sel', 'ip_sel.id', '=', 'p_sel.inscricao_id')
             ->join('atividades as ap_sel', 'ap_sel.id', '=', 'p_sel.atividade_id')
+            ->join('eventos as ep_sel', 'ep_sel.id', '=', 'ap_sel.evento_id')
             ->whereColumn('ip_sel.participante_id', 'participantes.id')
             ->where(function (Builder $q) {
                 $q->where('p_sel.status', 'presente')
                     ->orWhere('ip_sel.ouvinte', true);
             })
-            ->whereIn('ap_sel.evento_id', $eventoIds)
+            ->whereIn('ep_sel.id', $eventoIds)
             ->whereNull('p_sel.deleted_at')
             ->whereNull('ip_sel.deleted_at')
             ->whereNull('ap_sel.deleted_at')
+            ->whereNull('ep_sel.deleted_at')
             ->selectRaw('1');
     }
 
@@ -97,14 +107,21 @@ class ParticipantesExclusivosService
     {
         return $sub
             ->from('inscricaos as i_out')
+            ->leftJoin('eventos as e_out', 'e_out.id', '=', 'i_out.evento_id')
             ->leftJoin('atividades as a_out', 'a_out.id', '=', 'i_out.atividade_id')
+            ->leftJoin('eventos as ae_out', 'ae_out.id', '=', 'a_out.evento_id')
             ->whereColumn('i_out.participante_id', 'participantes.id')
             ->whereNull('i_out.deleted_at')
             ->where(function (Builder $q) use ($eventoIds) {
-                $q->whereNotIn('i_out.evento_id', $eventoIds)
-                    ->orWhere(function (Builder $nested) use ($eventoIds) {
-                        $nested->whereNotNull('a_out.evento_id')
-                            ->whereNotIn('a_out.evento_id', $eventoIds);
+                $q->where(function (Builder $direct) use ($eventoIds) {
+                    $direct->whereNotNull('e_out.id')
+                        ->whereNotIn('e_out.id', $eventoIds)
+                        ->whereNull('e_out.deleted_at');
+                })->orWhere(function (Builder $nested) use ($eventoIds) {
+                    $nested->whereNotNull('ae_out.id')
+                        ->whereNotIn('ae_out.id', $eventoIds)
+                        ->whereNull('a_out.deleted_at')
+                        ->whereNull('ae_out.deleted_at');
                     });
             })
             ->selectRaw('1');
@@ -116,15 +133,17 @@ class ParticipantesExclusivosService
             ->from('presencas as p_out')
             ->join('inscricaos as ip_out', 'ip_out.id', '=', 'p_out.inscricao_id')
             ->join('atividades as ap_out', 'ap_out.id', '=', 'p_out.atividade_id')
+            ->join('eventos as ep_out', 'ep_out.id', '=', 'ap_out.evento_id')
             ->whereColumn('ip_out.participante_id', 'participantes.id')
             ->where(function (Builder $q) {
                 $q->where('p_out.status', 'presente')
                     ->orWhere('ip_out.ouvinte', true);
             })
-            ->whereNotIn('ap_out.evento_id', $eventoIds)
+            ->whereNotIn('ep_out.id', $eventoIds)
             ->whereNull('p_out.deleted_at')
             ->whereNull('ip_out.deleted_at')
             ->whereNull('ap_out.deleted_at')
+            ->whereNull('ep_out.deleted_at')
             ->selectRaw('1');
     }
 
@@ -132,12 +151,20 @@ class ParticipantesExclusivosService
     {
         return $sub
             ->from('inscricaos as i_count')
+            ->leftJoin('eventos as e_count', 'e_count.id', '=', 'i_count.evento_id')
             ->leftJoin('atividades as a_count', 'a_count.id', '=', 'i_count.atividade_id')
+            ->leftJoin('eventos as ae_count', 'ae_count.id', '=', 'a_count.evento_id')
             ->whereColumn('i_count.participante_id', 'participantes.id')
             ->whereNull('i_count.deleted_at')
             ->where(function (Builder $q) use ($eventoIds) {
-                $q->whereIn('i_count.evento_id', $eventoIds)
-                    ->orWhereIn('a_count.evento_id', $eventoIds);
+                $q->where(function (Builder $direct) use ($eventoIds) {
+                    $direct->whereIn('e_count.id', $eventoIds)
+                        ->whereNull('e_count.deleted_at');
+                })->orWhere(function (Builder $byActivity) use ($eventoIds) {
+                    $byActivity->whereIn('ae_count.id', $eventoIds)
+                        ->whereNull('a_count.deleted_at')
+                        ->whereNull('ae_count.deleted_at');
+                });
             })
             ->selectRaw('count(distinct i_count.id)');
     }
@@ -148,15 +175,17 @@ class ParticipantesExclusivosService
             ->from('presencas as p_count')
             ->join('inscricaos as ip_count', 'ip_count.id', '=', 'p_count.inscricao_id')
             ->join('atividades as ap_count', 'ap_count.id', '=', 'p_count.atividade_id')
+            ->join('eventos as ep_count', 'ep_count.id', '=', 'ap_count.evento_id')
             ->whereColumn('ip_count.participante_id', 'participantes.id')
             ->where(function (Builder $q) {
                 $q->where('p_count.status', 'presente')
                     ->orWhere('ip_count.ouvinte', true);
             })
-            ->whereIn('ap_count.evento_id', $eventoIds)
+            ->whereIn('ep_count.id', $eventoIds)
             ->whereNull('p_count.deleted_at')
             ->whereNull('ip_count.deleted_at')
             ->whereNull('ap_count.deleted_at')
+            ->whereNull('ep_count.deleted_at')
             ->selectRaw('count(distinct p_count.id)');
     }
 }

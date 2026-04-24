@@ -20,6 +20,7 @@ use App\Http\Controllers\InscricaoController;
 use App\Http\Controllers\ModeloCertificadoController;
 use App\Http\Controllers\MunicipioController;
 use App\Http\Controllers\ParticipantesExclusivosController;
+use App\Http\Controllers\UsuariosSemVinculoController;
 use App\Http\Controllers\PresencaController;
 use App\Http\Controllers\PresencaImportController;
 use App\Http\Controllers\ProfileController;
@@ -187,6 +188,8 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
             Route::get('participantes-exclusivos', [ParticipantesExclusivosController::class, 'index'])->name('participantes-exclusivos.index');
             Route::get('participantes-exclusivos/resultado', [ParticipantesExclusivosController::class, 'resultado'])->name('participantes-exclusivos.resultado');
             Route::get('participantes-exclusivos/exportar', [ParticipantesExclusivosController::class, 'exportar'])->name('participantes-exclusivos.exportar');
+            Route::get('sem-vinculo', [UsuariosSemVinculoController::class, 'index'])->name('sem-vinculo.index');
+            Route::get('sem-vinculo/exportar', [UsuariosSemVinculoController::class, 'exportar'])->name('sem-vinculo.exportar');
         });
         Route::get('{managedUser}/editar', [UserManagementController::class, 'edit'])->name('edit');
         Route::put('{managedUser}', [UserManagementController::class, 'update'])->name('update');
