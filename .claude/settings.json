@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Read(./vendor/**)",
+      "Read(./node_modules/**)",
+      "Read(./public/build/**)",
+      "Read(./public/hot/**)",
+      "Read(./public/storage/**)",
+      "Read(./storage/framework/cache/**)",
+      "Read(./storage/framework/sessions/**)",
+      "Read(./storage/framework/views/**)",
+      "Read(./storage/logs/**)",
+      "Read(./storage/pail/**)",
+      "Read(./bootstrap/cache/**)",
+      "Read(./.idea/**)",
+      "Read(./.vscode/**)",
+      "Read(./.fleet/**)",
+      "Read(./.nova/**)",
+      "Read(./.zed/**)",
+      "Read(./package-lock.json)",
+      "Read(./composer.lock)",
+      "Read(./**/*.log)",
+      "Read(./auth.json)",
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  }
+}

@@ -134,7 +134,7 @@
                     <table class="bar-table">
                         @foreach($labels as $idx => $label)
                             @php
-                                $rawLabel = (string) $label;
+                                $rawLabel = trim(strip_tags((string) $label));
                                 $labelShow = $rawLabel === 'Nao' ? 'Não' : $rawLabel;
                                 $val = (int) ($values[$idx] ?? 0);
                                 $pct = round(($val / $totalBarras) * 100);
