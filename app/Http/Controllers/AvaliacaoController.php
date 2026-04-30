@@ -279,6 +279,7 @@ class AvaliacaoController extends Controller
                 $questao->questao_id ?? $questao->id => [
                     'texto' => $questao->texto,
                     'tipo' => $questao->tipo,
+                    'opcoes_resposta' => $questao->opcoes_resposta ?? [],
                     'evidencia_id' => $questao->evidencia_id,
                     'escala_id' => $questao->escala_id,
                 ],
@@ -291,6 +292,7 @@ class AvaliacaoController extends Controller
                 'id' => $questao->id,
                 'texto' => $questao->texto,
                 'tipo' => $questao->tipo,
+                'opcoes_resposta' => $questao->opcoes_resposta ?? [],
                 'evidencia_id' => $questao->evidencia_id,
                 'escala_id' => $questao->escala_id,
                 'ordem' => $questao->ordem,
@@ -498,6 +500,8 @@ class AvaliacaoController extends Controller
                         : ['prohibited'],
                     'texto' => ['required', 'string', 'max:1000'],
                     'tipo' => ['required', 'string', Rule::in($tipos)],
+                    'opcoes_resposta' => ['nullable', 'array'],
+                    'opcoes_resposta.*' => ['nullable', 'string', 'max:255'],
                     'evidencia_id' => ['nullable', 'integer', Rule::exists('evidencias', 'id')],
                     'escala_id' => ['nullable', 'integer', Rule::exists('escalas', 'id')],
                     'ordem' => ['nullable', 'integer', 'min:1', 'max:999'],
@@ -507,6 +511,7 @@ class AvaliacaoController extends Controller
                     'id' => "questoes_adicionais.$index.id",
                     'texto' => "questoes_adicionais.$index.texto",
                     'tipo' => "questoes_adicionais.$index.tipo",
+                    'opcoes_resposta' => "questoes_adicionais.$index.opcoes_resposta",
                     'evidencia_id' => "questoes_adicionais.$index.evidencia_id",
                     'escala_id' => "questoes_adicionais.$index.escala_id",
                     'ordem' => "questoes_adicionais.$index.ordem",
@@ -515,7 +520,11 @@ class AvaliacaoController extends Controller
 
             $validator->after(function ($validator) use ($questao, $index) {
                 if (($questao['tipo'] ?? null) === 'escala' && empty($questao['escala_id'])) {
-                    $validator->errors()->add("questoes_adicionais.$index.escala_id", 'Selecione uma escala quando o tipo da questao for Escala.');
+                    $validator->errors()->add("questoes_adicionais.$index.escala_id", 'Selecione uma escala quando o tipo da questão for Escala.');
+                }
+
+                if (($questao['tipo'] ?? null) === 'unica' && empty($this->normalizaOpcoesResposta($questao['opcoes_resposta'] ?? []))) {
+                    $validator->errors()->add("questoes_adicionais.$index.opcoes_resposta", 'Informe pelo menos uma opção para questões do tipo "Resposta única".');
                 }
             });
 
@@ -537,6 +546,10 @@ class AvaliacaoController extends Controller
             if (($dados['tipo'] ?? null) !== 'escala') {
                 $dados['escala_id'] = null;
             }
+
+            $dados['opcoes_resposta'] = ($dados['tipo'] ?? null) === 'unica'
+                ? $this->normalizaOpcoesResposta($dados['opcoes_resposta'] ?? [])
+                : null;
 
             $dados['ordem'] = $dados['ordem'] ?? null;
 
@@ -591,6 +604,7 @@ class AvaliacaoController extends Controller
                 'evidencia_id' => $dados['evidencia_id'] ?? null,
                 'texto' => $dados['texto'],
                 'tipo' => $dados['tipo'],
+                'opcoes_resposta' => $dados['opcoes_resposta'] ?? null,
                 'ordem' => $dados['ordem'] ?? null,
                 'fixa' => false,
             ];
@@ -651,6 +665,8 @@ class AvaliacaoController extends Controller
             if (! $questao->fixa) {
                 $rules["questoes.{$questao->id}.texto"] = ['nullable', 'string', 'max:1000'];
                 $rules["questoes.{$questao->id}.tipo"] = ['nullable', 'string', Rule::in($tipos)];
+                $rules["questoes.{$questao->id}.opcoes_resposta"] = ['nullable', 'array'];
+                $rules["questoes.{$questao->id}.opcoes_resposta.*"] = ['nullable', 'string', 'max:255'];
                 $rules["questoes.{$questao->id}.evidencia_id"] = ['nullable', 'integer', Rule::exists('evidencias', 'id')];
                 $rules["questoes.{$questao->id}.escala_id"] = ['nullable', 'integer', Rule::exists('escalas', 'id')];
             }
@@ -668,6 +684,7 @@ class AvaliacaoController extends Controller
             $resultado[$questaoId] = [
                 'texto' => $config['texto'] ?? null,
                 'tipo' => isset($config['tipo']) && $config['tipo'] !== '' ? $config['tipo'] : null,
+                'opcoes_resposta' => $this->normalizaOpcoesResposta($config['opcoes_resposta'] ?? []),
                 'evidencia_id' => array_key_exists('evidencia_id', $config) && $config['evidencia_id'] !== ''
                     ? (int) $config['evidencia_id']
                     : null,
@@ -735,12 +752,16 @@ class AvaliacaoController extends Controller
             $evidenciaId = $questao->evidencia_id;
             $indicadorId = $questao->indicador_id;
             $escalaId = $questao->escala_id;
+            $opcoesResposta = $questao->opcoes_resposta ?? [];
 
             if (! $questao->fixa) {
                 $evidenciaId = $personalizacao['evidencia_id'] ?? $evidenciaId;
                 $evidenciaId = $evidenciaId ? (int) $evidenciaId : null;
                 $escalaId = $personalizacao['escala_id'] ?? $escalaId;
                 $escalaId = $escalaId ? (int) $escalaId : null;
+                $opcoesResposta = array_key_exists('opcoes_resposta', $personalizacao)
+                    ? $personalizacao['opcoes_resposta']
+                    : $opcoesResposta;
 
                 if ($evidenciaId && $evidencias->has($evidenciaId)) {
                     $indicadorId = $evidencias[$evidenciaId]->indicador_id;
@@ -755,7 +776,17 @@ class AvaliacaoController extends Controller
 
             if ($tipo === 'escala' && ! $escalaId) {
                 throw ValidationException::withMessages([
-                    "questoes.{$questao->id}.escala_id" => 'Selecione uma escala quando o tipo da questao for Escala.',
+                    "questoes.{$questao->id}.escala_id" => 'Selecione uma escala quando o tipo da questão for Escala.',
+                ]);
+            }
+
+            $opcoesResposta = $tipo === 'unica'
+                ? $this->normalizaOpcoesResposta($opcoesResposta)
+                : null;
+
+            if ($tipo === 'unica' && empty($opcoesResposta)) {
+                throw ValidationException::withMessages([
+                    "questoes.{$questao->id}.opcoes_resposta" => 'Informe pelo menos uma opção para questões do tipo "Resposta única".',
                 ]);
             }
 
@@ -766,6 +797,7 @@ class AvaliacaoController extends Controller
                 'evidencia_id' => $questao->fixa ? $questao->evidencia_id : $evidenciaId,
                 'texto' => $texto,
                 'tipo' => $tipo,
+                'opcoes_resposta' => $opcoesResposta,
                 'ordem' => $questao->ordem,
                 'fixa' => (bool) $questao->fixa,
             ];
@@ -796,9 +828,24 @@ class AvaliacaoController extends Controller
         return [
             'texto' => 'Texto aberto',
             'escala' => 'Escala',
-            'numero' => 'Numero',
-            'boolean' => 'Sim/Nao',
+            'numero' => 'Número',
+            'boolean' => 'Sim/Não',
+            'unica' => 'Resposta única',
         ];
+    }
+
+    private function normalizaOpcoesResposta($opcoes): array
+    {
+        if (! is_array($opcoes)) {
+            return [];
+        }
+
+        return collect($opcoes)
+            ->map(fn ($opcao) => is_string($opcao) ? trim($opcao) : '')
+            ->filter(fn ($opcao) => $opcao !== '')
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function buildEvidenciasOptions(Collection $evidencias): array
@@ -926,6 +973,12 @@ class AvaliacaoController extends Controller
             $valores = $questao->escala?->valores ?? [];
 
             return empty($valores) ? ['nullable', 'string'] : ['nullable', Rule::in($valores)];
+        }
+
+        if ($questao->tipo === 'unica') {
+            $opcoes = $questao->opcoes_resposta ?? [];
+
+            return empty($opcoes) ? ['nullable', 'string'] : ['nullable', Rule::in($opcoes)];
         }
 
         return match ($questao->tipo) {

@@ -5,7 +5,7 @@
   $namePrefix = $namePrefix ?? 'questoes';
   $errorPrefix = $errorPrefix ?? $namePrefix;
   $scope = $scope ?? 'template';
-  $titlePrefix = $titlePrefix ?? 'Questao';
+  $titlePrefix = $titlePrefix ?? 'Questão';
   $showFixaToggle = $showFixaToggle ?? true;
   $textoRequired = $textoRequired ?? ! $isPrototype;
   $tipoRequired = $tipoRequired ?? ! $isPrototype;
@@ -18,9 +18,17 @@
   $textoErro = ! $isPrototype && $errorsBag->has("$baseKey.texto");
   $tipoErro = ! $isPrototype && $errorsBag->has("$baseKey.tipo");
   $escalaErro = ! $isPrototype && $errorsBag->has("$baseKey.escala_id");
+  $opcoesRespostaErro = ! $isPrototype && $errorsBag->has("$baseKey.opcoes_resposta");
   $ordemErro = ! $isPrototype && $errorsBag->has("$baseKey.ordem");
   $fixaErro = ! $isPrototype && $errorsBag->has("$baseKey.fixa");
   $questionPosition = is_numeric($index) ? ((int) $index + 1) : '';
+  $opcoesResposta = collect($questao['opcoes_resposta'] ?? [])
+      ->filter(fn ($opcao) => is_string($opcao) && trim($opcao) !== '')
+      ->values();
+
+  if ($opcoesResposta->isEmpty()) {
+      $opcoesResposta = collect(['']);
+  }
 
   $fieldName = static function (string $field) use ($namePrefix, $index): string {
       return $namePrefix . '[' . $index . '][' . $field . ']';
@@ -56,7 +64,7 @@
 
     <div class="row g-3 align-items-start">
       <div class="col-md-6">
-        <label for="{{ $fieldId('evidencia_id') }}" class="form-label">Evidencia</label>
+        <label for="{{ $fieldId('evidencia_id') }}" class="form-label">Evidência</label>
         <select id="{{ $fieldId('evidencia_id') }}" name="{{ $fieldName('evidencia_id') }}"
           class="form-select{{ $evidenciaErro ? ' is-invalid' : '' }}">
           <option value="">Selecione...</option>
@@ -64,7 +72,7 @@
           <option value="{{ $id }}" @selected((string) ($questao['evidencia_id'] ?? '') === (string) $id)>{{ $descricao }}</option>
           @endforeach
         </select>
-        <div class="form-text">O indicador sera associado automaticamente pela evidencia escolhida.</div>
+        <div class="form-text">O indicador será associado automaticamente pela evidência escolhida.</div>
         @if ($evidenciaErro)
         <div class="invalid-feedback">{{ $errorsBag->first("$baseKey.evidencia_id") }}</div>
         @endif
@@ -118,11 +126,54 @@
       </div>
     </div>
 
+    <div class="mt-3 resposta-unica-field" data-resposta-unica-wrapper>
+      <div class="border rounded p-3 bg-light">
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+          <div>
+            <label class="form-label mb-1">Opções da resposta única</label>
+            <div class="form-text mt-0">Inclua as opções que serão exibidas no select da avaliação.</div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-primary" data-add-resposta-unica-option>Adicionar opção</button>
+        </div>
+
+        <div class="d-flex flex-column gap-2" data-resposta-unica-options>
+          @foreach ($opcoesResposta as $opcaoIndex => $opcao)
+            <div class="input-group" data-resposta-unica-option>
+              <span class="input-group-text">{{ $opcaoIndex + 1 }}</span>
+              <input type="text"
+                name="{{ $fieldName('opcoes_resposta') }}[]"
+                class="form-control{{ $opcoesRespostaErro ? ' is-invalid' : '' }}"
+                value="{{ $opcao }}"
+                placeholder="Digite uma opção"
+                data-resposta-unica-input>
+              <button type="button" class="btn btn-outline-danger" data-remove-resposta-unica-option>Remover</button>
+            </div>
+          @endforeach
+        </div>
+
+        @if ($opcoesRespostaErro)
+        <div class="text-danger small mt-2">{{ $errorsBag->first("$baseKey.opcoes_resposta") }}</div>
+        @endif
+      </div>
+
+      <template data-resposta-unica-prototype>
+        <div class="input-group" data-resposta-unica-option>
+          <span class="input-group-text">+</span>
+          <input type="text"
+            name="{{ $fieldName('opcoes_resposta') }}[]"
+            class="form-control"
+            placeholder="Digite uma opção"
+            data-resposta-unica-input>
+          <button type="button" class="btn btn-outline-danger" data-remove-resposta-unica-option>Remover</button>
+        </div>
+      </template>
+    </div>
+
     @if ($showFixaToggle)
     <div class="form-check form-switch mt-3">
       <input class="form-check-input{{ $fixaErro ? ' is-invalid' : '' }}" type="checkbox" role="switch"
         id="{{ $fieldId('fixa') }}" name="{{ $fieldName('fixa') }}" value="1" @checked(!empty($questao['fixa']))>
-      <label class="form-check-label" for="{{ $fieldId('fixa') }}">Questao fixa</label>
+      <label class="form-check-label" for="{{ $fieldId('fixa') }}">Questão fixa</label>
       @if ($fixaErro)
       <div class="invalid-feedback d-block">{{ $errorsBag->first("$baseKey.fixa") }}</div>
       @endif
@@ -130,4 +181,3 @@
     @endif
   </div>
 </div>
-

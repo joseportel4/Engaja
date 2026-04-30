@@ -122,6 +122,20 @@
                                   </div>
                                   @break
 
+                                @case('unica')
+                                  @php $opcoesResposta = collect($questao->opcoes_resposta ?? []); @endphp
+                                  @if($opcoesResposta->isNotEmpty())
+                                    <select name="respostas[{{ $questao->id }}]" class="form-select">
+                                      <option value="">Selecione...</option>
+                                      @foreach($opcoesResposta as $opcao)
+                                        <option value="{{ $opcao }}" @selected((string) $valorAtual === (string) $opcao)>{{ $opcao }}</option>
+                                      @endforeach
+                                    </select>
+                                  @else
+                                    <p class="text-muted small">Opções não configuradas.</p>
+                                  @endif
+                                  @break
+
                                 @default
                                   <textarea name="respostas[{{ $questao->id }}]" class="form-control" rows="3" placeholder="Compartilhe sua percepção">{{ $valorAtual }}</textarea>
                               @endswitch

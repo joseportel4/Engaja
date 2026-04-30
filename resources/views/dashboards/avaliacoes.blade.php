@@ -325,6 +325,7 @@
     if (pergunta.tipo === 'boolean') return 'doughnut';
     if (pergunta.tipo === 'numero') return 'line';
     if (pergunta.tipo === 'escala') return 'bar';
+    if (pergunta.tipo === 'unica') return 'bar';
     return labels.length > 3 ? 'polarArea' : 'bar';
   }
 
@@ -524,4 +525,3 @@
 })();
 </script>
 @endsection
-

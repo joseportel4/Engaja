@@ -17,8 +17,14 @@ class AvaliacaoQuestao extends Model
         'evidencia_id',
         'texto',
         'tipo',
+        'opcoes_resposta',
         'ordem',
         'fixa',
+    ];
+
+    protected $casts = [
+        'fixa' => 'boolean',
+        'opcoes_resposta' => 'array',
     ];
 
     public function avaliacao(): BelongsTo

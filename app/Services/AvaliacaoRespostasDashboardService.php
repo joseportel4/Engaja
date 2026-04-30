@@ -155,56 +155,29 @@ class AvaliacaoRespostasDashboardService
                 }
 
                 if ($tipo === 'escala') {
-                    $opcoes = $questao?->escala?->valores ?? [];
-                    if (empty($opcoes)) {
-                        $ordemValores = [];
-                        foreach ($items as $resposta) {
-                            $valor = $this->respostaParaTexto($resposta->resposta);
-                            if ($valor !== '' && ! in_array($valor, $ordemValores, true)) {
-                                $ordemValores[] = $valor;
-                            }
-                        }
-                        $opcoes = $ordemValores;
-                    }
+                    [$labels, $values] = $this->montarDistribuicaoOpcoes(
+                        $items,
+                        $questao?->escala?->valores ?? []
+                    );
 
-                    $contagem = [];
-                    foreach ($opcoes as $opcao) {
-                        $contagem[$opcao] = 0;
-                    }
-
-                    foreach ($items as $resposta) {
-                        $valor = $this->respostaParaTexto($resposta->resposta);
-                        if ($valor === '') {
-                            continue;
-                        }
-                        $contagem[$valor] = ($contagem[$valor] ?? 0) + 1;
-                    }
-
-                    if (! empty($questao?->escala?->valores)) {
-                        $labelsOrdenadas = [];
-                        $valuesOrdenadas = [];
-                        foreach ($questao->escala->valores as $opcao) {
-                            if (array_key_exists($opcao, $contagem)) {
-                                $labelsOrdenadas[] = $opcao;
-                                $valuesOrdenadas[] = $contagem[$opcao];
-                            }
-                        }
-                        foreach ($contagem as $k => $v) {
-                            if (! in_array($k, $questao->escala->valores, true)) {
-                                $labelsOrdenadas[] = $k;
-                                $valuesOrdenadas[] = $v;
-                            }
-                        }
-                        $bloco['labels'] = $labelsOrdenadas;
-                        $bloco['values'] = $valuesOrdenadas;
-                    } else {
-                        $bloco['labels'] = array_keys($contagem);
-                        $bloco['values'] = array_values($contagem);
-                    }
+                    $bloco['labels'] = $labels;
+                    $bloco['values'] = $values;
 
                     $media = $this->calcularMediaNumerica($items);
                     $bloco['media'] = $media;
                     $bloco['resumo'] = $media !== null ? 'Media '.number_format($media, 1, ',', '.') : null;
+
+                    return $bloco;
+                }
+
+                if ($tipo === 'unica') {
+                    [$labels, $values] = $this->montarDistribuicaoOpcoes(
+                        $items,
+                        $questao?->opcoes_resposta ?? []
+                    );
+
+                    $bloco['labels'] = $labels;
+                    $bloco['values'] = $values;
 
                     return $bloco;
                 }
@@ -253,6 +226,57 @@ class AvaliacaoRespostasDashboardService
 
             return sprintf('%s|%s|%03d|%06d', $dim, $ind, $ordem, $id);
         })->values();
+    }
+
+    private function montarDistribuicaoOpcoes(Collection $items, array $opcoesConfiguradas = []): array
+    {
+        $opcoes = collect($opcoesConfiguradas)
+            ->map(fn ($opcao) => is_string($opcao) ? trim($opcao) : '')
+            ->filter()
+            ->values()
+            ->all();
+
+        if (empty($opcoes)) {
+            foreach ($items as $resposta) {
+                $valor = $this->respostaParaTexto($resposta->resposta);
+                if ($valor !== '' && ! in_array($valor, $opcoes, true)) {
+                    $opcoes[] = $valor;
+                }
+            }
+        }
+
+        $contagem = [];
+        foreach ($opcoes as $opcao) {
+            $contagem[$opcao] = 0;
+        }
+
+        foreach ($items as $resposta) {
+            $valor = $this->respostaParaTexto($resposta->resposta);
+            if ($valor === '') {
+                continue;
+            }
+
+            $contagem[$valor] = ($contagem[$valor] ?? 0) + 1;
+        }
+
+        $labelsOrdenadas = [];
+        $valuesOrdenadas = [];
+
+        foreach ($opcoes as $opcao) {
+            if (array_key_exists($opcao, $contagem)) {
+                $labelsOrdenadas[] = $opcao;
+                $valuesOrdenadas[] = $contagem[$opcao];
+            }
+        }
+
+        foreach ($contagem as $opcao => $total) {
+            if (! in_array($opcao, $opcoes, true)) {
+                $labelsOrdenadas[] = $opcao;
+                $valuesOrdenadas[] = $total;
+            }
+        }
+
+        return [$labelsOrdenadas, $valuesOrdenadas];
     }
 
     public function respostaParaTexto($valor): string

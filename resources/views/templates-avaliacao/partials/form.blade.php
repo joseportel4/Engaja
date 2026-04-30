@@ -28,6 +28,7 @@
     'escala_id' => '',
     'texto' => '',
     'tipo' => 'texto',
+    'opcoes_resposta' => [],
     'ordem' => null,
     'fixa' => false,
   ];
@@ -43,6 +44,7 @@
         'escala_id' => $questao->escala_id,
         'texto' => $questao->texto,
         'tipo' => $questao->tipo,
+        'opcoes_resposta' => $questao->opcoes_resposta ?? [],
         'ordem' => $questao->ordem,
         'fixa' => $questao->fixa,
       ]);
@@ -172,6 +174,7 @@
       // Ensure new question fields have correct required state and visibility
       applyEvidenciaRequiredRules();
       applyEscalaVisibility();
+      applyRespostaUnicaVisibility();
     };
 
     // Attach click handler to all add-question buttons
@@ -258,6 +261,71 @@
       });
     }
 
+    function setRespostaUnicaRequired(wrapper, required) {
+      wrapper.querySelectorAll('[data-resposta-unica-input]').forEach(input => {
+        if (required) {
+          input.setAttribute('required', 'required');
+        } else {
+          input.removeAttribute('required');
+        }
+      });
+    }
+
+    function addRespostaUnicaOption(card) {
+      if (!card) return;
+
+      const optionsList = card.querySelector('[data-resposta-unica-options]');
+      const prototype = card.querySelector('[data-resposta-unica-prototype]');
+      if (!optionsList || !prototype) return;
+
+      const index = optionsList.querySelectorAll('[data-resposta-unica-option]').length;
+      const html = prototype.innerHTML.replace(/__OPTION_INDEX__/g, index);
+      const fragment = document.createRange().createContextualFragment(html);
+      optionsList.appendChild(fragment);
+    }
+
+    function ensureRespostaUnicaOptions(card) {
+      if (!card) return;
+
+      const optionsList = card.querySelector('[data-resposta-unica-options]');
+      if (!optionsList || optionsList.querySelector('[data-resposta-unica-option]')) {
+        return;
+      }
+
+      addRespostaUnicaOption(card);
+    }
+
+    function updateRespostaUnicaRemoveButtons(card) {
+      const options = Array.from(card.querySelectorAll('[data-resposta-unica-option]'));
+      options.forEach(option => {
+        const removeButton = option.querySelector('[data-remove-resposta-unica-option]');
+        if (removeButton) {
+          removeButton.disabled = options.length <= 1;
+        }
+      });
+    }
+
+    function applyRespostaUnicaVisibility() {
+      const cards = Array.from(container.querySelectorAll('[data-question-card]'))
+        .filter(card => !card.classList.contains('d-none'));
+
+      cards.forEach(card => {
+        const tipoSelect = card.querySelector('select[name$="[tipo]"]');
+        const wrapper = card.querySelector('[data-resposta-unica-wrapper]');
+        if (!tipoSelect || !wrapper) return;
+
+        const mostrar = tipoSelect.value === 'unica';
+        wrapper.style.display = mostrar ? '' : 'none';
+
+        if (mostrar) {
+          ensureRespostaUnicaOptions(card);
+        }
+
+        setRespostaUnicaRequired(wrapper, mostrar);
+        updateRespostaUnicaRemoveButtons(card);
+      });
+    }
+
     // Listen for tipo changes to toggle escala visibility
     container.addEventListener('change', event => {
       const target = event.target;
@@ -272,6 +340,30 @@
           const escalaSelect = card.querySelector('select[name$="[escala_id]"]');
           if (escalaSelect) escalaSelect.value = '';
         }
+
+        applyRespostaUnicaVisibility();
+      }
+    });
+
+    container.addEventListener('click', event => {
+      const addButton = event.target.closest('[data-add-resposta-unica-option]');
+      if (addButton) {
+        event.preventDefault();
+        const card = addButton.closest('[data-question-card]');
+        addRespostaUnicaOption(card);
+        applyRespostaUnicaVisibility();
+        return;
+      }
+
+      const removeButton = event.target.closest('[data-remove-resposta-unica-option]');
+      if (removeButton) {
+        event.preventDefault();
+        const card = removeButton.closest('[data-question-card]');
+        const option = removeButton.closest('[data-resposta-unica-option]');
+        if (option && card.querySelectorAll('[data-resposta-unica-option]').length > 1) {
+          option.remove();
+        }
+        applyRespostaUnicaVisibility();
       }
     });
 
@@ -313,6 +405,7 @@
     // Apply rules on initial load
     applyEvidenciaRequiredRules();
     applyEscalaVisibility();
+    applyRespostaUnicaVisibility();
 
     updatePositions();
   });

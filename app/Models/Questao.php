@@ -16,8 +16,14 @@ class Questao extends Model
         'evidencia_id',
         'texto',
         'tipo',
+        'opcoes_resposta',
         'fixa',
         'ordem',
+    ];
+
+    protected $casts = [
+        'fixa' => 'boolean',
+        'opcoes_resposta' => 'array',
     ];
 
     public function indicador(): BelongsTo

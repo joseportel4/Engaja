@@ -29,7 +29,7 @@
             <p class="text-muted small mb-2">
               Indicador: {{ $questao['meta']['indicador'] ?? '-' }}
               @if (! empty($questao['meta']['dimensao']))
-                &bull; Dimensao: {{ $questao['meta']['dimensao'] }}
+                &bull; Dimensão: {{ $questao['meta']['dimensao'] }}
               @endif
             </p>
 
@@ -37,14 +37,14 @@
               <p class="fw-semibold mb-2">{{ $questao['texto_display'] }}</p>
               <div class="row g-2 text-muted small mb-3">
                 <div class="col-md-4">Tipo: {{ $questao['resumo']['tipo'] ?? '' }}</div>
-                <div class="col-md-4">Evidencia: {{ $questao['resumo']['evidencia'] ?? 'Sem evidencia' }}</div>
+                <div class="col-md-4">Evidência: {{ $questao['resumo']['evidencia'] ?? 'Sem evidência' }}</div>
                 <div class="col-md-4">Escala: {{ $questao['resumo']['escala'] ?? '---' }}</div>
               </div>
             @else
               <div class="row g-3 align-items-start mb-3">
                 <div class="col-12">
                   <label class="form-label small text-muted" for="{{ $questao['form']['texto']['id'] }}">
-                    Ajuste o enunciado para esta avaliacao
+                    Ajuste o enunciado para esta avaliação
                   </label>
                   <textarea
                     class="form-control{{ $questao['form']['texto']['error'] ? ' is-invalid' : '' }}"
@@ -77,7 +77,7 @@
                 </div>
 
                 <div class="col-md-4">
-                  <label class="form-label small text-muted" for="{{ $questao['form']['evidencia']['id'] }}">Evidencia</label>
+                  <label class="form-label small text-muted" for="{{ $questao['form']['evidencia']['id'] }}">Evidência</label>
                   <select
                     class="form-select{{ $questao['form']['evidencia']['error'] ? ' is-invalid' : '' }}"
                     id="{{ $questao['form']['evidencia']['id'] }}"
@@ -113,6 +113,55 @@
                     <div class="invalid-feedback">{{ $questao['form']['escala']['error'] }}</div>
                   @endif
                 </div>
+
+                @php
+                  $opcoesRespostaName = str_replace('[tipo]', '[opcoes_resposta][]', $questao['form']['tipo']['name']);
+                  $opcoesResposta = collect($questao['opcoes_resposta'] ?? []);
+                  if ($opcoesResposta->isEmpty()) {
+                    $opcoesResposta = collect(['']);
+                  }
+                  $opcoesRespostaErrorKey = str_replace(['[', ']'], ['.', ''], $questao['form']['tipo']['name']);
+                  $opcoesRespostaErrorKey = str_replace('.tipo', '.opcoes_resposta', $opcoesRespostaErrorKey);
+                  $opcoesRespostaErro = $errors->first($opcoesRespostaErrorKey);
+                @endphp
+                <div class="col-12 resposta-unica-field" data-resposta-unica-wrapper>
+                  <div class="border rounded p-3 bg-light">
+                    <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                      <div>
+                        <label class="form-label small text-muted mb-1">Opções da resposta única</label>
+                        <div class="form-text mt-0">Inclua as opções exibidas no select.</div>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-outline-primary" data-add-resposta-unica-option>Adicionar opção</button>
+                    </div>
+                    <div class="d-flex flex-column gap-2" data-resposta-unica-options>
+                      @foreach ($opcoesResposta as $opcao)
+                        <div class="input-group" data-resposta-unica-option>
+                          <input type="text"
+                            name="{{ $opcoesRespostaName }}"
+                            class="form-control{{ $opcoesRespostaErro ? ' is-invalid' : '' }}"
+                            value="{{ $opcao }}"
+                            placeholder="Digite uma opção"
+                            data-resposta-unica-input
+                            {{ ! empty($questao['form']['disabled']) ? 'disabled' : '' }}>
+                          <button type="button" class="btn btn-outline-danger" data-remove-resposta-unica-option>Remover</button>
+                        </div>
+                      @endforeach
+                    </div>
+                    @if ($opcoesRespostaErro)
+                      <div class="text-danger small mt-2">{{ $opcoesRespostaErro }}</div>
+                    @endif
+                  </div>
+                  <template data-resposta-unica-prototype>
+                    <div class="input-group" data-resposta-unica-option>
+                      <input type="text"
+                        name="{{ $opcoesRespostaName }}"
+                        class="form-control"
+                        placeholder="Digite uma opção"
+                        data-resposta-unica-input>
+                      <button type="button" class="btn btn-outline-danger" data-remove-resposta-unica-option>Remover</button>
+                    </div>
+                  </template>
+                </div>
               </div>
             @endif
 
@@ -124,7 +173,7 @@
                   @case('escala')
                     @if (empty($questao['resposta']['escala_opcoes']))
                       <p class="text-muted small mb-0">
-                        Configure opcoes na escala associada antes de registrar respostas.
+                        Configure opções na escala associada antes de registrar respostas.
                       </p>
                     @else
                       <div class="d-flex flex-wrap gap-2">
@@ -156,7 +205,7 @@
 
                   @case('boolean')
                     <div class="d-flex gap-3">
-                      @foreach (['1' => 'Sim', '0' => 'Nao'] as $valorBooleano => $rotulo)
+                      @foreach (['1' => 'Sim', '0' => 'Não'] as $valorBooleano => $rotulo)
                         @php $inputId = 'questao-' . $questao['key'] . '-boolean-' . $valorBooleano; @endphp
                         <div class="form-check">
                           <input class="form-check-input"
@@ -172,6 +221,23 @@
                     </div>
                     @break
 
+                  @case('unica')
+                    @if (empty($questao['resposta']['opcoes_resposta']))
+                      <p class="text-muted small mb-0">
+                        Configure opções antes de registrar respostas.
+                      </p>
+                    @else
+                      <select class="form-select"
+                        name="respostas[{{ $questao['key'] }}]"
+                        {{ ! empty($questao['form']['disabled']) ? 'disabled' : '' }}>
+                        <option value="">Selecione...</option>
+                        @foreach ($questao['resposta']['opcoes_resposta'] as $opcao)
+                          <option value="{{ $opcao }}" {{ (string) ($questao['resposta']['valor'] ?? '') === (string) $opcao ? 'selected' : '' }}>{{ $opcao }}</option>
+                        @endforeach
+                      </select>
+                    @endif
+                    @break
+
                   @default
                     <textarea class="form-control" rows="3"
                       name="respostas[{{ $questao['key'] }}]"
@@ -181,7 +247,7 @@
             @endif
           </div>
         @empty
-          <p class="text-muted mb-0">Nenhuma questao vinculada a este modelo.</p>
+          <p class="text-muted mb-0">Nenhuma questão vinculada a este modelo.</p>
         @endforelse
       </div>
     </div>
@@ -191,14 +257,14 @@
 <div class="card shadow-sm">
   <div class="card-header bg-white d-flex justify-content-between align-items-center">
     <div>
-      <h2 class="h6 fw-semibold mb-0">Questoes adicionais</h2>
-      <small class="text-muted">Personalize a avaliacao adicionando novas questoes especificas.</small>
+      <h2 class="h6 fw-semibold mb-0">Questões adicionais</h2>
+      <small class="text-muted">Personalize a avaliação adicionando novas questões específicas.</small>
     </div>
-    <button type="button" class="btn btn-outline-primary btn-sm" id="btn-add-questao-adicional">Adicionar questao</button>
+    <button type="button" class="btn btn-outline-primary btn-sm" id="btn-add-questao-adicional">Adicionar questão</button>
   </div>
   <div class="card-body">
     <div id="questoes-adicionais-container">
-      <p class="text-muted small mb-3 {{ ! empty($adicionaisData['empty']) ? '' : 'd-none' }}" data-adicional-empty>Nenhuma questao adicional adicionada.</p>
+      <p class="text-muted small mb-3 {{ ! empty($adicionaisData['empty']) ? '' : 'd-none' }}" data-adicional-empty>Nenhuma questão adicional adicionada.</p>
 
       @foreach ($adicionaisData['cards'] as $card)
         @php
@@ -212,7 +278,7 @@
             'tiposQuestao' => $optionMaps['tipos'] ?? [],
             'namePrefix' => 'questoes_adicionais',
             'errorPrefix' => 'questoes_adicionais',
-            'titlePrefix' => 'Questao adicional',
+            'titlePrefix' => 'Questão adicional',
             'scope' => 'adicional',
             'showFixaToggle' => false,
             'textoRequired' => false,
@@ -234,7 +300,7 @@
       'tiposQuestao' => $optionMaps['tipos'] ?? [],
       'namePrefix' => 'questoes_adicionais',
       'errorPrefix' => 'questoes_adicionais',
-      'titlePrefix' => 'Questao adicional',
+      'titlePrefix' => 'Questão adicional',
       'scope' => 'adicional',
       'showFixaToggle' => false,
       'textoRequired' => false,
@@ -278,6 +344,61 @@
     escalaWrapper.classList.toggle('d-none', !mostrar);
   }
 
+  function setRespostaUnicaRequired(wrapper, required) {
+    wrapper.querySelectorAll('[data-resposta-unica-input]').forEach(input => {
+      if (required) {
+        input.setAttribute('required', 'required');
+      } else {
+        input.removeAttribute('required');
+      }
+    });
+  }
+
+  function addRespostaUnicaOption(card) {
+    if (!card) {
+      return;
+    }
+
+    const optionsList = card.querySelector('[data-resposta-unica-options]');
+    const prototype = card.querySelector('[data-resposta-unica-prototype]');
+    if (!optionsList || !prototype) {
+      return;
+    }
+
+    const index = optionsList.querySelectorAll('[data-resposta-unica-option]').length;
+    const html = prototype.innerHTML.replace(/__OPTION_INDEX__/g, index);
+    optionsList.appendChild(document.createRange().createContextualFragment(html));
+  }
+
+  function toggleRespostaUnica(select) {
+    const questionContainer = select.closest('.question-config');
+    if (!questionContainer) {
+      return;
+    }
+
+    const wrapper = questionContainer.querySelector('[data-resposta-unica-wrapper]');
+    if (!wrapper) {
+      return;
+    }
+
+    const mostrar = select.value === 'unica';
+    wrapper.style.display = mostrar ? '' : 'none';
+
+    if (mostrar && !wrapper.querySelector('[data-resposta-unica-option]')) {
+      addRespostaUnicaOption(questionContainer);
+    }
+
+    setRespostaUnicaRequired(wrapper, mostrar);
+
+    const options = Array.from(wrapper.querySelectorAll('[data-resposta-unica-option]'));
+    options.forEach(option => {
+      const removeButton = option.querySelector('[data-remove-resposta-unica-option]');
+      if (removeButton) {
+        removeButton.disabled = options.length <= 1;
+      }
+    });
+  }
+
   if (selectTemplate) {
     selectTemplate.addEventListener('change', toggleBlocks);
     toggleBlocks();
@@ -312,12 +433,48 @@
       return;
     }
 
-    select.addEventListener('change', () => toggleEscala(select));
+    select.addEventListener('change', () => {
+      toggleEscala(select);
+      toggleRespostaUnica(select);
+    });
     toggleEscala(select);
+    toggleRespostaUnica(select);
     select.dataset.tipoListener = 'true';
   }
 
   document.querySelectorAll('[data-tipo-select]').forEach(select => attachTipoListener(select));
+
+  const blocosQuestoes = document.getElementById('blocos-questoes');
+
+  if (blocosQuestoes) {
+    blocosQuestoes.addEventListener('click', (event) => {
+      const addOptionButton = event.target.closest('[data-add-resposta-unica-option]');
+      if (addOptionButton) {
+        event.preventDefault();
+        const card = addOptionButton.closest('.question-config');
+        addRespostaUnicaOption(card);
+        const tipoSelect = card?.querySelector('[data-tipo-select]');
+        if (tipoSelect) {
+          toggleRespostaUnica(tipoSelect);
+        }
+        return;
+      }
+
+      const removeOptionButton = event.target.closest('[data-remove-resposta-unica-option]');
+      if (removeOptionButton) {
+        event.preventDefault();
+        const card = removeOptionButton.closest('.question-config');
+        const option = removeOptionButton.closest('[data-resposta-unica-option]');
+        if (card && option && card.querySelectorAll('[data-resposta-unica-option]').length > 1) {
+          option.remove();
+        }
+        const tipoSelect = card?.querySelector('[data-tipo-select]');
+        if (tipoSelect) {
+          toggleRespostaUnica(tipoSelect);
+        }
+      }
+    });
+  }
 
   const adicionaisContainer = document.getElementById('questoes-adicionais-container');
   const addAdicionalButton = document.getElementById('btn-add-questao-adicional');
@@ -388,6 +545,34 @@
   }
 
   if (adicionaisContainer) {
+    adicionaisContainer.addEventListener('click', (event) => {
+      const addOptionButton = event.target.closest('[data-add-resposta-unica-option]');
+      if (addOptionButton) {
+        event.preventDefault();
+        const card = addOptionButton.closest('[data-question-card]');
+        addRespostaUnicaOption(card);
+        const tipoSelect = card?.querySelector('[data-tipo-select]');
+        if (tipoSelect) {
+          toggleRespostaUnica(tipoSelect);
+        }
+        return;
+      }
+
+      const removeOptionButton = event.target.closest('[data-remove-resposta-unica-option]');
+      if (removeOptionButton) {
+        event.preventDefault();
+        const card = removeOptionButton.closest('[data-question-card]');
+        const option = removeOptionButton.closest('[data-resposta-unica-option]');
+        if (card && option && card.querySelectorAll('[data-resposta-unica-option]').length > 1) {
+          option.remove();
+        }
+        const tipoSelect = card?.querySelector('[data-tipo-select]');
+        if (tipoSelect) {
+          toggleRespostaUnica(tipoSelect);
+        }
+      }
+    });
+
     adicionaisContainer.addEventListener('click', (event) => {
       const button = event.target.closest('.js-remove-question');
       if (!button) {

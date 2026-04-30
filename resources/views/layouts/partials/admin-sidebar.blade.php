@@ -55,7 +55,7 @@
         <span class="admin-nav-text">Agendamentos</span>
       </a>
 
-      @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+      @hasanyrole('administrador|gerente|eq_pedagogica')
       <a class="admin-nav-link {{ request()->routeIs('agendamentos.efetivacoes.*') ? 'active' : '' }}" href="{{ route('agendamentos.efetivacoes.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
@@ -66,7 +66,7 @@
       </a>
       @endhasanyrole
 
-      @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+      @hasanyrole('administrador|gerente|eq_pedagogica')
       <a class="admin-nav-link {{ request()->routeIs('atividade-acoes.*') ? 'active' : '' }}" href="{{ route('atividade-acoes.index') }}">
         <span class="admin-nav-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
