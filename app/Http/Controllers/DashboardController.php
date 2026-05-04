@@ -275,10 +275,18 @@ class DashboardController extends Controller
     private function avaliacoesDataLimeSurvey(Request $request)
     {
         try {
+            $surveyId = (int) ($request->integer('survey_id') ?: config('services.limesurvey.survey_id'));
+
             if ($request->query('debug_lime') === 'export_responses') {
-                $surveyId = (int) ($request->integer('survey_id') ?: config('services.limesurvey.survey_id'));
                 $client = app(LimeSurveyClient::class);
                 return response()->json($client->exportResponses($surveyId));
+            }
+
+            if (!Cache::has("limesurvey:{$surveyId}:questions") || !Cache::has("limesurvey:{$surveyId}:responses")) {
+                return response()->json([
+                    'sem_dados' => true,
+                    'mensagem'  => 'Este survey ainda não possui dados importados. Execute o importador de dados ou aguarde a atualização automática diária.',
+                ]);
             }
 
             $service = app(LimeSurveyDashboardService::class);

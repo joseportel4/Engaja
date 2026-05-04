@@ -53,11 +53,18 @@
                   @endif
                 </td>
                 <td class="text-end">
-                  <a
-                    href="{{ route('dashboards.avaliacoes', ['fonte' => 'limesurvey', 'survey_id' => $survey['sid']]) }}"
-                    class="btn btn-sm btn-primary">
-                    Abrir dashboard
-                  </a>
+                  @if($survey['cached_at'])
+                    <a
+                      href="{{ route('dashboards.avaliacoes', ['fonte' => 'limesurvey', 'survey_id' => $survey['sid']]) }}"
+                      class="btn btn-sm btn-primary">
+                      Abrir dashboard
+                    </a>
+                  @else
+                    <button class="btn btn-sm btn-secondary" disabled
+                            title="Sem dados em cache. Aguarde a atualização automática ou execute o importador.">
+                      Sem dados
+                    </button>
+                  @endif
                 </td>
               </tr>
             @empty

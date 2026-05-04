@@ -812,6 +812,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.erro || 'Erro ao carregar dados.');
 
+      if (payload.sem_dados) {
+        renderBiMatrizes([], ctx);
+        cardsQuestoes.innerHTML = `<div class="col-12"><div class="alert alert-warning border-0 shadow-sm"><strong>Sem dados disponíveis.</strong> ${payload.mensagem}</div></div>`;
+        setLoading(false);
+        return;
+      }
+
       renderTotals(payload.totais || {});
 
       if (Array.isArray(payload.question_blocks) && payload.question_blocks.length > 0) {
