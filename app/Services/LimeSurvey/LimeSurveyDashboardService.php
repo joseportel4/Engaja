@@ -18,17 +18,14 @@ class LimeSurveyDashboardService
     public function buildPayload(Request $request): array
     {
         $surveyId = $this->resolveSurveyId($request);
-        $cacheMinutes = max((int) config('services.limesurvey.cache_minutes', 5), 1);
 
-        $questions = Cache::remember(
+        $questions = Cache::rememberForever(
             "limesurvey:{$surveyId}:questions",
-            now()->addMinutes($cacheMinutes),
             fn () => $this->client->listQuestions($surveyId)
         );
 
-        $responses = Cache::remember(
+        $responses = Cache::rememberForever(
             "limesurvey:{$surveyId}:responses",
-            now()->addMinutes($cacheMinutes),
             fn () => $this->client->exportResponses($surveyId)
         );
 
@@ -37,7 +34,7 @@ class LimeSurveyDashboardService
         $responsesCollection = collect($this->applyDateFilter($responses, $request));
         $questionList = $this->normalizeQuestions($questions);
         $tokenMunicipioMap = $this->buildTokenMunicipioMap($surveyId);
-        $answerOptionsMap = $this->buildAnswerOptionsMap($questionList, $surveyId, $cacheMinutes);
+        $answerOptionsMap = $this->buildAnswerOptionsMap($questionList, $surveyId);
         $biMatrizes = $this->buildBiMatrizes($questionList, $responsesCollection, $request, $tokenMunicipioMap);
 
         $excludedColumns = collect($biMatrizes)
@@ -1148,7 +1145,7 @@ class LimeSurveyDashboardService
      * @param Collection<int, array<string, mixed>> $questionList
      * @return array<string, list<array{nivel: int, label: string}>>
      */
-    private function buildAnswerOptionsMap(Collection $questionList, int $surveyId, int $cacheMinutes): array
+    private function buildAnswerOptionsMap(Collection $questionList, int $surveyId): array
     {
         $lTypeQuestions = $questionList->filter(
             fn (array $q) => strtoupper((string) ($q['type'] ?? '')) === 'L' && $q['parent_qid'] === '0'
@@ -1167,9 +1164,8 @@ class LimeSurveyDashboardService
                 continue;
             }
 
-            $props = Cache::remember(
+            $props = Cache::rememberForever(
                 "limesurvey:{$surveyId}:answer_options:{$qid}",
-                now()->addMinutes($cacheMinutes),
                 function () use ($qid) {
                     try {
                         return $this->client->getQuestionProperties($qid);
