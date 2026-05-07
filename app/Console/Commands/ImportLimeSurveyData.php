@@ -143,7 +143,7 @@ class ImportLimeSurveyData extends Command
             );
             $this->line("    ✓ Respostas: " . count($responses));
 
-            Cache::put("limesurvey:{$surveyId}:cached_at", now(), now()->addDay());
+            Cache::forever("limesurvey:{$surveyId}:cached_at", now());
 
             $this->refreshAnswerOptions($surveyId, $questions);
 
@@ -208,7 +208,7 @@ class ImportLimeSurveyData extends Command
     {
         Cache::forget($key);
         $data = $fetch();
-        Cache::put($key, $data, now()->addDay());
+        Cache::forever($key, $data);
         return $data;
     }
 }
