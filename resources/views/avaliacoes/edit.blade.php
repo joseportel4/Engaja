@@ -1,20 +1,27 @@
 ﻿@extends('layouts.app')
 
 @section('content')
+@php
+  $universal = $universal ?? false;
+  $formAction = $formAction ?? route('avaliacoes.update', $avaliacao);
+  $cancelUrl = $cancelUrl ?? route('avaliacoes.index');
+  $showUrl = $showUrl ?? route('avaliacoes.show', $avaliacao);
+@endphp
 <div class="row justify-content-center">
   <div class="col-xl-10">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="h3 fw-bold text-engaja mb-0">Editar avaliação</h1>
-      <a href="{{ route('avaliacoes.show', $avaliacao) }}" class="btn btn-outline-secondary">Ver detalhes</a>
+      <h1 class="h3 fw-bold text-engaja mb-0">{{ $universal ? 'Editar avaliação universal' : 'Editar avaliação' }}</h1>
+      <a href="{{ $showUrl }}" class="btn btn-outline-secondary">Ver detalhes</a>
     </div>
 
     <div class="card shadow-sm mb-4">
       <div class="card-body">
-        <form method="POST" action="{{ route('avaliacoes.update', $avaliacao) }}">
+        <form method="POST" action="{{ $formAction }}">
           @csrf
           @method('PUT')
 
           <div class="row g-3">
+            @unless($universal)
             <div class="col-md-6">
               <label for="atividade_id" class="form-label">Atividade</label>
               <select id="atividade_id" name="atividade_id"
@@ -31,6 +38,7 @@
               <div class="invalid-feedback">{{ $message }}</div>
               @enderror
             </div>
+            @endunless
 
             <div class="col-md-6">
               <label for="template_avaliacao_id" class="form-label">Modelo de avaliação</label>
@@ -49,6 +57,20 @@
               @enderror
             </div>
 
+            @if($universal)
+            <div class="col-md-6">
+              <label for="descricao_universal" class="form-label">Descrição</label>
+              <input type="text" id="descricao_universal" name="descricao_universal"
+                class="form-control @error('descricao_universal') is-invalid @enderror"
+                value="{{ old('descricao_universal', $avaliacao->descricao_universal) }}"
+                placeholder="Ex.: Avaliação geral do ciclo formativo">
+              @error('descricao_universal')
+              <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+            </div>
+            @endif
+
+            @unless($universal)
             <div class="col-md-6 d-flex align-items-center">
               <div class="form-check mt-4">
                 <input class="form-check-input" type="checkbox" value="1" id="anonima" disabled
@@ -61,6 +83,11 @@
                 </div>
               </div>
             </div>
+            @else
+            <div class="col-md-6 d-flex align-items-center">
+              <div class="form-text mt-4">Avaliações universais são sempre anônimas e não ficam vinculadas a um momento.</div>
+            </div>
+            @endunless
           </div>
 
           <div class="mt-4">
@@ -70,7 +97,7 @@
           </div>
 
           <div class="d-flex justify-content-between mt-4">
-            <a href="{{ route('avaliacoes.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+            <a href="{{ $cancelUrl }}" class="btn btn-outline-secondary">Cancelar</a>
             <button type="submit" class="btn btn-engaja">Salvar alterações</button>
           </div>
         </form>

@@ -1,11 +1,17 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+  $isUniversal = $isUniversal ?? false;
+  $tituloAvaliacao = $isUniversal
+      ? ($avaliacao->descricao_universal ?: ($avaliacao->templateAvaliacao->nome ?? 'Avaliação universal'))
+      : ($atividade?->descricao ?? $avaliacao->templateAvaliacao->nome ?? 'Avaliação universal');
+@endphp
 <div class="row justify-content-center">
   <div class="col-xl-8">
     <div class="text-center mb-4">
       <h1 class="h3 fw-bold text-engaja mb-1">
-        Avaliação - {{ $atividade->descricao }}
+        Avaliação - {{ $tituloAvaliacao }}
       </h1>
       <p class="text-muted mb-0" style="text-align: justify">
         Convidamos você a responder esta avaliação, expressando as suas opiniões, críticas e sugestões. 
@@ -26,25 +32,37 @@
           $eventoNome = $inscricaoExibida?->evento?->nome ?? $atividade?->evento?->nome;
           $respostas = $respostasExistentes ?? collect();
           $formBloqueado = $jaRespondeu ?? false;
+          $formularioFechado = $formularioFechado ?? false;
+          $somenteVisualizacao = $somenteVisualizacao ?? false;
         @endphp
 
         <div class="mb-4">
-          <p class="mb-0"><strong>Ação pedagógica:</strong> {{ $eventoNome ?? '-' }}</p>
+          @if($isUniversal)
+            <p class="mb-0"><strong>Avaliação universal:</strong> {{ $avaliacao->descricao_universal ?: ($avaliacao->templateAvaliacao->nome ?? '-') }}</p>
+          @else
+            <p class="mb-0"><strong>Ação pedagógica:</strong> {{ $eventoNome ?? '-' }}</p>
+          @endif
         </div>
 
-        @if(empty($token))
+        @if(!$isUniversal && empty($token))
           <div class="alert alert-warning">Confirme sua presença no momento para gerar o link pessoal desta avaliação.</div>
         @endif
 
         @if($formBloqueado)
-          <div class="alert alert-info">Você já respondeu este formulário. Obrigado pelo retorno!</div>
+          <div class="alert alert-info">
+            {{ $formularioFechado ? 'Este formulário não está recebendo respostas no momento.' : 'Você já respondeu este formulário. Obrigado pelo retorno!' }}
+          </div>
+        @endif
+
+        @if($somenteVisualizacao)
+          <div class="alert alert-info">Pré-visualização do formulário. As respostas não podem ser enviadas nesta tela.</div>
         @endif
 
         <form method="POST" action="{{ route('avaliacao.formulario.responder', $avaliacao) }}">
           @csrf
           <input type="hidden" name="token" value="{{ old('token', $token) }}">
 
-          <fieldset @disabled($formBloqueado)>
+          <fieldset @disabled($formBloqueado || $somenteVisualizacao)>
             @php
               $questoesAgrupadas = $avaliacao->avaliacaoQuestoes
                 ->sortBy(function ($q) {
@@ -65,7 +83,7 @@
 
                   @foreach($indicadores as $indicador => $questoes)
                     <div class="mb-2">
-                      <p class="fw-semibold mb-2">Indicador — {{ $indicador }}</p>
+                      <p class="fw-semibold mb-2" style="color: #008BBC;">Indicador — {{ $indicador }}</p>
                       <ol class="list-unstyled mb-3">
                         @foreach($questoes as $questao)
                           @php
@@ -155,7 +173,7 @@
             </div>
           </fieldset>
 
-          @unless($formBloqueado)
+          @unless($formBloqueado || $somenteVisualizacao)
           <div class="text-end mt-4">
             <button type="submit" class="btn btn-primary">
               Enviar avaliação

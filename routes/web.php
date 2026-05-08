@@ -114,6 +114,20 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('questaos', QuestaoController::class);
         Route::resource('templates-avaliacao', TemplateAvaliacaoController::class)
             ->parameters(['templates-avaliacao' => 'template']);
+        Route::prefix('avaliacoes-universais')
+            ->name('avaliacoes-universais.')
+            ->controller(AvaliacaoController::class)
+            ->group(function () {
+                Route::get('/', 'universaisIndex')->name('index');
+                Route::get('/create', 'universaisCreate')->name('create');
+                Route::post('/', 'universaisStore')->name('store');
+                Route::get('/{avaliacao}', 'universaisShow')->name('show');
+                Route::get('/{avaliacao}/edit', 'universaisEdit')->name('edit');
+                Route::put('/{avaliacao}', 'universaisUpdate')->name('update');
+                Route::delete('/{avaliacao}', 'universaisDestroy')->name('destroy');
+                Route::patch('/{avaliacao}/status-formulario', 'universaisToggleFormulario')->name('toggle-formulario');
+                Route::get('/{avaliacao}/link-qrcode', 'universaisLinkQrCode')->name('link-qrcode');
+            });
         Route::resource('avaliacoes', AvaliacaoController::class)
             ->parameters(['avaliacoes' => 'avaliacao']);
         Route::get('avaliacoes/{avaliacao}/respostas', [AvaliacaoController::class, 'respostas'])->name('avaliacoes.respostas');

@@ -130,6 +130,15 @@
         </span>
         <span class="admin-nav-text">Avaliações</span>
       </a>
+      <a class="admin-nav-link {{ request()->routeIs('avaliacoes-universais.*') ? 'active' : '' }}" href="{{ route('avaliacoes-universais.index') }}">
+        <span class="admin-nav-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M3 1.5A1.5 1.5 0 0 0 1.5 3v10A1.5 1.5 0 0 0 3 14.5h10a1.5 1.5 0 0 0 1.5-1.5V3A1.5 1.5 0 0 0 13 1.5zm0 1h10a.5.5 0 0 1 .5.5v10a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5"/>
+            <path d="M4 5.5h8v1H4zm0 2h8v1H4zm0 2h5v1H4z"/>
+          </svg>
+        </span>
+        <span class="admin-nav-text">Avaliações universais</span>
+      </a>
     </div>
   @endhasanyrole
 

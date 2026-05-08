@@ -39,7 +39,7 @@ class AvaliacaoController extends Controller
             'atividade.evento',
             'templateAvaliacao',
             'respostas.submissaoAvaliacao',
-        ]);
+        ])->whereNotNull('atividade_id');
 
         $searchTerm = trim((string) $request->query('search', ''));
         if ($searchTerm !== '') {
@@ -124,6 +124,67 @@ class AvaliacaoController extends Controller
         return view('avaliacoes.index', compact('avaliacoes', 'templatesDisponiveis'));
     }
 
+    public function universaisIndex(Request $request)
+    {
+        $avaliacaoTable = (new Avaliacao)->getTable();
+
+        $query = Avaliacao::query()
+            ->with(['templateAvaliacao', 'respostas.submissaoAvaliacao'])
+            ->whereNull('atividade_id');
+
+        $searchTerm = trim((string) $request->query('search', ''));
+        if ($searchTerm !== '') {
+            $query->where(function ($nested) use ($searchTerm) {
+                $nested->whereHas('templateAvaliacao', function ($template) use ($searchTerm) {
+                    $template->where('nome', 'like', '%'.$searchTerm.'%');
+                })
+                    ->orWhere('descricao_universal', 'like', '%'.$searchTerm.'%');
+
+                if (ctype_digit($searchTerm)) {
+                    $nested->orWhere('id', (int) $searchTerm);
+                }
+            });
+        }
+
+        $templateId = $request->query('template_id');
+        if ($templateId) {
+            $query->where('template_avaliacao_id', $templateId);
+        }
+
+        $from = $request->query('de');
+        if ($from) {
+            $query->whereDate("{$avaliacaoTable}.created_at", '>=', $from);
+        }
+
+        $to = $request->query('ate');
+        if ($to) {
+            $query->whereDate("{$avaliacaoTable}.created_at", '<=', $to);
+        }
+
+        $sort = $request->query('sort', 'created_at');
+        $directionParam = $request->query('dir', $request->query('direction', 'desc'));
+        $direction = Str::lower((string) $directionParam) === 'asc' ? 'asc' : 'desc';
+
+        if ($sort === 'template') {
+            $query->orderBy(
+                TemplateAvaliacao::select('nome')
+                    ->whereColumn('template_avaliacaos.id', "{$avaliacaoTable}.template_avaliacao_id"),
+                $direction
+            );
+        } else {
+            $query->orderBy("{$avaliacaoTable}.created_at", $direction);
+        }
+
+        if ($sort !== 'created_at') {
+            $query->orderBy("{$avaliacaoTable}.created_at", 'desc');
+        }
+
+        $avaliacoes = $query->paginate(15)->appends($request->query());
+        $templatesDisponiveis = TemplateAvaliacao::orderBy('nome')->pluck('nome', 'id');
+
+        return view('avaliacoes.universais.index', compact('avaliacoes', 'templatesDisponiveis'));
+    }
+
     public function create(Request $request)
     {
         $atividades = Atividade::with('evento')
@@ -181,6 +242,55 @@ class AvaliacaoController extends Controller
         ]);
     }
 
+    public function universaisCreate(Request $request)
+    {
+        $templates = TemplateAvaliacao::with(['questoes.escala', 'questoes.indicador.dimensao', 'questoes.evidencia.indicador'])
+            ->orderBy('nome')
+            ->get();
+
+        $evidencias = Evidencia::with('indicador.dimensao')
+            ->orderBy('descricao')
+            ->get();
+
+        $escalas = Escala::orderBy('descricao')->get();
+        $selectedTemplateId = $request->old('template_avaliacao_id', $templates->first()->id ?? null);
+        $oldInput = $request->old();
+        if (! is_array($oldInput)) {
+            $oldInput = [];
+        }
+
+        $questoesAdicionaisInput = $request->old('questoes_adicionais', []);
+        if (! is_array($questoesAdicionaisInput)) {
+            $questoesAdicionaisInput = [];
+        }
+
+        $questoesForm = QuestoesFormViewModel::make(
+            $templates,
+            $selectedTemplateId !== null ? (string) $selectedTemplateId : null,
+            [],
+            $questoesAdicionaisInput,
+            $this->tiposQuestao(),
+            $this->buildEvidenciasOptions($evidencias),
+            $evidencias->keyBy('id'),
+            $escalas->pluck('descricao', 'id')->toArray(),
+            $escalas->keyBy('id'),
+            [],
+            false,
+            $request->session()->get('errors'),
+            $oldInput
+        )->toArray();
+
+        return view('avaliacoes.create', [
+            'atividades' => collect(),
+            'templates' => $templates,
+            'selectedTemplateId' => $selectedTemplateId,
+            'questoesForm' => $questoesForm,
+            'universal' => true,
+            'formAction' => route('avaliacoes-universais.store'),
+            'cancelUrl' => route('avaliacoes-universais.index'),
+        ]);
+    }
+
     public function store(Request $request)
     {
         $dados = $this->validateAvaliacao($request);
@@ -229,6 +339,37 @@ class AvaliacaoController extends Controller
             ->with('success', 'Avaliação registrada com sucesso!');
     }
 
+    public function universaisStore(Request $request)
+    {
+        $dados = $this->validateAvaliacaoUniversal($request);
+
+        $template = TemplateAvaliacao::with([
+            'questoes.indicador',
+            'questoes.escala',
+            'questoes.evidencia',
+        ])->findOrFail($dados['template_avaliacao_id']);
+
+        $customizacoes = $this->validarQuestoesPersonalizadas($request, $template->questoes);
+        [$questoesAdicionais] = $this->processaQuestoesAdicionais($request);
+
+        DB::transaction(function () use ($dados, $template, $customizacoes, $questoesAdicionais) {
+            $avaliacao = Avaliacao::create($dados);
+
+            $this->sincronizaQuestoesPersonalizadas(
+                $avaliacao,
+                $template->questoes,
+                $customizacoes,
+                true
+            );
+
+            $this->sincronizaQuestoesAdicionais($avaliacao, $questoesAdicionais);
+        });
+
+        return redirect()
+            ->route('avaliacoes-universais.index')
+            ->with('success', 'Avaliação universal registrada com sucesso!');
+    }
+
     public function show(Avaliacao $avaliacao)
     {
         $avaliacao->load([
@@ -245,6 +386,31 @@ class AvaliacaoController extends Controller
         return view('avaliacoes.show', [
             'avaliacao' => $avaliacao,
             'tiposQuestao' => $this->tiposQuestao(),
+        ]);
+    }
+
+    public function universaisShow(Avaliacao $avaliacao)
+    {
+        abort_unless($avaliacao->atividade_id === null, 404);
+
+        $avaliacao->load([
+            'templateAvaliacao',
+            'avaliacaoQuestoes.indicador.dimensao',
+            'avaliacaoQuestoes.evidencia',
+            'avaliacaoQuestoes.escala',
+        ]);
+
+        return view('avaliacoes._form', [
+            'avaliacao' => $avaliacao,
+            'atividade' => null,
+            'tiposQuestao' => $this->tiposQuestao(),
+            'inscricaoRespondente' => null,
+            'token' => '',
+            'respostasExistentes' => collect(),
+            'jaRespondeu' => false,
+            'isUniversal' => true,
+            'formularioFechado' => false,
+            'somenteVisualizacao' => true,
         ]);
     }
 
@@ -343,6 +509,94 @@ class AvaliacaoController extends Controller
         ]);
     }
 
+    public function universaisEdit(Request $request, Avaliacao $avaliacao)
+    {
+        abort_unless($avaliacao->atividade_id === null, 404);
+
+        $avaliacao->load([
+            'templateAvaliacao',
+            'avaliacaoQuestoes.indicador.dimensao',
+            'avaliacaoQuestoes.evidencia',
+            'avaliacaoQuestoes.escala',
+        ]);
+
+        $templates = TemplateAvaliacao::with(['questoes.escala', 'questoes.indicador.dimensao', 'questoes.evidencia.indicador'])
+            ->orderBy('nome')
+            ->get();
+
+        $evidencias = Evidencia::with('indicador.dimensao')
+            ->orderBy('descricao')
+            ->get();
+
+        $escalas = Escala::orderBy('descricao')->get();
+
+        $personalizacoes = $avaliacao->avaliacaoQuestoes
+            ->mapWithKeys(fn ($questao) => [
+                $questao->questao_id ?? $questao->id => [
+                    'texto' => $questao->texto,
+                    'tipo' => $questao->tipo,
+                    'opcoes_resposta' => $questao->opcoes_resposta ?? [],
+                    'evidencia_id' => $questao->evidencia_id,
+                    'escala_id' => $questao->escala_id,
+                ],
+            ])
+            ->all();
+
+        $questoesAdicionais = $avaliacao->avaliacaoQuestoes
+            ->whereNull('questao_id')
+            ->map(fn ($questao) => [
+                'id' => $questao->id,
+                'texto' => $questao->texto,
+                'tipo' => $questao->tipo,
+                'opcoes_resposta' => $questao->opcoes_resposta ?? [],
+                'evidencia_id' => $questao->evidencia_id,
+                'escala_id' => $questao->escala_id,
+                'ordem' => $questao->ordem,
+            ])
+            ->values()
+            ->all();
+
+        $selectedTemplateId = $request->old('template_avaliacao_id', $avaliacao->template_avaliacao_id);
+        $oldInput = $request->old();
+        if (! is_array($oldInput)) {
+            $oldInput = [];
+        }
+
+        $questoesAdicionaisInput = $request->old('questoes_adicionais', $questoesAdicionais);
+        if (! is_array($questoesAdicionaisInput)) {
+            $questoesAdicionaisInput = $questoesAdicionais;
+        }
+
+        $questoesForm = QuestoesFormViewModel::make(
+            $templates,
+            $selectedTemplateId !== null ? (string) $selectedTemplateId : null,
+            $personalizacoes,
+            $questoesAdicionaisInput,
+            $this->tiposQuestao(),
+            $this->buildEvidenciasOptions($evidencias),
+            $evidencias->keyBy('id'),
+            $escalas->pluck('descricao', 'id')->toArray(),
+            $escalas->keyBy('id'),
+            [],
+            false,
+            $request->session()->get('errors'),
+            $oldInput
+        )->toArray();
+
+        return view('avaliacoes.edit', [
+            'avaliacao' => $avaliacao,
+            'atividades' => collect(),
+            'templates' => $templates,
+            'templateSelecionado' => $avaliacao->templateAvaliacao,
+            'selectedTemplateId' => $selectedTemplateId,
+            'questoesForm' => $questoesForm,
+            'universal' => true,
+            'formAction' => route('avaliacoes-universais.update', $avaliacao),
+            'cancelUrl' => route('avaliacoes-universais.index'),
+            'showUrl' => route('avaliacoes-universais.show', $avaliacao),
+        ]);
+    }
+
     public function update(Request $request, Avaliacao $avaliacao)
     {
         $dados = $this->validateAvaliacao($request, $avaliacao->id);
@@ -427,6 +681,68 @@ class AvaliacaoController extends Controller
             ->with('success', 'Avaliacao atualizada com sucesso!');
     }
 
+    public function universaisUpdate(Request $request, Avaliacao $avaliacao)
+    {
+        abort_unless($avaliacao->atividade_id === null, 404);
+
+        $dados = $this->validateAvaliacaoUniversal($request);
+        $template = TemplateAvaliacao::with([
+            'questoes.indicador',
+            'questoes.escala',
+            'questoes.evidencia',
+        ])->findOrFail($dados['template_avaliacao_id']);
+
+        $customizacoes = $this->validarQuestoesPersonalizadas($request, $template->questoes);
+        $respostas = $request->input('respostas');
+        [$questoesAdicionais, $questoesAdicionaisRemovidas] = $this->processaQuestoesAdicionais($request, $avaliacao);
+
+        $jaTemRespostas = $avaliacao->respostas()->exists();
+        $templateAlterado = $avaliacao->template_avaliacao_id !== $dados['template_avaliacao_id'];
+        $tentouAlterarQuestoes = $templateAlterado
+            || ! empty($customizacoes)
+            || ($questoesAdicionais && $questoesAdicionais->isNotEmpty())
+            || ! empty($questoesAdicionaisRemovidas)
+            || (is_array($respostas) && count($respostas) > 0);
+
+        if ($jaTemRespostas && $tentouAlterarQuestoes) {
+            return back()
+                ->withInput()
+                ->withErrors(['template_avaliacao_id' => 'Esta avaliação já possui respostas. Não é possível alterar modelo ou questões.']);
+        }
+
+        DB::transaction(function () use ($avaliacao, $dados, $template, $customizacoes, $respostas, $questoesAdicionais, $questoesAdicionaisRemovidas, $jaTemRespostas, $templateAlterado) {
+            $mudouQuestoesOuRespostas = ! $jaTemRespostas && (
+                $templateAlterado
+                || ! empty($customizacoes)
+                || (is_array($respostas) && count($respostas) > 0)
+                || ($questoesAdicionais && $questoesAdicionais->isNotEmpty())
+                || ! empty($questoesAdicionaisRemovidas)
+            );
+
+            $avaliacao->update($dados);
+            $avaliacao->refresh();
+
+            if ($mudouQuestoesOuRespostas) {
+                $questoesSincronizadas = $this->sincronizaQuestoesPersonalizadas(
+                    $avaliacao,
+                    $template->questoes,
+                    $customizacoes,
+                    $templateAlterado
+                );
+
+                $this->sincronizaQuestoesAdicionais($avaliacao, $questoesAdicionais, $questoesAdicionaisRemovidas);
+
+                if (is_array($respostas)) {
+                    $this->sincronizaRespostas($avaliacao, $respostas, $questoesSincronizadas);
+                }
+            }
+        });
+
+        return redirect()
+            ->route('avaliacoes-universais.index')
+            ->with('success', 'Avaliação universal atualizada com sucesso!');
+    }
+
     public function destroy(Avaliacao $avaliacao)
     {
         $avaliacao->delete();
@@ -434,6 +750,39 @@ class AvaliacaoController extends Controller
         return redirect()
             ->route('avaliacoes.index')
             ->with('success', 'Avaliacao removida com sucesso!');
+    }
+
+    public function universaisDestroy(Avaliacao $avaliacao)
+    {
+        abort_unless($avaliacao->atividade_id === null, 404);
+
+        $avaliacao->delete();
+
+        return redirect()
+            ->route('avaliacoes-universais.index')
+            ->with('success', 'Avaliação universal removida com sucesso!');
+    }
+
+    public function universaisLinkQrCode(Avaliacao $avaliacao)
+    {
+        abort_unless($avaliacao->atividade_id === null, 404);
+
+        $link = route('avaliacao.formulario', $avaliacao);
+
+        return view('avaliacoes.universais.link-qrcode', compact('avaliacao', 'link'));
+    }
+
+    public function universaisToggleFormulario(Avaliacao $avaliacao)
+    {
+        abort_unless($avaliacao->atividade_id === null, 404);
+
+        $avaliacao->update([
+            'formulario_aberto' => ! $avaliacao->formulario_aberto,
+        ]);
+
+        $status = $avaliacao->formulario_aberto ? 'aberto' : 'fechado';
+
+        return back()->with('success', "Formulário {$status} para respostas.");
     }
 
     private function sincronizaRespostas(
@@ -649,6 +998,23 @@ class AvaliacaoController extends Controller
         }
 
         return $resultado;
+    }
+
+    private function validateAvaliacaoUniversal(Request $request): array
+    {
+        $dados = $request->validate([
+            'template_avaliacao_id' => ['required', Rule::exists('template_avaliacaos', 'id')],
+            'descricao_universal' => ['nullable', 'string', 'max:255'],
+            'respostas' => ['nullable', 'array'],
+        ]);
+
+        return [
+            'inscricao_id' => null,
+            'atividade_id' => null,
+            'template_avaliacao_id' => $dados['template_avaliacao_id'],
+            'descricao_universal' => $dados['descricao_universal'] ?? null,
+            'anonima' => true,
+        ];
     }
 
     /**
@@ -876,9 +1242,11 @@ class AvaliacaoController extends Controller
         ]);
 
         $token = $request->query('token', $request->input('token'));
-        $presencaRespondente = $this->resolverPresencaPorToken($token, $avaliacao);
+        $isUniversal = $avaliacao->atividade_id === null;
+        $presencaRespondente = $isUniversal ? null : $this->resolverPresencaPorToken($token, $avaliacao);
         $inscricaoRespondente = $presencaRespondente?->inscricao;
-        $formBloqueado = $presencaRespondente?->avaliacao_respondida ?? false;
+        $formularioFechado = $isUniversal && ! $avaliacao->formulario_aberto;
+        $formBloqueado = $formularioFechado || ($isUniversal ? false : ($presencaRespondente?->avaliacao_respondida ?? false));
         $respostasExistentes = collect();
 
         return view('avaliacoes._form', [
@@ -889,29 +1257,38 @@ class AvaliacaoController extends Controller
             'token' => $token,
             'respostasExistentes' => $respostasExistentes,
             'jaRespondeu' => $formBloqueado,
+            'isUniversal' => $isUniversal,
+            'formularioFechado' => $formularioFechado,
         ]);
     }
 
     public function responderFormulario(Request $request, Avaliacao $avaliacao)
     {
         $avaliacao->load(['avaliacaoQuestoes.escala', 'atividade']);
+        $isUniversal = $avaliacao->atividade_id === null;
 
         $token = $request->input('token', $request->query('token'));
-        $presenca = $this->resolverPresencaPorToken($token, $avaliacao);
+        $presenca = $isUniversal ? null : $this->resolverPresencaPorToken($token, $avaliacao);
 
-        if (! $presenca) {
+        if ($isUniversal && ! $avaliacao->formulario_aberto) {
+            return redirect()
+                ->route('avaliacao.formulario', $avaliacao)
+                ->withErrors(['avaliacao' => 'Este formulário não está recebendo respostas no momento.']);
+        }
+
+        if (! $isUniversal && ! $presenca) {
             return redirect()
                 ->route('avaliacao.formulario', ['avaliacao' => $avaliacao->id, 'token' => $token])
                 ->withErrors(['token' => 'Nao encontramos sua inscricao para esta avaliacao. Confirme a presenca novamente.']);
         }
 
-        if ($presenca->avaliacao_respondida) {
+        if (! $isUniversal && $presenca->avaliacao_respondida) {
             return redirect()
                 ->route('avaliacao.formulario', ['avaliacao' => $avaliacao->id, 'token' => $token])
                 ->withErrors(['avaliacao' => 'Voce ja respondeu este formulario.']);
         }
 
-        if (! $avaliacao->anonima) {
+        if (! $isUniversal && ! $avaliacao->anonima) {
             $jaEnviou = SubmissaoAvaliacao::where('avaliacao_id', $avaliacao->id)
                 ->where('presenca_id', $presenca->id)
                 ->exists();
@@ -931,12 +1308,13 @@ class AvaliacaoController extends Controller
         $dados = $request->validate($rules);
         $respostas = $dados['respostas'] ?? [];
 
-        DB::transaction(function () use ($avaliacao, $presenca, $respostas) {
+        DB::transaction(function () use ($avaliacao, $presenca, $respostas, $isUniversal) {
             $submissao = SubmissaoAvaliacao::create([
                 'codigo' => (string) Str::ulid(),
                 'atividade_id' => $avaliacao->atividade_id,
                 'avaliacao_id' => $avaliacao->id,
-                'presenca_id' => $avaliacao->anonima ? null : $presenca->id,
+                'presenca_id' => $isUniversal || $avaliacao->anonima ? null : $presenca->id,
+                'universal' => $isUniversal,
             ]);
 
             foreach ($avaliacao->avaliacaoQuestoes as $questao) {
@@ -954,9 +1332,17 @@ class AvaliacaoController extends Controller
                 ]);
             }
 
-            $presenca->avaliacao_respondida = true;
-            $presenca->save();
+            if (! $isUniversal && $presenca) {
+                $presenca->avaliacao_respondida = true;
+                $presenca->save();
+            }
         });
+
+        if ($isUniversal) {
+            return redirect()
+                ->route('avaliacao.formulario', $avaliacao)
+                ->with('success', 'Avaliação registrada com sucesso!');
+        }
 
         return redirect()
             ->route('presenca.confirmar', $presenca->atividade_id)
@@ -1014,7 +1400,8 @@ class AvaliacaoController extends Controller
 
     public function respostas(Avaliacao $avaliacao)
     {
-        abort_if($avaliacao->anonima, 404);
+        $isUniversal = $avaliacao->atividade_id === null;
+        abort_if($avaliacao->anonima && ! $isUniversal, 404);
 
         $avaliacao->load(['atividade.evento', 'templateAvaliacao']);
 
@@ -1031,7 +1418,8 @@ class AvaliacaoController extends Controller
 
     public function respostasMostrar(Avaliacao $avaliacao, SubmissaoAvaliacao $submissao)
     {
-        abort_if($avaliacao->anonima, 404);
+        $isUniversal = $avaliacao->atividade_id === null;
+        abort_if($avaliacao->anonima && ! $isUniversal, 404);
         abort_unless($submissao->avaliacao_id === $avaliacao->id, 404);
 
         $submissao->load([

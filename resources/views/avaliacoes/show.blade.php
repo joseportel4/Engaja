@@ -1,6 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+  $isUniversal = $avaliacao->atividade_id === null;
+  $editUrl = $isUniversal ? route('avaliacoes-universais.edit', $avaliacao) : route('avaliacoes.edit', $avaliacao);
+  $backUrl = $isUniversal ? route('avaliacoes-universais.index') : route('avaliacoes.index');
+@endphp
 <div class="row justify-content-center">
   <div class="col-xl-8">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -12,7 +17,7 @@
         @if(!$avaliacao->anonima)
           <a href="{{ route('avaliacoes.respostas', $avaliacao) }}" class="btn btn-primary">Ver respostas</a>
         @endif
-        <a href="{{ route('avaliacoes.edit', $avaliacao) }}" class="btn btn-outline-secondary">Editar</a>
+        <a href="{{ $editUrl }}" class="btn btn-outline-secondary">Editar</a>
       </div>
     </div>
 
@@ -33,10 +38,15 @@
           <dd class="col-md-8">{{ $eventoNome ?? '-' }}</dd>
 
           <dt class="col-md-4 text-muted">Atividade</dt>
-          <dd class="col-md-8">{{ $avaliacao->atividade->descricao ?? '-' }}</dd>
+          <dd class="col-md-8">{{ $isUniversal ? 'Avaliação universal' : ($avaliacao->atividade->descricao ?? '-') }}</dd>
 
           <dt class="col-md-4 text-muted">Modelo de avaliacao</dt>
           <dd class="col-md-8">{{ $avaliacao->templateAvaliacao->nome ?? '-' }}</dd>
+
+          @if($isUniversal)
+          <dt class="col-md-4 text-muted">Descrição</dt>
+          <dd class="col-md-8">{{ $avaliacao->descricao_universal ?: '-' }}</dd>
+          @endif
         </dl>
       </div>
     </div>
@@ -80,7 +90,7 @@
       </div>
     </div>
 
-    <a href="{{ route('avaliacoes.index') }}" class="btn btn-link px-0 mt-3">Voltar para lista</a>
+    <a href="{{ $backUrl }}" class="btn btn-link px-0 mt-3">Voltar para lista</a>
   </div>
 </div>
 @endsection

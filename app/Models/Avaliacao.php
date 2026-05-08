@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Avaliacao extends Model
 {
-    protected $fillable = ['template_avaliacao_id', 'inscricao_id', 'atividade_id', 'anonima'];
+    protected $fillable = ['template_avaliacao_id', 'descricao_universal', 'formulario_aberto', 'inscricao_id', 'atividade_id', 'anonima'];
 
     protected $casts = [
         'anonima' => 'boolean',
+        'formulario_aberto' => 'boolean',
     ];
 
     public function getAnonimaAttribute($value): bool

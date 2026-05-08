@@ -78,6 +78,7 @@ class AvaliacaoRespostasDashboardService
                 'avaliacaoQuestao.indicador.dimensao',
                 'avaliacao.atividade.evento',
             ])
+            ->whereHas('avaliacao', fn ($aq) => $aq->whereNotNull('atividade_id'))
             ->when($templateId, fn ($q) => $q->whereHas('avaliacao', fn ($aq) => $aq->where('template_avaliacao_id', $templateId)))
             ->when($atividadeId, fn ($q) => $q->whereHas('avaliacao', fn ($aq) => $aq->where('atividade_id', $atividadeId)))
             ->when($eventoId, fn ($q) => $q->whereHas('avaliacao.atividade', fn ($aq) => $aq->where('evento_id', $eventoId)))
@@ -96,6 +97,7 @@ class AvaliacaoRespostasDashboardService
         $ate = $request->date('ate');
 
         return SubmissaoAvaliacao::query()
+            ->whereNotNull('atividade_id')
             ->when($templateId, fn ($q) => $q->whereHas('avaliacao', fn ($aq) => $aq->where('template_avaliacao_id', $templateId)))
             ->when($atividadeId, fn ($q) => $q->where('atividade_id', $atividadeId))
             ->when($eventoId, fn ($q) => $q->whereHas('atividade', fn ($aq) => $aq->where('evento_id', $eventoId)))
