@@ -11,6 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
 
+  {{-- O Vite agora controla todas as cores via SASS --}}
   @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 
   <style>
