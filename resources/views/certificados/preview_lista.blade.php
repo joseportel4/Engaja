@@ -14,6 +14,15 @@
         </div>
     </div>
 
+    <div class="d-flex align-items-center mb-3">
+        <div>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary btn-sm" id="btn-select-all">Selecionar Todos</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-clear-all">Limpar Todos</button>
+        </div>
+    </div>
+
     <div class="card shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -30,6 +39,9 @@
                     <tbody>
                     @forelse ($paginator as $row)
                     <tr>
+                        <td>
+                            <input type="checkbox" class="form-check-input cert-checkbox" value="{{ $row['id'] }}">
+                        </td>
                         <td class="fw-medium">{{ $row['nome'] }}</td>
                         <td>{{ $row['email'] }}</td>
                         <td>{{ $row['cpf'] }}</td>
@@ -76,9 +88,13 @@
                 </div>
 
                 <div class="col-12 col-xl-4">
-                    <form action="{{ route('certificados.emitir') }}" method="POST" class="m-0 d-flex justify-content-center justify-content-xl-end gap-2">
+                    <form id="form-emissao" action="{{ route('certificados.emitir') }}" method="POST" class="m-0 d-flex justify-content-center justify-content-xl-end gap-2">
                         @csrf
                         <input type="hidden" name="session_key" value="{{ $sessionKey }}">
+
+                        <input type="hidden" name="selection_mode" id="selection_mode" value="ALL">
+                        <input type="hidden" name="selection_exceptions" id="selection_exceptions" value="[]">
+
                         <a href="{{ route('eventos.index') }}" class="btn btn-light border">Voltar</a>
 
                         <button type="submit" class="btn btn-engaja" {{ $totalProntos === 0 ? 'disabled' : '' }}>
@@ -91,4 +107,102 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const STORAGE_KEY = 'cert_selection_' + '{{ $sessionKey }}';
+
+        const isPaginated = new URLSearchParams(window.location.search).has('page');
+        if (!isPaginated) {
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ mode: 'ALL', exceptions: [] }));
+        }
+
+        let state = JSON.parse(sessionStorage.getItem(STORAGE_KEY)) || { mode: 'ALL', exceptions: [] };
+        const checkboxes = document.querySelectorAll('.cert-checkbox');
+        const pageAllCheckbox = document.getElementById('checkbox-all-page');
+
+        const updateCheckboxesUI = () => {
+            let allPageChecked = true;
+            checkboxes.forEach(cb => {
+                const id = cb.value;
+                let shouldBeChecked = state.mode === 'ALL';
+
+                //inverte se for exceção
+                if (state.exceptions.includes(id)) {
+                    shouldBeChecked = !shouldBeChecked;
+                }
+
+                cb.checked = shouldBeChecked;
+                if (!shouldBeChecked) allPageChecked = false;
+            });
+
+            if (pageAllCheckbox) {
+                pageAllCheckbox.checked = allPageChecked && checkboxes.length > 0;
+            }
+        };
+
+        const saveState = () => sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const id = e.target.value;
+                const isChecked = e.target.checked;
+
+                const isException = (state.mode === 'ALL' && !isChecked) || (state.mode === 'NONE' && isChecked);
+
+                if (isException) {
+                    if (!state.exceptions.includes(id)) state.exceptions.push(id);
+                } else {
+                    state.exceptions = state.exceptions.filter(exId => exId !== id);
+                }
+
+                saveState();
+
+                //atualiza o master checkbox da página caso todos ou nenhum tenham sido desmarcados manualmente
+                let allPageChecked = true;
+                checkboxes.forEach(c => { if(!c.checked) allPageChecked = false; });
+                if (pageAllCheckbox) pageAllCheckbox.checked = allPageChecked;
+            });
+        });
+
+        pageAllCheckbox?.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            checkboxes.forEach(cb => {
+                if (cb.checked !== isChecked) {
+                    cb.checked = isChecked;
+                    //dispara o evento change manualmente para atualizar o estado
+                    cb.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+
+        document.getElementById('btn-select-all')?.addEventListener('click', () => {
+            state = { mode: 'ALL', exceptions: [] };
+            saveState();
+            updateCheckboxesUI();
+        });
+
+        document.getElementById('btn-clear-all')?.addEventListener('click', () => {
+            state = { mode: 'NONE', exceptions: [] };
+            saveState();
+            updateCheckboxesUI();
+        });
+
+        //intercepta o submit do form
+        const form = document.getElementById('form-emissao');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                if (state.mode === 'NONE' && state.exceptions.length === 0) {
+                    e.preventDefault();
+                    alert('Atenção: Nenhum certificado está selecionado para emissão.');
+                    return;
+                }
+                document.getElementById('selection_mode').value = state.mode;
+                document.getElementById('selection_exceptions').value = JSON.stringify(state.exceptions);
+            });
+        }
+
+        updateCheckboxesUI();
+    });
+</script>
 @endsection

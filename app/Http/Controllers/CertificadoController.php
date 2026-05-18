@@ -53,6 +53,9 @@ class CertificadoController extends Controller
 
         $modelo = ModeloCertificado::findOrFail($data['modelo_id']);
 
+        $selectionMode = $request->input('selection_mode', 'ALL');
+        $selectionExceptions = json_decode($request->input('selection_exceptions', '[]'), true);
+
         $eventos = Evento::with(['presencas.inscricao.participante.user', 'presencas.atividade'])
             ->whereIn('id', $eventosIds)
             ->get();
@@ -73,6 +76,18 @@ class CertificadoController extends Controller
                 ->groupBy(fn ($p) => $p->inscricao->participante->id);
 
             foreach ($presencasPorParticipante as $participanteId => $presencas) {
+                //logica do filtro de seleção para certificar ou não
+                $certKey = $participanteId . '_' . $evento->id;
+                $isException = in_array($certKey, $selectionExceptions);
+
+                if ($selectionMode === 'ALL' && $isException) {
+                    continue;
+                }
+                if ($selectionMode === 'NONE' && !$isException) {
+                    continue;
+                }
+                //fim da lógica de seleção
+
                 $participante = $presencas->first()->inscricao?->participante;
                 if (! $participante || ! $participante->user) {
                     continue;
@@ -156,6 +171,7 @@ class CertificadoController extends Controller
 
     public function previewLista(Request $request)
     {
+
         $sessionKey = $request->query('session_key');
         $payload = session($sessionKey);
 
@@ -168,7 +184,8 @@ class CertificadoController extends Controller
         $eventosIds = array_unique(array_filter(array_map('intval', explode(',', $payload['eventos']))));
         $eventos = Evento::with(['presencas.inscricao.participante.user', 'presencas.atividade'])
             ->whereIn('id', $eventosIds)
-            ->get();
+            ->get()
+            ->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE);
 
         $previewData = collect();
         $skippedZeroWorkload = 0;
@@ -182,6 +199,8 @@ class CertificadoController extends Controller
 
             $presencasPorParticipante = $presencasEvento->groupBy(fn ($p) => $p->inscricao->participante->id);
 
+            $participantesDestaAcao = collect();
+
             foreach ($presencasPorParticipante as $participanteId => $presencas) {
                 $participante = $presencas->first()->inscricao?->participante;
                 if (!$participante || !$participante->user) continue;
@@ -193,7 +212,8 @@ class CertificadoController extends Controller
                     continue;
                 }
 
-                $previewData->push([
+                $participantesDestaAcao->push([
+                    'id'            => $participante->id . '_' . $evento->id,
                     'nome'          => $participante->user->name,
                     'email'         => $participante->user->email,
                     'cpf'           => $participante->cpf ?? '-',
@@ -201,6 +221,10 @@ class CertificadoController extends Controller
                     'evento_nome'   => $evento->nome
                 ]);
             }
+
+            $participantesOrdenados = $participantesDestaAcao->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values();
+
+            $previewData = $previewData->merge($participantesOrdenados);
         }
 
         //paginação
