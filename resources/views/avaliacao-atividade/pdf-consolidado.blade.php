@@ -85,6 +85,7 @@
                 <tr><td>Quantidade de presentes na ação</td><td class="value-number">{{ $resumoPublico['presentes'] ?? 0 }}</td></tr>
                 <tr><td>Participantes ligados aos movimentos sociais</td><td class="value-number">{{ $resumoPublico['movimentos'] ?? 0 }}</td></tr>
                 <tr><td>Participantes com vínculo com a prefeitura</td><td class="value-number">{{ $resumoPublico['prefeitura'] ?? 0 }}</td></tr>
+                <tr><td>Participantes com vínculo não informado</td><td class="value-number">{{ $resumoPublico['sem_vinculo'] ?? 0 }}</td></tr>
             </table>
         </div>
 

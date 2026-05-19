@@ -104,6 +104,10 @@
                                 <th class="bg-light">Participantes com vínculo com a Prefeitura</th>
                                 <td class="text-center fw-semibold">{{ $resumoPublico['prefeitura'] ?? 0 }}</td>
                             </tr>
+                            <tr>
+                                <th class="bg-light">Participantes com vínculo não informado</th>
+                                <td class="text-center fw-semibold">{{ $resumoPublico['sem_vinculo'] ?? 0 }}</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

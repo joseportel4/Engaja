@@ -103,6 +103,13 @@ class AvaliacaoAtividadeController extends Controller
                 ->whereHas('participante', fn($q) => $q->where('tag', Participante::TAG_REDE_ENSINO))
                 ->distinct('participante_id')
                 ->count('participante_id'),
+            'sem_vinculo' => (clone $inscricoesQuery)
+                ->whereHas('participante', function ($q) {
+                    $q->whereNull('tag')
+                        ->orWhere('tag', '');
+                })
+                ->distinct('participante_id')
+                ->count('participante_id'),
         ];
     }
 
@@ -334,6 +341,7 @@ class AvaliacaoAtividadeController extends Controller
             'presentes' => 0,
             'movimentos' => $relatorio->qtd_participantes_movimentos_sociais ?? 0,
             'prefeitura' => $relatorio->qtd_participantes_prefeitura ?? 0,
+            'sem_vinculo' => 0,
         ];
     }
 }
