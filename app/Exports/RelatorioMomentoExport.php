@@ -61,12 +61,12 @@ class RelatorioMomentoExport implements FromCollection, WithHeadings, WithMappin
         $query->when(!$de && $ate, fn ($q) => $q->where('atividades.dia', '<=', $ate));
 
         $query->when($periodo === 'manha', fn ($q) =>
-            $q->whereRaw("TIME(atividades.hora_inicio) < '12:00:00'"));
+            $q->whereRaw("CAST(atividades.hora_inicio AS time) < '12:00:00'"));
         $query->when($periodo === 'tarde', fn ($q) =>
-            $q->whereRaw("TIME(atividades.hora_inicio) >= '12:00:00'")
-                ->whereRaw("TIME(atividades.hora_inicio) < '18:00:00'"));
+            $q->whereRaw("CAST(atividades.hora_inicio AS time) >= '12:00:00'")
+                ->whereRaw("CAST(atividades.hora_inicio AS time) < '18:00:00'"));
         $query->when($periodo === 'noite', fn ($q) =>
-            $q->whereRaw("TIME(atividades.hora_inicio) >= '18:00:00'"));
+            $q->whereRaw("CAST(atividades.hora_inicio AS time) >= '18:00:00'"));
 
         $query->orderBy('eventos.nome', 'asc')
             ->orderBy('atividades.dia', 'asc')
