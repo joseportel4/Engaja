@@ -234,6 +234,11 @@
               @role('administrador|gerente|eq_pedagogica|articulador')
                 <li><hr class="dropdown-divider"></li>
                 <li>
+                  <a class="dropdown-item" href="{{ route('eventos.avaliacoes.consolidado', $evento) }}">
+                    Consolidação de avaliações
+                  </a>
+                </li>
+                <li>
                   <button type="button" class="dropdown-item" data-bs-toggle="modal"
                     data-bs-target="#modalRelatoriosEvento">
                     Relatórios

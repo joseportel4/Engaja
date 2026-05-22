@@ -234,6 +234,8 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
 Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {
     Route::get('/eventos/{evento}/relatorios', [EventoController::class, 'relatorios'])
         ->name('eventos.relatorios');
+    Route::get('/eventos/{evento}/avaliacoes/consolidado', [EventoController::class, 'avaliacoesConsolidadas'])
+        ->name('eventos.avaliacoes.consolidado');
 });
 
 Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {
