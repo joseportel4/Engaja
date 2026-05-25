@@ -16,7 +16,6 @@ use App\Models\Presenca;
 use App\Models\SituacaoDesafiadora;
 use App\Models\User;
 use App\Support\CargaHoraria;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -28,7 +27,8 @@ use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\Response;
+use Spatie\LaravelPdf\Facades\Pdf;
+use Spatie\LaravelPdf\PdfBuilder;
 
 class EventoController extends Controller
 {
@@ -59,12 +59,12 @@ class EventoController extends Controller
     {
         $this->authorize('create', Evento::class);
 
-        $matrizes  = MatrizAprendizagem::all()
+        $matrizes = MatrizAprendizagem::all()
             ->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
         $situacoes = SituacaoDesafiadora::orderBy('categoria')->get()
-                ->groupBy('categoria')
-                ->map(fn($itens) => $itens->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values());
+            ->groupBy('categoria')
+            ->map(fn ($itens) => $itens->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values());
 
         return view('eventos.create', compact('matrizes', 'situacoes'));
     }
@@ -183,12 +183,12 @@ class EventoController extends Controller
 
         $evento->load(['matrizes', 'situacoesDesafiadoras', 'sequenciasDidaticas']);
 
-        $matrizes  = MatrizAprendizagem::all()
+        $matrizes = MatrizAprendizagem::all()
             ->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
         $situacoes = SituacaoDesafiadora::orderBy('categoria')->get()
-                ->groupBy('categoria')
-                ->map(fn($itens) => $itens->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values());
+            ->groupBy('categoria')
+            ->map(fn ($itens) => $itens->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values());
 
         return view('eventos.edit', compact('evento', 'matrizes', 'situacoes'));
     }
@@ -260,7 +260,7 @@ class EventoController extends Controller
         return redirect()->route('eventos.index')->with('success', 'Evento excluído.');
     }
 
-    public function gerarPdfPlanejamento(Evento $evento): Response
+    public function gerarPdfPlanejamento(Evento $evento): PdfBuilder
     {
         $this->authorize('view', $evento);
 
@@ -269,16 +269,15 @@ class EventoController extends Controller
             ->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('eventos.planejamento_pdf', [
-                'evento'         => $evento,
-                'matrizesOrdenadas' => $matrizesOrdenadas,
-                'acoesGerais'    => Evento::ACOES_GERAIS,
-                'checklistItems' => array_values(Evento::CHECKLIST_PLANEJAMENTO_ITEMS),
-            ])
-            ->setOptions(['isHtml5ParserEnabled' => true])
-            ->setPaper('a4', 'portrait');
-
-        return $pdf->stream('planejamento-'.Str::slug($evento->nome).'.pdf');
+        return Pdf::view('eventos.planejamento_pdf', [
+            'evento' => $evento,
+            'matrizesOrdenadas' => $matrizesOrdenadas,
+            'acoesGerais' => Evento::ACOES_GERAIS,
+            'checklistItems' => array_values(Evento::CHECKLIST_PLANEJAMENTO_ITEMS),
+        ])
+            ->format('a4')
+            ->withAlfaEjaBrand()
+            ->inline('planejamento-'.Str::slug($evento->nome).'.pdf');
     }
 
     public function relatorioParticipantesUnicos(Request $request, Evento $evento)

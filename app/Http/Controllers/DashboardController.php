@@ -11,9 +11,9 @@ use App\Models\RespostaAvaliacao;
 use App\Models\SubmissaoAvaliacao;
 use App\Models\TemplateAvaliacao;
 use App\Services\AvaliacaoRespostasDashboardService;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class DashboardController extends Controller
 {
@@ -344,12 +344,13 @@ class DashboardController extends Controller
             'Período' => $periodo,
         ]);
 
-        $pdf = PDF::loadView('dashboard_pdf', [
+        return Pdf::view('dashboard_pdf', [
             'atividades' => $atividades,
             'filtroResumo' => $filtroResumo,
             'filtros' => $request->query(),
-        ])->setPaper('a4', 'portrait');
-
-        return $pdf->download('dashboard-presencas-'.now()->format('Ymd_His').'.pdf');
+        ])
+            ->format('a4')
+            ->withAlfaEjaBrand()
+            ->download('dashboard-presencas-'.now()->format('Ymd_His').'.pdf');
     }
 }

@@ -5,15 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Atividade;
 use App\Models\AvaliacaoAtividade;
 use App\Models\Participante;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class AvaliacaoAtividadeController extends Controller
 {
     use AuthorizesRequests;
 
     private const REPORT_EDIT_ROLES = ['administrador', 'gerente'];
+
     private const REPORT_QUESTION_FIELDS = [
         'avaliacao_logistica' => 'Quais melhorias você sugere para a logística do evento?',
         'avaliacao_acolhimento_sme' => 'Como você avalia o acolhimento e apoio da SME?',
@@ -38,19 +40,19 @@ class AvaliacaoAtividadeController extends Controller
         $search = trim((string) $request->query('search', ''));
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
-                $q->whereHas('atividade', fn($a) => $a->where('descricao', 'like', "%{$search}%"))
-                  ->orWhereHas('atividade.evento', fn($e) => $e->where('nome', 'like', "%{$search}%"))
-                  ->orWhere('nome_educador', 'like', "%{$search}%");
+                $q->whereHas('atividade', fn ($a) => $a->where('descricao', 'like', "%{$search}%"))
+                    ->orWhereHas('atividade.evento', fn ($e) => $e->where('nome', 'like', "%{$search}%"))
+                    ->orWhere('nome_educador', 'like', "%{$search}%");
             });
         }
 
         $relatorios = $query->orderByDesc('updated_at')->get();
 
         $acoesAgrupadas = $relatorios
-            ->groupBy(fn(AvaliacaoAtividade $relatorio) => $relatorio->atividade?->evento?->nome ?? 'Ação pedagógica não informada')
+            ->groupBy(fn (AvaliacaoAtividade $relatorio) => $relatorio->atividade?->evento?->nome ?? 'Ação pedagógica não informada')
             ->map(function ($relatoriosDaAcao) {
                 return $relatoriosDaAcao
-                    ->groupBy(fn(AvaliacaoAtividade $relatorio) => $relatorio->atividade_id)
+                    ->groupBy(fn (AvaliacaoAtividade $relatorio) => $relatorio->atividade_id)
                     ->map(function ($relatoriosDoMomento) {
                         return [
                             'atividade' => $relatoriosDoMomento->first()->atividade,
@@ -68,18 +70,18 @@ class AvaliacaoAtividadeController extends Controller
     private function rules(): array
     {
         return [
-            'nome_educador'                        => ['nullable', 'string', 'max:255'],
-            'qtd_participantes_prefeitura'         => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'nome_educador' => ['nullable', 'string', 'max:255'],
+            'qtd_participantes_prefeitura' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'qtd_participantes_movimentos_sociais' => ['nullable', 'integer', 'min:0', 'max:9999'],
-            'avaliacao_logistica'                  => ['nullable', 'string'],
-            'avaliacao_acolhimento_sme'            => ['nullable', 'string'],
-            'avaliacao_recursos_materiais'         => ['nullable', 'string'],
-            'avaliacao_planejamento'               => ['nullable', 'string'],
-            'avaliacao_links_presenca'             => ['nullable', 'string'],
-            'avaliacao_destaques'                  => ['nullable', 'string'],
-            'avaliacao_atuacao_equipe'             => ['nullable', 'string'],
-            'checklist_pos_acao'                   => ['nullable', 'array'],
-            'checklist_pos_acao.*'                 => ['string', 'max:100'],
+            'avaliacao_logistica' => ['nullable', 'string'],
+            'avaliacao_acolhimento_sme' => ['nullable', 'string'],
+            'avaliacao_recursos_materiais' => ['nullable', 'string'],
+            'avaliacao_planejamento' => ['nullable', 'string'],
+            'avaliacao_links_presenca' => ['nullable', 'string'],
+            'avaliacao_destaques' => ['nullable', 'string'],
+            'avaliacao_atuacao_equipe' => ['nullable', 'string'],
+            'checklist_pos_acao' => ['nullable', 'array'],
+            'checklist_pos_acao.*' => ['string', 'max:100'],
         ];
     }
 
@@ -88,19 +90,19 @@ class AvaliacaoAtividadeController extends Controller
         $inscricoesQuery = $atividade->inscricoes()->whereNull('deleted_at');
 
         return [
-            'prevista'   => $atividade->publico_esperado ?? 0,
-            'inscritos'  => (clone $inscricoesQuery)->distinct('participante_id')->count('participante_id'),
-            'presentes'  => $atividade->presencas()
+            'prevista' => $atividade->publico_esperado ?? 0,
+            'inscritos' => (clone $inscricoesQuery)->distinct('participante_id')->count('participante_id'),
+            'presentes' => $atividade->presencas()
                 ->where('status', 'presente')
                 ->whereNull('deleted_at')
                 ->distinct('inscricao_id')
                 ->count('inscricao_id'),
             'movimentos' => (clone $inscricoesQuery)
-                ->whereHas('participante', fn($q) => $q->where('tag', Participante::TAG_MOVIMENTO_SOCIAL))
+                ->whereHas('participante', fn ($q) => $q->where('tag', Participante::TAG_MOVIMENTO_SOCIAL))
                 ->distinct('participante_id')
                 ->count('participante_id'),
             'prefeitura' => (clone $inscricoesQuery)
-                ->whereHas('participante', fn($q) => $q->where('tag', Participante::TAG_REDE_ENSINO))
+                ->whereHas('participante', fn ($q) => $q->where('tag', Participante::TAG_REDE_ENSINO))
                 ->distinct('participante_id')
                 ->count('participante_id'),
             'sem_vinculo' => (clone $inscricoesQuery)
@@ -217,14 +219,15 @@ class AvaliacaoAtividadeController extends Controller
         $this->loadRelatorioRelations($relatorio);
 
         $resumoPublico = $this->buildResumoPublicoForRelatorio($relatorio);
-        $pdf = Pdf::loadView('avaliacao-atividade.pdf', [
+
+        return Pdf::view('avaliacao-atividade.pdf', [
             'relatorio' => $relatorio,
             'resumoPublico' => $resumoPublico,
             'camposPerguntas' => self::REPORT_QUESTION_FIELDS,
-        ]);
-        $pdf->setPaper('a4', 'portrait');
-
-        return $pdf->download('relatorio-acao-' . $relatorio->id . '.pdf');
+        ])
+            ->format('a4')
+            ->withAlfaEjaBrand()
+            ->download('relatorio-acao-'.$relatorio->id.'.pdf');
     }
 
     public function downloadOwn(Atividade $atividade)
@@ -232,7 +235,7 @@ class AvaliacaoAtividadeController extends Controller
         $this->authorizeReport($atividade);
 
         $relatorio = $this->getUserReport($atividade);
-        abort_if(!$relatorio, 404, 'Relatório não encontrado para este momento.');
+        abort_if(! $relatorio, 404, 'Relatório não encontrado para este momento.');
 
         return $this->download($relatorio);
     }
@@ -284,18 +287,18 @@ class AvaliacaoAtividadeController extends Controller
             ];
         })->values();
 
-        $pdf = Pdf::loadView('avaliacao-atividade.pdf-consolidado', [
+        $nomeArquivo = 'relatorios-consolidado-'.Str::slug($atividade->descricao ?? 'momento').'.pdf';
+
+        return Pdf::view('avaliacao-atividade.pdf-consolidado', [
             'atividade' => $atividade,
             'relatorios' => $relatorios,
             'resumoPublico' => $resumoPublico,
             'camposPerguntas' => self::REPORT_QUESTION_FIELDS,
             'respostasPorPergunta' => $respostasPorPergunta,
-        ]);
-        $pdf->setPaper('a4', 'portrait');
-
-        $nomeArquivo = 'relatorios-consolidado-' . \Illuminate\Support\Str::slug($atividade->descricao ?? 'momento') . '.pdf';
-
-        return $pdf->download($nomeArquivo);
+        ])
+            ->format('a4')
+            ->withAlfaEjaBrand()
+            ->download($nomeArquivo);
     }
 
     private function authorizeRelatorio(AvaliacaoAtividade $relatorio): void
@@ -313,6 +316,7 @@ class AvaliacaoAtividadeController extends Controller
 
         if ($relatorio->atividade) {
             $relatorio->load(['atividade.evento', 'atividade.municipios']);
+
             return;
         }
 

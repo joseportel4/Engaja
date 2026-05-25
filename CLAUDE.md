@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Frontend:** Bootstrap 5 + Blade + Livewire 4
 - **Database:** PostgreSQL
 - **Auth:** Laravel Breeze + Spatie Laravel Permission
-- **PDF:** barryvdh/laravel-dompdf + setasign/fpdi
+- **PDF:** spatie/laravel-pdf (Browsershot/Puppeteer/Chromium)
 - **Imports:** maatwebsite/excel (xlsx)
 - **QR Code:** simplesoftwareio/simple-qrcode
 
@@ -79,7 +79,7 @@ Permissions follow the pattern `resource.action` (e.g., `evento.criar`, `presenc
 - **Livewire:** `app/Livewire/Dashboards/` and `app/Livewire/Graficos/` — interactive dashboard components.
 - **Imports:** `app/Imports/` — Excel importers via maatwebsite/excel with tolerant header parsing.
 - **Exports:** `app/Exports/` — Excel exports.
-- **PDF:** `app/Pdf/` — PDF generation classes; views in `resources/views/layouts/pdf-alfa-eja.blade.php`.
+- **PDF:** gerado via `spatie/laravel-pdf` (Browsershot/Puppeteer). Macro `->withAlfaEjaBrand()` em `AppServiceProvider` aplica cabeçalho, rodapé e margens institucionais. Layouts em `resources/views/layouts/pdf-alfa-eja.blade.php` (portrait) e `pdf-alfa-eja-landscape.blade.php` (landscape).
 - **ViewModels:** `app/ViewModels/` — view data transformation.
 - **Policies:** `app/Policies/` — model-level authorization.
 
@@ -149,6 +149,59 @@ Imports follow a multi-step preview/confirm pattern:
 **Frontend Rendering** (Chart.js, not ApexCharts):
 - Two paths: **new** (`question_blocks`) uses `renderSimpleQuestionCard`/`renderMatrixBlockCard`; **legacy** (`perguntas`/`bi_matrizes`) uses `renderLegacyCharts`.
 - Circular charts (doughnut, polarArea): use `maintainAspectRatio: false` + `canvas.style.height` to prevent excessive height.
+
+### PDF Generation (spatie/laravel-pdf + Browsershot)
+
+**Stack:** `Pdf::view()` → `BrowsershotDriver` → Puppeteer/Chromium. Node.js instalado via fnm; path configurado em `.env` como `LARAVEL_PDF_NODE_BINARY`.
+
+**Macro `withAlfaEjaBrand()`** — registrada em `AppServiceProvider::registerPdfMacros()`:
+```php
+Pdf::view('minha.view', $dados)
+    ->format('a4')
+    ->withAlfaEjaBrand()              // portrait: margens 28 14 22 14 mm (padrão)
+    ->download('arquivo.pdf');
+
+->withAlfaEjaBrand(35, 10, 25, 10)   // landscape
+```
+O macro define as margens do Puppeteer e os templates de header/footer com as imagens institucionais (`public/images/Alfa-Eja Header.png` e `Alfa-Eja Footer.png`) em base64.
+
+**Return type dos controllers:** `PdfBuilder` implementa `Responsable`; retorná-lo de um controller é válido — Laravel chama `toResponse()` automaticamente. Declare `: PdfBuilder` ou omita o tipo. **Não use** `: Symfony\Component\HttpFoundation\Response`.
+
+**Armadilhas críticas do Puppeteer — leia antes de mexer em PDFs:**
+
+1. **Header/footer rodam em contexto HTML completamente isolado.** Não herdam CSS nem recursos do documento principal. Sempre incluir reset completo no template:
+   ```html
+   <style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100%;font-size:0;line-height:0;overflow:hidden}</style>
+   ```
+
+2. **Imagens base64 no header/footer podem não renderizar.** O contexto isolado do Puppeteer não carrega dados base64 não previamente "vistos". Solução: adicionar `<img>` invisíveis com o mesmo `src` nos layouts Blade para pré-carregar:
+   ```html
+   {{-- em pdf-alfa-eja.blade.php e pdf-alfa-eja-landscape.blade.php --}}
+   <img src="data:image/png;base64,..." style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" aria-hidden="true">
+   ```
+
+3. **Header descolado do topo: usar `position:absolute`, não confiar em `margin:0`.** Chrome print tem espaçamento padrão que `margin:0` no body não elimina. Solução robusta:
+   ```html
+   <body style='position:relative'>
+     <img src='...' style='position:absolute;top:0;left:0;width:100%;display:block'>
+   </body>
+   ```
+
+4. **Footer desalinhado: `display:flex` no body pode não funcionar** porque a largura do body no contexto isolado não corresponde à página. Solução:
+   ```html
+   <body style='position:relative;width:100%;height:100%'>
+     <img src='...' style='position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:61mm;display:block'>
+   </body>
+   ```
+
+5. **`position:fixed` em Chrome PDF NÃO repete em cada página** (ao contrário do wkhtmltopdf). Cria uma página extra em branco no final. Nunca use `position:fixed` para header/footer — use os templates nativos `headerHtml`/`footerHtml` via macro.
+
+6. **Rodapés legados das views wkhtmltopdf.** Views migradas podem ter `<div class="footer">` com texto no corpo — isso vira conteúdo normal e cria páginas extras. Verificar e remover ao migrar:
+   ```bash
+   grep -rn 'class="footer"' resources/views/ --include="*.blade.php" | grep -v vendor | grep -v mail
+   ```
+
+7. **Cache de views.** Ao modificar layouts PDF rodar `php artisan view:clear`.
 
 ===
 

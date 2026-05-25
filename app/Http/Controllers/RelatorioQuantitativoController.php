@@ -2,37 +2,37 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\RelatorioMomentoExport;
+use App\Exports\RelatorioTotalGeralExport;
 use App\Models\Atividade;
 use App\Models\Evento;
 use App\Models\Municipio;
 use App\Models\Regiao;
-use App\Exports\RelatorioMomentoExport;
-use App\Exports\RelatorioTotalGeralExport;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class RelatorioQuantitativoController extends Controller
 {
     public function index(Request $request)
     {
-        $eventoId    = $request->integer('evento_id');
-        $descricao   = trim((string) $request->get('descricao', ''));
+        $eventoId = $request->integer('evento_id');
+        $descricao = trim((string) $request->get('descricao', ''));
         $municipioId = $request->integer('municipio_id');
-        $regiaoId    = $request->integer('regiao_id');
-        $de          = $request->date('de');
-        $ate         = $request->date('ate');
-        $periodo     = $request->get('periodo', '');
+        $regiaoId = $request->integer('regiao_id');
+        $de = $request->date('de');
+        $ate = $request->date('ate');
+        $periodo = $request->get('periodo', '');
 
         $sort = $request->get('sort', 'dia');
-        $dir  = $request->get('dir', 'asc') === 'asc' ? 'asc' : 'desc';
+        $dir = $request->get('dir', 'asc') === 'asc' ? 'asc' : 'desc';
 
         $sortable = [
-            'acao'      => 'eventos.nome',
-            'momento'   => 'atividades.descricao',
+            'acao' => 'eventos.nome',
+            'momento' => 'atividades.descricao',
             'municipio' => 'municipios.nome',
-            'dia'       => 'atividades.dia',
-            'periodo'   => 'atividades.hora_inicio',
+            'dia' => 'atividades.dia',
+            'periodo' => 'atividades.hora_inicio',
             'previstas' => 'atividades.publico_esperado',
             'presentes' => 'presentes_count',
             'avaliacoes' => 'avaliacoes_count',
@@ -64,27 +64,24 @@ class RelatorioQuantitativoController extends Controller
             ->whereNull('atividades.deleted_at')
             ->whereNotNull('atividades.evento_id');
 
-        $query->when($eventoId,    fn ($q) => $q->where('atividades.evento_id',    $eventoId));
+        $query->when($eventoId, fn ($q) => $q->where('atividades.evento_id', $eventoId));
         $query->when($municipioId, fn ($q) => $q->where('atividades.municipio_id', $municipioId));
-        $query->when($regiaoId,    fn ($q) => $q->where('regiaos.id',             $regiaoId));
-        $query->when($descricao,   fn ($q) => $q->where('atividades.descricao',    $descricao));
+        $query->when($regiaoId, fn ($q) => $q->where('regiaos.id', $regiaoId));
+        $query->when($descricao, fn ($q) => $q->where('atividades.descricao', $descricao));
 
-        $query->when($de && $ate,  fn ($q) => $q->whereBetween('atividades.dia', [$de, $ate]));
+        $query->when($de && $ate, fn ($q) => $q->whereBetween('atividades.dia', [$de, $ate]));
         $query->when($de && ! $ate, fn ($q) => $q->where('atividades.dia', '>=', $de));
         $query->when(! $de && $ate, fn ($q) => $q->where('atividades.dia', '<=', $ate));
 
-        $query->when($periodo === 'manha', fn ($q) =>
-            $q->whereRaw("CAST(atividades.hora_inicio AS time) < '12:00:00'"));
-        $query->when($periodo === 'tarde', fn ($q) =>
-            $q->whereRaw("CAST(atividades.hora_inicio AS time) >= '12:00:00'")
-              ->whereRaw("CAST(atividades.hora_inicio AS time) < '18:00:00'"));
-        $query->when($periodo === 'noite', fn ($q) =>
-            $q->whereRaw("CAST(atividades.hora_inicio AS time) >= '18:00:00'"));
+        $query->when($periodo === 'manha', fn ($q) => $q->whereRaw("CAST(atividades.hora_inicio AS time) < '12:00:00'"));
+        $query->when($periodo === 'tarde', fn ($q) => $q->whereRaw("CAST(atividades.hora_inicio AS time) >= '12:00:00'")
+            ->whereRaw("CAST(atividades.hora_inicio AS time) < '18:00:00'"));
+        $query->when($periodo === 'noite', fn ($q) => $q->whereRaw("CAST(atividades.hora_inicio AS time) >= '18:00:00'"));
 
         $query->orderBy($orderByCol, $dir)
-              ->orderBy('eventos.nome', 'asc')
-              ->orderBy('atividades.dia', 'asc')
-              ->orderBy('atividades.id', 'asc');
+            ->orderBy('eventos.nome', 'asc')
+            ->orderBy('atividades.dia', 'asc')
+            ->orderBy('atividades.id', 'asc');
 
         $atividades = $query->get();
 
@@ -131,8 +128,8 @@ class RelatorioQuantitativoController extends Controller
             ->when($eventoId, fn ($q) => $q->where('evento_id', $eventoId))
             ->when($municipioId, fn ($q) => $q->where('municipio_id', $municipioId))
             ->when($de && $ate, fn ($q) => $q->whereBetween('dia', [$de, $ate]))
-            ->when($de && !$ate, fn ($q) => $q->where('dia', '>=', $de))
-            ->when(!$de && $ate, fn ($q) => $q->where('dia', '<=', $ate))
+            ->when($de && ! $ate, fn ($q) => $q->where('dia', '>=', $de))
+            ->when(! $de && $ate, fn ($q) => $q->where('dia', '<=', $ate))
             ->whereNull('deleted_at')
             ->whereNotNull('evento_id')
             ->groupBy('municipio_id')
@@ -153,8 +150,8 @@ class RelatorioQuantitativoController extends Controller
             ->when($eventoId, fn ($q) => $q->where('atividades.evento_id', $eventoId))
             ->when($municipioId, fn ($q) => $q->where('atividades.municipio_id', $municipioId))
             ->when($de && $ate, fn ($q) => $q->whereBetween('atividades.dia', [$de, $ate]))
-            ->when($de && !$ate, fn ($q) => $q->where('atividades.dia', '>=', $de))
-            ->when(!$de && $ate, fn ($q) => $q->where('atividades.dia', '<=', $ate))
+            ->when($de && ! $ate, fn ($q) => $q->where('atividades.dia', '>=', $de))
+            ->when(! $de && $ate, fn ($q) => $q->where('atividades.dia', '<=', $ate))
             ->groupBy('atividades.municipio_id')
             ->get()
             ->keyBy('municipio_id');
@@ -176,7 +173,9 @@ class RelatorioQuantitativoController extends Controller
 
         // Linhas de municípios identificados
         foreach ($municipios as $municipioId => $municipio) {
-            if ($municipioId === null) continue;
+            if ($municipioId === null) {
+                continue;
+            }
 
             $prev = $previstos->get($municipioId)?->previstos ?? 0;
             $comCpf = $cpfCounts->get($municipioId)?->com_cpf ?? 0;
@@ -245,7 +244,7 @@ class RelatorioQuantitativoController extends Controller
                 'com_cpf' => $a['metricas']['cpf']['com'],
                 'sem_cpf' => $a['metricas']['cpf']['sem'],
                 'pct_cpf' => $a['metricas']['cpf']['pct'],
-                default => $a['regiao'] . $a['municipio_nome'],
+                default => $a['regiao'].$a['municipio_nome'],
             };
 
             $bVal = match ($sort) {
@@ -255,10 +254,11 @@ class RelatorioQuantitativoController extends Controller
                 'com_cpf' => $b['metricas']['cpf']['com'],
                 'sem_cpf' => $b['metricas']['cpf']['sem'],
                 'pct_cpf' => $b['metricas']['cpf']['pct'],
-                default => $b['regiao'] . $b['municipio_nome'],
+                default => $b['regiao'].$b['municipio_nome'],
             };
 
             $cmp = is_string($aVal) ? strcmp($aVal, $bVal) : $aVal <=> $bVal;
+
             return $dir === 'asc' ? $cmp : -$cmp;
         });
 
@@ -275,6 +275,7 @@ class RelatorioQuantitativoController extends Controller
                 }
 
                 $munCmp = strcmp($a['municipio_nome'], $b['municipio_nome']);
+
                 return $dir === 'asc' ? $munCmp : -$munCmp;
             });
         }
@@ -337,34 +338,17 @@ class RelatorioQuantitativoController extends Controller
 
         if ($formato === 'pdf') {
             $atividades = $this->getAtividadesData($request);
-            $headerPath = public_path('images/Alfa-Eja Header.png');
-            $footerPath = public_path('images/Alfa-Eja Footer.png');
 
-            $options = [
-                'margin-top' => 35,
-                'margin-right' => 10,
-                'margin-bottom' => 25,
-                'margin-left' => 10,
-            ];
-
-            $pdf = Pdf::loadView('relatorio-quantitativo.pdf-momento', compact('atividades'))
-                ->setPaper('a4', 'landscape')
-                ->setOptions($options);
-
-            if (file_exists($headerPath)) {
-                $pdf->setOption('header-html', view('relatorio-quantitativo.pdf-header')->render());
-            }
-
-            if (file_exists($footerPath)) {
-                $pdf->setOption('footer-html', view('relatorio-quantitativo.pdf-footer')->render());
-            }
-
-            return $pdf->download('relatorio-momento-' . now()->format('Ymd_His') . '.pdf');
+            return Pdf::view('relatorio-quantitativo.pdf-momento', compact('atividades'))
+                ->format('a4')
+                ->landscape()
+                ->withAlfaEjaBrand(35, 10, 25, 10)
+                ->download('relatorio-momento-'.now()->format('Ymd_His').'.pdf');
         }
 
         return Excel::download(
             new RelatorioMomentoExport($request),
-            'relatorio-momento-' . now()->format('Ymd_His') . '.xlsx'
+            'relatorio-momento-'.now()->format('Ymd_His').'.xlsx'
         );
     }
 
@@ -374,34 +358,17 @@ class RelatorioQuantitativoController extends Controller
 
         if ($formato === 'pdf') {
             $totalGeral = $this->buildTotalGeralData($request);
-            $headerPath = public_path('images/Alfa-Eja Header.png');
-            $footerPath = public_path('images/Alfa-Eja Footer.png');
 
-            $options = [
-                'margin-top' => 35,
-                'margin-right' => 10,
-                'margin-bottom' => 25,
-                'margin-left' => 10,
-            ];
-
-            $pdf = Pdf::loadView('relatorio-quantitativo.pdf-total-geral', compact('totalGeral'))
-                ->setPaper('a4', 'landscape')
-                ->setOptions($options);
-
-            if (file_exists($headerPath)) {
-                $pdf->setOption('header-html', view('relatorio-quantitativo.pdf-header')->render());
-            }
-
-            if (file_exists($footerPath)) {
-                $pdf->setOption('footer-html', view('relatorio-quantitativo.pdf-footer')->render());
-            }
-
-            return $pdf->download('relatorio-total-geral-' . now()->format('Ymd_His') . '.pdf');
+            return Pdf::view('relatorio-quantitativo.pdf-total-geral', compact('totalGeral'))
+                ->format('a4')
+                ->landscape()
+                ->withAlfaEjaBrand(35, 10, 25, 10)
+                ->download('relatorio-total-geral-'.now()->format('Ymd_His').'.pdf');
         }
 
         return Excel::download(
             new RelatorioTotalGeralExport($request),
-            'relatorio-total-geral-' . now()->format('Ymd_His') . '.xlsx'
+            'relatorio-total-geral-'.now()->format('Ymd_His').'.xlsx'
         );
     }
 
@@ -446,16 +413,13 @@ class RelatorioQuantitativoController extends Controller
         $query->when($descricao, fn ($q) => $q->where('atividades.descricao', $descricao));
 
         $query->when($de && $ate, fn ($q) => $q->whereBetween('atividades.dia', [$de, $ate]));
-        $query->when($de && !$ate, fn ($q) => $q->where('atividades.dia', '>=', $de));
-        $query->when(!$de && $ate, fn ($q) => $q->where('atividades.dia', '<=', $ate));
+        $query->when($de && ! $ate, fn ($q) => $q->where('atividades.dia', '>=', $de));
+        $query->when(! $de && $ate, fn ($q) => $q->where('atividades.dia', '<=', $ate));
 
-        $query->when($periodo === 'manha', fn ($q) =>
-            $q->whereRaw("CAST(atividades.hora_inicio AS time) < '12:00:00'"));
-        $query->when($periodo === 'tarde', fn ($q) =>
-            $q->whereRaw("CAST(atividades.hora_inicio AS time) >= '12:00:00'")
-                ->whereRaw("CAST(atividades.hora_inicio AS time) < '18:00:00'"));
-        $query->when($periodo === 'noite', fn ($q) =>
-            $q->whereRaw("CAST(atividades.hora_inicio AS time) >= '18:00:00'"));
+        $query->when($periodo === 'manha', fn ($q) => $q->whereRaw("CAST(atividades.hora_inicio AS time) < '12:00:00'"));
+        $query->when($periodo === 'tarde', fn ($q) => $q->whereRaw("CAST(atividades.hora_inicio AS time) >= '12:00:00'")
+            ->whereRaw("CAST(atividades.hora_inicio AS time) < '18:00:00'"));
+        $query->when($periodo === 'noite', fn ($q) => $q->whereRaw("CAST(atividades.hora_inicio AS time) >= '18:00:00'"));
 
         $query->orderBy('eventos.nome', 'asc')
             ->orderBy('atividades.dia', 'asc')
@@ -463,5 +427,4 @@ class RelatorioQuantitativoController extends Controller
 
         return $query->get();
     }
-
 }

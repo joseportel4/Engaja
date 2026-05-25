@@ -17,7 +17,6 @@ use App\Models\TemplateAvaliacao;
 use App\Models\User;
 use App\Services\AvaliacaoRespostasDashboardService;
 use App\ViewModels\Avaliacao\QuestoesFormViewModel;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -29,6 +28,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Spatie\LaravelPdf\Facades\Pdf;
 use Throwable;
 
 class AvaliacaoController extends Controller
@@ -1260,9 +1260,9 @@ class AvaliacaoController extends Controller
         }
 
         if ($usuarios->count() > 1) {
-            $msg = "Foram encontrados {$usuarios->count()} usuários com este " . ($type === 'nome' ? 'nome' : $type) . ".";
+            $msg = "Foram encontrados {$usuarios->count()} usuários com este ".($type === 'nome' ? 'nome' : $type).'.';
             if ($type === 'nome') {
-                $msg .= " Sugerimos buscar por CPF ou E-mail para maior precisão.";
+                $msg .= ' Sugerimos buscar por CPF ou E-mail para maior precisão.';
             }
 
             return view('avaliacoes.transcricao_busca', [
@@ -1278,12 +1278,12 @@ class AvaliacaoController extends Controller
         $user = $usuarios->first();
         $participante = $user->participante;
 
-        if (!$participante) {
+        if (! $participante) {
             return back()->with('error', 'Este usuário não possui perfil de participante completo.')->withInput();
         }
 
         $atividade = $avaliacao->atividade;
-        if (!$atividade) {
+        if (! $atividade) {
             return back()->with('error', 'Esta avaliação não possui um momento (atividade) vinculado.')->withInput();
         }
 
@@ -1295,7 +1295,7 @@ class AvaliacaoController extends Controller
             ->where('atividade_id', $atividade->id)
             ->first();
 
-        if (!$inscricao) {
+        if (! $inscricao) {
             $inscricao = Inscricao::withTrashed()
                 ->where('participante_id', $participante->id)
                 ->where('evento_id', $evento->id)
@@ -1305,18 +1305,18 @@ class AvaliacaoController extends Controller
 
         if ($inscricao) {
             $inscricao->fill([
-                'evento_id'       => $evento->id,
-                'atividade_id'    => $atividade->id,
+                'evento_id' => $evento->id,
+                'atividade_id' => $atividade->id,
                 'participante_id' => $participante->id,
             ]);
             $inscricao->deleted_at = null;
             $inscricao->save();
         } else {
             $inscricao = Inscricao::create([
-                'evento_id'       => $evento->id,
-                'atividade_id'    => $atividade->id,
+                'evento_id' => $evento->id,
+                'atividade_id' => $atividade->id,
                 'participante_id' => $participante->id,
-                'ouvinte'         => true,
+                'ouvinte' => true,
             ]);
         }
 
@@ -1333,7 +1333,7 @@ class AvaliacaoController extends Controller
         return redirect()->route('avaliacao.formulario', [
             'avaliacao' => $avaliacao->id,
             'token' => encrypt($presenca->id),
-            'transcricao' => 1
+            'transcricao' => 1,
         ]);
     }
 
@@ -1357,6 +1357,7 @@ class AvaliacaoController extends Controller
             if ($cpf) {
                 if (! $this->isValidCpf($cpf)) {
                     $v->errors()->add('cpf', 'CPF invalido.');
+
                     return;
                 }
 
@@ -1404,10 +1405,10 @@ class AvaliacaoController extends Controller
         $evento = $atividade->evento;
 
         $inscricao = Inscricao::create([
-            'evento_id'       => $evento->id,
-            'atividade_id'    => $atividade->id,
+            'evento_id' => $evento->id,
+            'atividade_id' => $atividade->id,
             'participante_id' => $participante->id,
-            'ouvinte'         => true,
+            'ouvinte' => true,
         ]);
 
         $presenca = $atividade->presencas()->create([
@@ -1419,7 +1420,7 @@ class AvaliacaoController extends Controller
         return redirect()->route('avaliacao.formulario', [
             'avaliacao' => $avaliacao->id,
             'token' => encrypt($presenca->id),
-            'transcricao' => 1
+            'transcricao' => 1,
         ]);
     }
 
@@ -1585,10 +1586,10 @@ class AvaliacaoController extends Controller
         $rules = [];
         foreach ($avaliacao->avaliacaoQuestoes as $questao) {
             if ($questao->tipo === 'multipla') {
-                //exige que seja um array e valida cada item selecionado
+                // exige que seja um array e valida cada item selecionado
                 $rules["respostas.{$questao->id}"] = ['nullable', 'array'];
                 $opcoes = $questao->opcoes_resposta ?? [];
-                if (!empty($opcoes)) {
+                if (! empty($opcoes)) {
                     $rules["respostas.{$questao->id}.*"] = ['string', Rule::in($opcoes)];
                 }
             } else {
@@ -1818,17 +1819,16 @@ class AvaliacaoController extends Controller
         $fileSlug = Str::slug($atividade->descricao ?: 'momento');
         $fileName = 'avaliacoes-momento-'.$atividade->id.'-'.$fileSlug.'-'.now()->format('Ymd_His').'.pdf';
 
-        $pdf = Pdf::loadView('avaliacoes.resultados_atividade_pdf', [
+        return Pdf::view('avaliacoes.resultados_atividade_pdf', [
             'atividade' => $atividade,
             'avaliacao' => $avaliacao,
             'totais' => $payload['totais'],
             'perguntas' => $payload['perguntas'],
             'geradoEm' => now(),
-        ]);
-
-        $pdf->setPaper('a4', 'portrait');
-
-        return $pdf->download($fileName);
+        ])
+            ->format('a4')
+            ->withAlfaEjaBrand()
+            ->download($fileName);
     }
 
     public function downloadFichaPdf(Avaliacao $avaliacao)
@@ -1842,12 +1842,11 @@ class AvaliacaoController extends Controller
 
         $fileName = 'ficha-avaliacao-'.$avaliacao->id.'-'.now()->format('Ymd_His').'.pdf';
 
-        $pdf = Pdf::loadView('avaliacoes.ficha_pdf', [
+        return Pdf::view('avaliacoes.ficha_pdf', [
             'avaliacao' => $avaliacao,
-        ]);
-
-        $pdf->setPaper('a4', 'portrait');
-
-        return $pdf->download($fileName);
+        ])
+            ->format('a4')
+            ->withAlfaEjaBrand()
+            ->download($fileName);
     }
 }

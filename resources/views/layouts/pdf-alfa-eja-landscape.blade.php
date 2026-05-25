@@ -18,6 +18,16 @@
     </style>
 </head>
 <body>
+    @php
+        $headerPath = public_path('images/Alfa-Eja Header.png');
+        $footerPath = public_path('images/Alfa-Eja Footer.png');
+    @endphp
+    @if(file_exists($headerPath))
+        <img src="data:image/png;base64,{{ base64_encode(file_get_contents($headerPath)) }}" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" aria-hidden="true">
+    @endif
+    @if(file_exists($footerPath))
+        <img src="data:image/png;base64,{{ base64_encode(file_get_contents($footerPath)) }}" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" aria-hidden="true">
+    @endif
     @yield('content')
 </body>
 </html>

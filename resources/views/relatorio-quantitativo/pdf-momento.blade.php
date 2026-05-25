@@ -3,26 +3,24 @@
 @section('title', 'Relatório de Participação e Avaliação por Encontro')
 
 @section('styles')
-    <style>
-        .table-header {
-            font-size: 11px;
-            font-weight: bold;
-            background-color: #f0f0f0;
-            padding: 4px;
-        }
-        .table-data {
-            font-size: 10px;
-            padding: 3px;
-        }
-        .text-end {
-            text-align: right;
-        }
-        .subtotal-row {
-            background-color: #e8daea;
-            font-weight: bold;
-            font-size: 10px;
-        }
-    </style>
+    .table-header {
+        font-size: 11px;
+        font-weight: bold;
+        background-color: #f0f0f0;
+        padding: 4px;
+    }
+    .table-data {
+        font-size: 10px;
+        padding: 3px;
+    }
+    .text-end {
+        text-align: right;
+    }
+    .subtotal-row {
+        background-color: #e8daea;
+        font-weight: bold;
+        font-size: 10px;
+    }
 @endsection
 
 @section('content')

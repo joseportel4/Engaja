@@ -74,15 +74,6 @@
     .check-icon { width: 16px; text-align: center; }
     .icon-ok  { color: #16a34a; font-size: 13px; }
     .icon-no  { color: #9ca3af; font-size: 13px; }
-
-    .footer {
-        margin-top: 28px;
-        padding-top: 8px;
-        border-top: 1px solid #e5e7eb;
-        font-size: 8.5px;
-        color: #9ca3af;
-        text-align: center;
-    }
 @endsection
 
 @section('content')
@@ -273,10 +264,6 @@
         </table>
     </div>
 
-    <div class="footer">
-        Documento gerado automaticamente &middot; Ação Pedagógica #{{ $evento->id }}
-        &middot; {{ now()->format('d/m/Y H:i') }}
-    </div>
 
 </div>
 @endsection
