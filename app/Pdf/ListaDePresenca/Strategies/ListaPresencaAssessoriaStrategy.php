@@ -23,7 +23,7 @@ class ListaPresencaAssessoriaStrategy implements ListaPresencaStrategyInterface
 
         //preenche o cabecalho do template
         $municipioAtividade = $atividade->municipio;
-        $pdf->municipioLabel = $municipioAtividade ? ($municipioAtividade->nome . ' / ' . ($municipioAtividade->estado->sigla ?? '')) : '—';
+        $pdf->municipioLabel = $municipioAtividade ? ($municipioAtividade->nome . ' / ' . ($municipioAtividade->estado->sigla ?? '')) : '';
         $ini = Carbon::parse($atividade->hora_inicio)->format('H:i');
         $fim = Carbon::parse($atividade->hora_fim)->format('H:i');
         $pdf->periodoLabel = "{$ini} às {$fim}";

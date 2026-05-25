@@ -29,8 +29,10 @@ class CertificadoController extends Controller
             $request->merge([
                 'modelo_id' => $payload['modelo_id'],
                 'eventos'   => $payload['eventos'],
+                'unificar'  => $payload['unificar'] ?? false,
             ]);
         }
+        $unificar = $request->boolean('unificar', false);
 
         $data = $request->validate([
             'modelo_id' => ['required', 'exists:modelo_certificados,id'],
@@ -63,49 +65,38 @@ class CertificadoController extends Controller
         $created = 0;
         $skippedZeroWorkload = 0;
         $paraNotificar = [];
-        foreach ($eventos as $evento) {
-            // Somat?rio por participante para este evento, apenas presen?as confirmadas ainda n?o certificadas
-            $presencasEvento = $evento->presencas
-                ->filter(function ($presenca) {
-                    return ($presenca->status ?? null) === 'presente'
-                        && ! $presenca->certificado_emitido
-                        && $presenca->inscricao?->participante?->id;
-                });
 
-            $presencasPorParticipante = $presencasEvento
-                ->groupBy(fn ($p) => $p->inscricao->participante->id);
+        if ($unificar) {
+            $todasPresencas = collect();
+            foreach ($eventos as $evento) {
+                $presencasValidas = $evento->presencas->filter(function ($presenca) {
+                    return ($presenca->status ?? null) === 'presente' && !$presenca->certificado_emitido && $presenca->inscricao?->participante?->id;
+                });
+                $presencasValidas->each(function ($p) use ($evento) { $p->evento_pai = $evento; });
+                $todasPresencas = $todasPresencas->merge($presencasValidas);
+            }
+
+            $presencasPorParticipante = $todasPresencas->groupBy(fn ($p) => $p->inscricao->participante->id);
 
             foreach ($presencasPorParticipante as $participanteId => $presencas) {
-                //logica do filtro de seleção para certificar ou não
-                $certKey = $participanteId . '_' . $evento->id;
+                $certKey = $participanteId . '_unificado';
                 $isException = in_array($certKey, $selectionExceptions);
 
-                if ($selectionMode === 'ALL' && $isException) {
-                    continue;
-                }
-                if ($selectionMode === 'NONE' && !$isException) {
-                    continue;
-                }
-                //fim da lógica de seleção
+                if ($selectionMode === 'ALL' && $isException) continue;
+                if ($selectionMode === 'NONE' && !$isException) continue;
 
                 $participante = $presencas->first()->inscricao?->participante;
-                if (! $participante || ! $participante->user) {
-                    continue;
-                }
+                if (! $participante || ! $participante->user) continue;
 
-                $cargaTotal = (int) $presencas->sum(function ($p) {
-                    return (int) ($p->atividade?->carga_horaria ?? 0);
-                });
+                $cargaTotal = (int) $presencas->sum(fn($p) => (int) ($p->atividade?->carga_horaria ?? 0));
+                if ($cargaTotal <= 0) { $skippedZeroWorkload++; continue; }
 
-                if ($cargaTotal <= 0) {
-                    $skippedZeroWorkload++;
-
-                    continue;
-                }
+                $nomesEventos = $presencas->map(fn($p) => $p->evento_pai->nome)->unique()->values();
+                $eventoNomeFormatado = $this->formatarListaNomes($nomesEventos->toArray());
 
                 $map = [
                     '%participante%' => $participante->user->name,
-                    '%acao%' => $evento->nome,
+                    '%acao%' => $eventoNomeFormatado,
                     '%carga_horaria%' => CargaHoraria::formatMinutos($cargaTotal),
                 ];
 
@@ -115,25 +106,98 @@ class CertificadoController extends Controller
                 $cert = Certificado::create([
                     'modelo_certificado_id' => $modelo->id,
                     'participante_id' => $participante->id,
-                    'evento_id' => $evento->id,
-                    'evento_nome' => $evento->nome,
+                    'evento_id' => null, // Como é unificado, não pertence a 1 só.
+                    'evento_nome' => $eventoNomeFormatado,
                     'codigo_validacao' => Str::uuid()->toString(),
-                    'ano' => (int) ($evento->data_inicio ? date('Y', strtotime($evento->data_inicio)) : date('Y')),
+                    'ano' => (int) date('Y'),
                     'texto_frente' => $textoFrente,
                     'texto_verso' => $textoVerso,
                     'carga_horaria' => $cargaTotal,
                 ]);
+
                 if (! empty($participante->user?->email)) {
-                    $paraNotificar[] = [$participante->user->email, $participante->user->name, $evento->nome, $cert->id];
+                    $paraNotificar[] = [$participante->user->email, $participante->user->name, $eventoNomeFormatado, $cert->id];
                 }
 
-                // Marca todas as presen?as deste participante no evento como certificadas
                 foreach ($presencas as $presenca) {
                     $presenca->certificado_emitido = true;
                     $presenca->save();
                 }
-
                 $created++;
+            }
+        } else {
+            foreach ($eventos as $evento) {
+                // Somat?rio por participante para este evento, apenas presen?as confirmadas ainda n?o certificadas
+                $presencasEvento = $evento->presencas
+                    ->filter(function ($presenca) {
+                        return ($presenca->status ?? null) === 'presente'
+                            && !$presenca->certificado_emitido
+                            && $presenca->inscricao?->participante?->id;
+                    });
+
+                $presencasPorParticipante = $presencasEvento
+                    ->groupBy(fn($p) => $p->inscricao->participante->id);
+
+                foreach ($presencasPorParticipante as $participanteId => $presencas) {
+                    //logica do filtro de seleção para certificar ou não
+                    $certKey = $participanteId . '_' . $evento->id;
+                    $isException = in_array($certKey, $selectionExceptions);
+
+                    if ($selectionMode === 'ALL' && $isException) {
+                        continue;
+                    }
+                    if ($selectionMode === 'NONE' && !$isException) {
+                        continue;
+                    }
+                    //fim da lógica de seleção
+
+                    $participante = $presencas->first()->inscricao?->participante;
+                    if (!$participante || !$participante->user) {
+                        continue;
+                    }
+
+                    $cargaTotal = (int)$presencas->sum(function ($p) {
+                        return (int)($p->atividade?->carga_horaria ?? 0);
+                    });
+
+                    if ($cargaTotal <= 0) {
+                        $skippedZeroWorkload++;
+
+                        continue;
+                    }
+
+                    $map = [
+                        '%participante%' => $participante->user->name,
+                        '%acao%' => $evento->nome,
+                        '%carga_horaria%' => CargaHoraria::formatMinutos($cargaTotal),
+                    ];
+
+                    $textoFrente = $this->renderPlaceholders($modelo->texto_frente ?? '', $map);
+                    $textoVerso = $this->renderPlaceholders($modelo->texto_verso ?? '', $map);
+
+                    $cert = Certificado::create([
+                        'modelo_certificado_id' => $modelo->id,
+                        'participante_id' => $participante->id,
+                        'evento_id' => $evento->id,
+                        'evento_nome' => $evento->nome,
+                        'codigo_validacao' => Str::uuid()->toString(),
+                        'ano' => (int)($evento->data_inicio ? date('Y', strtotime($evento->data_inicio)) : date('Y')),
+                        'texto_frente' => $textoFrente,
+                        'texto_verso' => $textoVerso,
+                        'carga_horaria' => $cargaTotal,
+                    ]);
+                    if (!empty($participante->user?->email)) {
+                        $paraNotificar[] = [$participante->user->email, $participante->user->name, $evento->nome, $cert->id];
+                    }
+
+                    // Marca todas as presen?as deste participante no evento como certificadas
+                    foreach ($presencas as $presenca) {
+                        $presenca->certificado_emitido = true;
+                        $presenca->save();
+                    }
+
+                    $created++;
+                }
             }
         }
 
@@ -158,12 +222,14 @@ class CertificadoController extends Controller
         $data = $request->validate([
             'modelo_id' => ['required', 'exists:modelo_certificados,id'],
             'eventos'   => ['required'],
+            'unificar'  => ['nullable', 'boolean']
         ]);
 
         $sessionKey = 'emissao_certificados_' . Str::uuid();
         session([$sessionKey => [
             'modelo_id' => $data['modelo_id'],
-            'eventos'   => $data['eventos']
+            'eventos'   => $data['eventos'],
+            'unificar'  => $request->boolean('unificar', false)
         ]]);
 
         return redirect()->route('certificados.emitir.preview_lista', ['session_key' => $sessionKey]);
@@ -189,42 +255,96 @@ class CertificadoController extends Controller
 
         $previewData = collect();
         $skippedZeroWorkload = 0;
+        $unificar = $payload['unificar'] ?? false;
 
-        foreach ($eventos as $evento) {
-            $presencasEvento = $evento->presencas->filter(function ($presenca) {
-                return ($presenca->status ?? null) === 'presente'
-                    && !$presenca->certificado_emitido
-                    && $presenca->inscricao?->participante?->id;
-            });
+        if ($unificar) {
+            //logica de unificar certificados
+            $todasPresencas = collect();
 
-            $presencasPorParticipante = $presencasEvento->groupBy(fn ($p) => $p->inscricao->participante->id);
+            //junto todas as presenças válidas de todos os eventos
+            foreach ($eventos as $evento) {
+                $presencasValidas = $evento->presencas->filter(function ($presenca) {
+                    return ($presenca->status ?? null) === 'presente'
+                        && !$presenca->certificado_emitido
+                        && $presenca->inscricao?->participante?->id;
+                });
 
-            $participantesDestaAcao = collect();
+                //injeto a referência do evento pai para usar o nome depois
+                $presencasValidas->each(function ($p) use ($evento) {
+                    $p->evento_pai = $evento;
+                });
+
+                $todasPresencas = $todasPresencas->merge($presencasValidas);
+            }
+
+            //agrupo globalmente pelo participante
+            $presencasPorParticipante = $todasPresencas->groupBy(fn($p) => $p->inscricao->participante->id);
+            $participantesUnificados = collect();
 
             foreach ($presencasPorParticipante as $participanteId => $presencas) {
                 $participante = $presencas->first()->inscricao?->participante;
                 if (!$participante || !$participante->user) continue;
 
-                $cargaTotal = (int) $presencas->sum(fn($p) => (int) ($p->atividade?->carga_horaria ?? 0));
-
+                $cargaTotal = (int)$presencas->sum(fn($p) => (int)($p->atividade?->carga_horaria ?? 0));
                 if ($cargaTotal <= 0) {
                     $skippedZeroWorkload++;
                     continue;
                 }
 
-                $participantesDestaAcao->push([
-                    'id'            => $participante->id . '_' . $evento->id,
-                    'nome'          => $participante->user->name,
-                    'email'         => $participante->user->email,
-                    'cpf'           => $participante->cpf ?? '-',
+                //aqui resgata os nomes únicos dos eventos que ele participou
+                $nomesEventos = $presencas->map(fn($p) => $p->evento_pai->nome)->unique()->values();
+                $eventoNomeFormatado = $this->formatarListaNomes($nomesEventos->toArray());
+
+                $participantesUnificados->push([
+                    'id' => $participante->id . '_unificado',
+                    'nome' => $participante->user->name,
+                    'email' => $participante->user->email,
+                    'cpf' => $participante->cpf ?? '-',
                     'carga_horaria' => CargaHoraria::formatMinutos($cargaTotal),
-                    'evento_nome'   => $evento->nome
+                    'evento_nome' => $eventoNomeFormatado
                 ]);
             }
 
-            $participantesOrdenados = $participantesDestaAcao->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values();
-
+            $participantesOrdenados = $participantesUnificados->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values();
             $previewData = $previewData->merge($participantesOrdenados);
+        } else {
+
+            foreach ($eventos as $evento) {
+                $presencasEvento = $evento->presencas->filter(function ($presenca) {
+                    return ($presenca->status ?? null) === 'presente'
+                        && !$presenca->certificado_emitido
+                        && $presenca->inscricao?->participante?->id;
+                });
+
+                $presencasPorParticipante = $presencasEvento->groupBy(fn($p) => $p->inscricao->participante->id);
+
+                $participantesDestaAcao = collect();
+
+                foreach ($presencasPorParticipante as $participanteId => $presencas) {
+                    $participante = $presencas->first()->inscricao?->participante;
+                    if (!$participante || !$participante->user) continue;
+
+                    $cargaTotal = (int)$presencas->sum(fn($p) => (int)($p->atividade?->carga_horaria ?? 0));
+
+                    if ($cargaTotal <= 0) {
+                        $skippedZeroWorkload++;
+                        continue;
+                    }
+
+                    $participantesDestaAcao->push([
+                        'id' => $participante->id . '_' . $evento->id,
+                        'nome' => $participante->user->name,
+                        'email' => $participante->user->email,
+                        'cpf' => $participante->cpf ?? '-',
+                        'carga_horaria' => CargaHoraria::formatMinutos($cargaTotal),
+                        'evento_nome' => $evento->nome
+                    ]);
+                }
+
+                $participantesOrdenados = $participantesDestaAcao->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)->values();
+
+                $previewData = $previewData->merge($participantesOrdenados);
+            }
         }
 
         //paginação
@@ -582,5 +702,13 @@ class CertificadoController extends Controller
         $pdf->loadView('certificados.pdf', ['certificado' => $certificado]);
 
         return $pdf->stream('certificado-preview.pdf');
+    }
+
+    private function formatarListaNomes(array $nomes): string
+    {
+        if (count($nomes) === 0) return '';
+        if (count($nomes) === 1) return $nomes[0];
+        $ultimo = array_pop($nomes);
+        return implode(', ', $nomes) . ' e ' . $ultimo;
     }
 }

@@ -26,32 +26,41 @@
     <div class="card shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0" style="table-layout: fixed; min-width: 1000px;">
                     <thead class="table-light">
                     <tr>
-                        <th>Nome</th>
-                        <th>E-mail</th>
-                        <th>CPF</th>
-                        <th>Ação Pedagógica</th>
-                        <th>Carga Horária no Certificado</th>
+                        <th style="width: 5%; text-align: center;">
+                            <input type="checkbox" id="checkbox-all-page" class="form-check-input" checked>
+                        </th>
+                        <th style="width: 22%;">Nome</th>
+                        <th style="width: 20%;">E-mail</th>
+                        <th style="width: 13%;">CPF</th>
+                        <th style="width: 28%;">Ação Pedagógica</th>
+                        <th style="width: 12%; text-align: center;">Carga Horária</th>
                     </tr>
                     </thead>
                     <tbody>
                     @forelse ($paginator as $row)
-                    <tr>
-                        <td>
-                            <input type="checkbox" class="form-check-input cert-checkbox" value="{{ $row['id'] }}">
-                        </td>
-                        <td class="fw-medium">{{ $row['nome'] }}</td>
-                        <td>{{ $row['email'] }}</td>
-                        <td>{{ $row['cpf'] }}</td>
-                        <td>{{ $row['evento_nome'] }}</td>
-                        <td><span class="badge bg-secondary-subtle text-secondary border">{{ $row['carga_horaria'] }}</span></td>
-                    </tr>
+                        <tr>
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input cert-checkbox" value="{{ $row['id'] }}">
+                            </td>
+                            <td class="fw-medium text-wrap text-break">{{ $row['nome'] }}</td>
+                            <td class="text-wrap text-break">{{ $row['email'] }}</td>
+                            <td class="text-nowrap">{{ $row['cpf'] }}</td>
+                            <td>
+                                <div class="text-wrap pe-1" style="max-height: 75px; overflow-y: auto; font-size: 0.9em; line-height: 1.4;">
+                                    {{ $row['evento_nome'] }}
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary-subtle text-secondary border">{{ $row['carga_horaria'] }}</span>
+                            </td>
+                        </tr>
                     @empty
-                    <tr>
-                        <td colspan="5" class="text-center text-muted py-4">Nenhum participante apto para certificação nestas ações.</td>
-                    </tr>
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Nenhum participante apto para certificação nestas ações.</td>
+                        </tr>
                     @endforelse
                     </tbody>
                 </table>

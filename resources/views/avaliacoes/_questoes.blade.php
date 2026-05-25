@@ -128,7 +128,7 @@
                   <div class="border rounded p-3 bg-light">
                     <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                       <div>
-                        <label class="form-label small text-muted mb-1">Opções da resposta única</label>
+                        <label class="form-label small text-muted mb-1">Opções de resposta </label>
                         <div class="form-text mt-0">Inclua as opções exibidas no select.</div>
                       </div>
                       <button type="button" class="btn btn-sm btn-outline-primary" data-add-resposta-unica-option>Adicionar opção</button>
@@ -381,7 +381,7 @@
       return;
     }
 
-    const mostrar = select.value === 'unica';
+    const mostrar = select.value === 'unica' || select.value === 'multipla';
     wrapper.style.display = mostrar ? '' : 'none';
 
     if (mostrar && !wrapper.querySelector('[data-resposta-unica-option]')) {

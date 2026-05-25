@@ -34,7 +34,7 @@
                 <input type="date" name="de" value="{{ request('de') }}" class="form-control" placeholder="de">
             </div>
             <div class="col-md-2 d-grid">
-                <button class="btn btn-outline-secondary">Filtrar</button>
+                <button class="btn btn-engaja">Filtrar</button>
             </div>
         </form>
 
@@ -158,6 +158,11 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div class="form-check form-switch mt-3 mb-2 p-3 bg-light border rounded">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" role="switch" name="unificar" id="unificarSwitch" value="1" style="transform: scale(1.2);">
+                            <label class="form-check-label fw-bold" for="unificarSwitch">Unificar ações para a certificação</label>
+                            <div class="text-muted small mt-1">Se ativada, o sistema juntará todos os eventos selecionados em um único certificado por pessoa (somando a carga horária).</div>
+                        </div>
                         <div class="alert alert-info small mb-0">
                             Serão substituídas as tags: <code>%participante%</code> (nome do participante) e <code>%acao%</code> (nome da ação pedagógica).
                         </div>
@@ -174,93 +179,110 @@
     @endhasanyrole
 
 @push('scripts')
-<script>
-  (function() {
-    const selectModelo = document.getElementById('modelo_id');
-    const hiddenEventos = document.getElementById('eventosSelecionados');
-    const btnPreview = document.getElementById('btn-preview-certificado');
-    const btnEmitir = document.getElementById('btn-confirmar-emissao');
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const STORAGE_KEY = 'eventos_selecionados_certificacao';
 
-    const toggleButtons = () => {
-      const hasModelo = selectModelo && selectModelo.value;
-      const hasEventos = hiddenEventos && hiddenEventos.value;
-      const enable = Boolean(hasModelo && hasEventos);
-      if (btnPreview) btnPreview.disabled = !enable;
-      if (btnEmitir) btnEmitir.disabled = !enable;
-    };
-
-    if (selectModelo) {
-      selectModelo.addEventListener('change', toggleButtons);
-    }
-
-    if (hiddenEventos) {
-      hiddenEventos.addEventListener('change', toggleButtons);
-    }
-
-    if (btnPreview) {
-      btnPreview.addEventListener('click', () => {
-        if (!selectModelo.value || !hiddenEventos.value) return;
-        const params = new URLSearchParams({
-          modelo_id: selectModelo.value,
-          eventos: hiddenEventos.value,
-        });
-        window.open(`{{ route('certificados.preview') }}?${params.toString()}`, '_blank');
-      });
-    }
-
-    toggleButtons();
-  })();
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const checkAll = document.getElementById('check-all');
-    const checks = Array.from(document.querySelectorAll('.evento-check'));
-    const btnEmitir = document.getElementById('btn-emitir-certificados');
-    const modalEl = document.getElementById('modalEmitirCertificados');
-    let modalInstance = null;
-    const inputEventos = document.getElementById('eventosSelecionados');
-    const btnConfirmar = document.getElementById('btn-confirmar-emissao');
-
-    const syncButtons = () => {
-        const selecionados = checks.filter(c => c.checked).map(c => c.value);
-        const hasSel = selecionados.length > 0;
-        if (btnEmitir) btnEmitir.disabled = !hasSel;
-        if (btnConfirmar) btnConfirmar.disabled = !hasSel;
-        if (inputEventos) inputEventos.value = selecionados.join(',');
-    };
-
-    if (checkAll) {
-        checkAll.addEventListener('change', () => {
-            checks.forEach(c => { c.checked = checkAll.checked; });
-            syncButtons();
-        });
-    }
-
-    checks.forEach(c => c.addEventListener('change', syncButtons));
-
-    if (modalEl && window.bootstrap?.Modal) {
-        modalInstance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
-        modalEl.addEventListener('show.bs.modal', syncButtons);
-    }
-
-    if (btnEmitir && modalEl) {
-        btnEmitir.addEventListener('click', (e) => {
-            if (btnEmitir.disabled) {
-                e.preventDefault();
-                return;
+            //se a URL não tem parametros, eh porque o usuario clicou no menu. eh limpada a sessao para começar do zero.
+            if (!window.location.search) {
+                sessionStorage.removeItem(STORAGE_KEY);
             }
-            if (modalInstance && modalInstance.show) {
-                modalInstance.show();
-            } else {
-                modalEl.classList.add('show');
-                modalEl.style.display = 'block';
-                modalEl.removeAttribute('aria-hidden');
-            }
-        });
-    }
 
-    syncButtons();
-});
-</script>
+            let selectedSet = new Set(JSON.parse(sessionStorage.getItem(STORAGE_KEY)) || []);
+
+            //captura dos elementos html
+            const checkAll = document.getElementById('check-all');
+            const checks = Array.from(document.querySelectorAll('.evento-check'));
+            const inputEventos = document.getElementById('eventosSelecionados');
+            const btnEmitir = document.getElementById('btn-emitir-certificados');
+            const btnConfirmar = document.getElementById('btn-confirmar-emissao');
+            const btnPreview = document.getElementById('btn-preview-certificado');
+            const selectModelo = document.getElementById('modelo_id');
+
+            //atualiza todos os botoes e inputs baseado na memoria
+            const syncGlobalState = () => {
+
+                sessionStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(selectedSet)));
+
+                if (inputEventos) inputEventos.value = Array.from(selectedSet).join(',');
+
+                //habilita/desabilita botao de emitir
+                const hasSel = selectedSet.size > 0;
+                if (btnEmitir) btnEmitir.disabled = !hasSel;
+
+                //habilita/desabilita botões dentro do modal
+                const hasModelo = selectModelo && selectModelo.value;
+                const enableModalBtns = hasSel && hasModelo;
+                if (btnConfirmar) btnConfirmar.disabled = !enableModalBtns;
+                if (btnPreview) btnPreview.disabled = !enableModalBtns;
+
+                //se todos os checkboxes visíveis nesta pagina estiverem marcados, marca o "checkAll"
+                if (checkAll && checks.length > 0) {
+                    checkAll.checked = checks.every(c => c.checked);
+                }
+            };
+
+            checks.forEach(c => {
+                if (selectedSet.has(c.value)) {
+                    c.checked = true;
+                }
+
+                c.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        selectedSet.add(e.target.value);
+                    } else {
+                        selectedSet.delete(e.target.value);
+                    }
+                    syncGlobalState();
+                });
+            });
+
+            if (checkAll) {
+                checkAll.addEventListener('change', (e) => {
+                    const isChecked = e.target.checked;
+                    checks.forEach(c => {
+                        c.checked = isChecked;
+                        if (isChecked) {
+                            selectedSet.add(c.value);
+                        } else {
+                            selectedSet.delete(c.value);
+                        }
+                    });
+                    syncGlobalState();
+                });
+            }
+
+            //eventos do modal
+            if (selectModelo) {
+                selectModelo.addEventListener('change', syncGlobalState);
+            }
+
+            if (btnPreview) {
+                btnPreview.addEventListener('click', () => {
+                    if (!selectModelo.value || selectedSet.size === 0) return;
+                    const params = new URLSearchParams({
+                        modelo_id: selectModelo.value,
+                        eventos: Array.from(selectedSet).join(','),
+                    });
+                    window.open(`{{ route('certificados.preview') }}?${params.toString()}`, '_blank');
+                });
+            }
+
+            const modalEl = document.getElementById('modalEmitirCertificados');
+            if (btnEmitir && modalEl) {
+                btnEmitir.addEventListener('click', (e) => {
+                    if (btnEmitir.disabled) {
+                        e.preventDefault();
+                        return;
+                    }
+                    const modalInstance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modalInstance.show();
+                });
+            }
+
+            //roda a sincronizacao uma vez ao carregar para garantir que o estado inicie perfeito
+            syncGlobalState();
+        });
+    </script>
 @endpush
 @endsection
