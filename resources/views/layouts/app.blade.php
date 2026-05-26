@@ -11,11 +11,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
 
+  {{-- O Vite agora controla todas as cores via SASS --}}
   @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 
   <style>
     :root {
-      --engaja-purple: #421944;
+      --engaja-teal: #104E5B;
     }
 
     body {
@@ -60,7 +61,7 @@
       flex: 0 0 auto;
       width: max-content;
       min-width: 300px;
-      background: linear-gradient(180deg, #421944 0%, #2c1230 100%);
+      background: linear-gradient(180deg, #104E5B 0%, #104E5B 100%);
       color: #f5f3ff;
       min-height: 100vh;
       height: 100vh;
@@ -560,11 +561,11 @@
       </div>
     </div>
   </div>
-  
+
   @if (empty($exibirModalCompletarPerfil) && (!empty($showProfilePhotoPromptModal) || $errors->getBag('photoPrompt')->isNotEmpty()))
     @include('layouts.partials.profile-photo-prompt-modal')
   @endif
-  
+
   @livewireScripts
 </body>
 
@@ -812,7 +813,7 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      
+
       document.addEventListener('change', function (e) {
           const cb = e.target;
           if (!cb.classList.contains('js-checklist-item')) return;
@@ -840,18 +841,18 @@
 
           // ── Botão confirmar ─────────
           const btn = document.querySelector(`.js-checklist-confirm[data-modal="${modalId}"]`);
-          if (btn) btn.disabled = false; 
+          if (btn) btn.disabled = false;
       });
 
       // ── Reset ao fechar ─────────────────────────────────
       document.querySelectorAll('.modal').forEach(function (modalEl) {
           modalEl.addEventListener('hidden.bs.modal', function () {
               const id    = modalEl.id;
-              
+
               if (id === 'modalCompletarPerfil') return;
 
               const btn = modalEl.querySelector('.js-checklist-confirm');
-              if (btn) btn.disabled = false; 
+              if (btn) btn.disabled = false;
           });
       });
 
