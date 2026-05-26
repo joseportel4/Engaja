@@ -61,11 +61,39 @@
     {{-- Filtro --}}
     <div class="card shadow-sm mb-4">
         <div class="card-body py-3">
-            <form method="GET" action="{{ route('avaliacao-atividade.index') }}" class="row g-2 align-items-end">
-                <div class="col-md-6">
-                    <label class="form-label mb-1 small">Buscar (momento, ação ou educador)</label>
-                    <input type="text" name="search" class="form-control"
-                           value="{{ $search }}" placeholder="Digite para filtrar...">
+            <form method="GET" action="{{ route('avaliacao-atividade.index') }}" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label mb-1 small">Ação Pedagógica</label>
+                    <select name="acao_ids[]" id="filter-acao-relatorio" class="form-select" multiple data-multiselect data-placeholder="Selecione uma ou mais ações">
+                        @foreach($acoesDisponiveis as $acao)
+                            <option value="{{ $acao->id }}" @selected(in_array($acao->id, $acaoIds, true))>
+                                {{ $acao->nome }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label mb-1 small">Momentos</label>
+                    <select name="momento_ids[]" id="filter-momento-relatorio" class="form-select" multiple data-dependent-moment data-placeholder="Selecione primeiro uma ação" @disabled(empty($acaoIds))>
+                        @foreach($atividadesDisponiveis->whereIn('evento_id', $acaoIds) as $atividadeOpcao)
+                            <option value="{{ $atividadeOpcao->id }}" @selected(in_array($atividadeOpcao->id, $momentoIds, true))>
+                                {{ $atividadeOpcao->descricao ?? 'Momento sem descrição' }}
+                                @if($atividadeOpcao->dia)
+                                    ({{ \Carbon\Carbon::parse($atividadeOpcao->dia)->format('d/m/Y') }})
+                                @endif
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label mb-1 small">Municípios</label>
+                    <select name="municipio_ids[]" id="filter-municipio-relatorio" class="form-select" multiple data-multiselect data-placeholder="Todos os municípios">
+                        @foreach($municipiosDisponiveis as $municipio)
+                            <option value="{{ $municipio->id }}" @selected(in_array((string) $municipio->id, array_map('strval', request()->input('municipio_ids', [])), true))>
+                                {{ $municipio->nome_com_estado }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="col-auto">
                     <button type="submit" class="btn btn-engaja" style="background-color:#421944; color:white;">Aplicar</button>
@@ -167,4 +195,16 @@
     @endif
 
 </div>
+
+@php
+    $momentosOptions = $atividadesDisponiveis->map(function ($atividade) {
+        return [
+            'value' => (string) $atividade->id,
+            'acao_id' => (string) $atividade->evento_id,
+            'text' => ($atividade->descricao ?? 'Momento sem descrição')
+                . ($atividade->dia ? ' (' . \Carbon\Carbon::parse($atividade->dia)->format('d/m/Y') . ')' : ''),
+        ];
+    })->values();
+@endphp
+<script type="application/json" id="relatorio-momentos-options">@json($momentosOptions)</script>
 @endsection

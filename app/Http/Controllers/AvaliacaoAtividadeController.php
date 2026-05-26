@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Atividade;
 use App\Models\AvaliacaoAtividade;
+use App\Models\Evento;
+use App\Models\Municipio;
 use App\Models\Participante;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -26,9 +28,30 @@ class AvaliacaoAtividadeController extends Controller
         'avaliacao_destaques' => 'Que destaques sobre esta ação você considera importantes?',
     ];
 
+    private function parseIntArray(Request $request, string $key): array
+    {
+        return collect($request->input($key, []))
+            ->map(fn ($value) => (int) $value)
+            ->filter(fn ($value) => $value > 0)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public function index(Request $request)
     {
-        $query = AvaliacaoAtividade::with(['atividade.evento', 'atividade.municipios', 'user'])
+        $acaoIds = $this->parseIntArray($request, 'acao_ids');
+        $municipioIds = $this->parseIntArray($request, 'municipio_ids');
+        $momentoIds = empty($acaoIds)
+            ? []
+            : Atividade::query()
+                ->whereIn('evento_id', $acaoIds)
+                ->whereIn('id', $this->parseIntArray($request, 'momento_ids'))
+                ->pluck('id')
+                ->all();
+
+        $query = AvaliacaoAtividade::query()
+            ->with(['atividade.evento', 'atividade.municipios', 'user'])
             ->whereHas('atividade');
 
         $user = $request->user();
@@ -37,14 +60,30 @@ class AvaliacaoAtividadeController extends Controller
             $query->where('user_id', $user->id);
         }
 
-        $search = trim((string) $request->query('search', ''));
-        if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->whereHas('atividade', fn ($a) => $a->where('descricao', 'like', "%{$search}%"))
-                    ->orWhereHas('atividade.evento', fn ($e) => $e->where('nome', 'like', "%{$search}%"))
-                    ->orWhere('nome_educador', 'like', "%{$search}%");
+        $query->when(! empty($acaoIds), fn ($q) => $q->whereHas('atividade', fn ($a) => $a->whereIn('evento_id', $acaoIds)));
+        $query->when(! empty($momentoIds), fn ($q) => $q->whereIn('atividade_id', $momentoIds));
+        $query->when(! empty($municipioIds), function ($q) use ($municipioIds) {
+            $q->whereHas('atividade', function ($a) use ($municipioIds) {
+                $a->whereIn('municipio_id', $municipioIds)
+                    ->orWhereHas('municipios', fn ($m) => $m->whereIn('municipios.id', $municipioIds));
             });
-        }
+        });
+
+        $atividadesDisponiveis = Atividade::query()
+            ->with('evento')
+            ->whereNotNull('evento_id')
+            ->orderBy('descricao')
+            ->get(['id', 'descricao', 'dia', 'evento_id', 'municipio_id']);
+
+        $acoesDisponiveis = Evento::query()
+            ->whereIn('id', $atividadesDisponiveis->pluck('evento_id')->filter()->unique()->values())
+            ->orderBy('nome')
+            ->get(['id', 'nome']);
+
+        $municipiosDisponiveis = Municipio::query()
+            ->with('estado:id,sigla')
+            ->orderBy('nome')
+            ->get();
 
         $relatorios = $query->orderByDesc('updated_at')->get();
 
@@ -64,7 +103,15 @@ class AvaliacaoAtividadeController extends Controller
 
         $camposPerguntas = self::REPORT_QUESTION_FIELDS;
 
-        return view('avaliacao-atividade.index', compact('acoesAgrupadas', 'camposPerguntas', 'search'));
+        return view('avaliacao-atividade.index', compact(
+            'acoesAgrupadas',
+            'camposPerguntas',
+            'acoesDisponiveis',
+            'atividadesDisponiveis',
+            'municipiosDisponiveis',
+            'acaoIds',
+            'momentoIds'
+        ));
     }
 
     private function rules(): array

@@ -1,12 +1,84 @@
-﻿import "./bootstrap";
+import "./bootstrap";
 import "../css/graficos.css";
 import "./graficos-ranking-municipios";
 import "./graficos-distribuicao-dimensoes";
+import "tom-select/dist/css/tom-select.bootstrap5.min.css";
+import TomSelect from "tom-select";
 
 // import bundle com Popper e exporta classes Bootstrap
 import * as bootstrap from "bootstrap";
 
 window.bootstrap = bootstrap;
+window.TomSelect = TomSelect;
+
+const loadMultiSelectsIfNeeded = () => {
+    document.querySelectorAll("[data-multiselect]").forEach((el) => {
+        if (el.tomselect) {
+            return;
+        }
+
+        new TomSelect(el, {
+            plugins: ["remove_button"],
+            hideSelected: true,
+            closeAfterSelect: false,
+            maxOptions: null,
+            create: false,
+            placeholder: el.dataset.placeholder || "Selecione...",
+        });
+    });
+};
+
+const loadReportMomentSelectIfNeeded = () => {
+    const actionEl = document.getElementById("filter-acao-relatorio");
+    const momentEl = document.getElementById("filter-momento-relatorio");
+    const optionsEl = document.getElementById("relatorio-momentos-options");
+
+    if (!actionEl || !momentEl || !optionsEl || momentEl.tomselect) {
+        return;
+    }
+
+    const allMoments = JSON.parse(optionsEl.textContent || "[]");
+    const actions = actionEl.tomselect;
+    const moments = new TomSelect(momentEl, {
+        plugins: ["remove_button"],
+        hideSelected: true,
+        closeAfterSelect: false,
+        maxOptions: null,
+        create: false,
+        placeholder: momentEl.dataset.placeholder,
+    });
+
+    const updateMoments = () => {
+        const selectedActions = new Set(actions?.items.map(String) || []);
+        const allowedMoments = allMoments.filter((moment) =>
+            selectedActions.has(String(moment.acao_id)),
+        );
+        const allowedValues = new Set(allowedMoments.map((moment) => String(moment.value)));
+        const selectedMoments = moments.items.filter((value) =>
+            allowedValues.has(String(value)),
+        );
+
+        moments.clear(true);
+        moments.clearOptions();
+
+        if (selectedActions.size === 0) {
+            moments.settings.placeholder = "Selecione primeiro uma ação";
+            moments.disable();
+            moments.inputState();
+            return;
+        }
+
+        moments.settings.placeholder = "Todos os momentos";
+        moments.enable();
+        moments.addOptions(allowedMoments);
+        moments.setValue(selectedMoments, true);
+        moments.refreshOptions(false);
+        moments.inputState();
+    };
+
+    actions?.on("change", updateMoments);
+    updateMoments();
+};
 
 // Carrega Fabric.js apenas nas telas que têm o canvas de certificado
 const loadFabricIfNeeded = () => {
@@ -24,10 +96,18 @@ const loadFabricIfNeeded = () => {
 };
 
 if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", loadMultiSelectsIfNeeded, {
+        once: true,
+    });
+    document.addEventListener("DOMContentLoaded", loadReportMomentSelectIfNeeded, {
+        once: true,
+    });
     document.addEventListener("DOMContentLoaded", loadFabricIfNeeded, {
         once: true,
     });
 } else {
+    loadMultiSelectsIfNeeded();
+    loadReportMomentSelectIfNeeded();
     loadFabricIfNeeded();
 }
 
