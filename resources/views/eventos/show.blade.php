@@ -1,858 +1,830 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+@extends('layouts.app')
 
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>{{ config('app.name', 'Engaja') }}</title>
-  <link rel="icon" type="image/png" href="{{ asset('images/engaja-favicon.png') }}">
+@section('content')
+<style>
+  :root {
+    --engaja: #421944;
+  }
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+  .ev-card {
+    border-radius: .8rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .06);
+  }
 
-  @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+  .ev-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: .75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef2e6;
+  }
 
-  <style>
-    :root {
-      --engaja-purple: #421944;
-    }
+  .ev-chip {
+    display: inline-block;
+    padding: .35rem .65rem;
+    border-radius: 999px;
+    border: 1px solid #dee2e6;
+    font-size: .85rem;
+  }
 
-    body {
-      font-family: 'Montserrat', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    }
+  .nav-day .nav-link {
+    border-radius: 999px;
+  }
 
-    .navbar-brand {
-      font-weight: 700;
-      letter-spacing: .2px;
-    }
-  </style>
-  <style>
-    .form-control {
-      border-color: #b1b6bbff !important;
-      /* cinza escuro padrão Bootstrap */
-    }
+  .nav-day .nav-link.active {
+    background: var(--engaja);
+    color: #fff;
+  }
 
-    .form-control:focus {
-      border-color: #421944 !important;
-      /* roxo Engaja no foco */
-      box-shadow: 0 0 0 0.2rem rgba(66, 25, 68, 0.25);
-      /* glow roxo no foco */
-    }
+  .program-sec {
+    position: relative;
+  }
 
-    .form-select {
-      border-color: #b1b6bbff !important;
-    }
+  .day-tabs {
+    overflow: auto;
+    white-space: nowrap;
+    gap: .5rem;
+  }
 
-    .form-select:focus {
-      border-color: #421944 !important;
-      box-shadow: 0 0 0 0.2rem rgba(66, 25, 68, 0.25);
-    }
-  </style>
-  <style>
-    .admin-shell {
-      min-height: 100vh;
-      background: #f6f7fb;
-      transition: all .2s ease;
-    }
+  .day-tabs .nav-link {
+    border-radius: 999px;
+    padding: .4rem .9rem;
+    font-weight: 600;
+    border: 1px solid #e7e7e7;
+    color: #333;
+  }
 
-    .admin-sidebar {
-      flex: 0 0 auto;
-      width: max-content;
-      min-width: 300px;
-      background: linear-gradient(180deg, #421944 0%, #2c1230 100%);
-      color: #f5f3ff;
-      min-height: 100vh;
-      height: 100vh;
-      position: sticky;
-      top: 0;
-      padding: 1.5rem 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-      z-index: 1030;
-      transition: transform .3s ease;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-    }
+  .day-tabs .nav-link.active {
+    background: var(--engaja);
+    color: #fff;
+    border-color: var(--engaja);
+  }
 
-    .admin-sidebar__brand {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: .75rem;
-      padding: 0 .25rem;
-    }
+  .timeline {
+    position: relative;
+    padding-left: 2.25rem;
+  }
 
-    .admin-sidebar__actions {
-      display: flex;
-      align-items: center;
-      gap: .4rem;
-    }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 1rem;
+    top: .25rem;
+    bottom: .25rem;
+    width: 2px;
+    background: linear-gradient(#ececec, #d9d9d9);
+  }
 
-    .admin-collapse-btn {
-      border-radius: .9rem;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #fff;
-      background: rgba(255, 255, 255, 0.08);
-      padding: .35rem .55rem;
-      line-height: 1;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
+  .t-item {
+    position: relative;
+    margin-bottom: 1rem;
+  }
 
-    .admin-collapse-btn:hover {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.16);
-    }
+  .t-dot {
+    display: none;
+  }
 
-    .admin-sidebar__brand {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: .75rem;
-    }
+  .program-card {
+    border: 1px solid #ececec;
+    border-radius: .9rem;
+    padding: 1rem;
+    transition: transform .15s ease, box-shadow .15s ease;
+    background: #fff;
+  }
 
-    .admin-sidebar__logo {
-      height: 38px;
-    }
+  .program-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .06);
+  }
 
-    .admin-sidebar__logo-mini {
-      display: none;
-      height: 32px;
-    }
+  .program-time {
+    font-weight: 800;
+    font-size: .95rem;
+    color: #6c757d;
+    letter-spacing: .3px;
+  }
 
-    .admin-sidebar__section {
-      display: grid;
-      gap: .35rem;
-      padding: .5rem 0 1rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
+  .program-title {
+    font-weight: 700;
+    margin: .15rem 0 .35rem;
+  }
 
-    .admin-sidebar__section:last-of-type {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
+  .program-meta {
+    font-size: .85rem;
+    color: #6c757d;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+  }
 
-    .admin-sidebar__label {
-      text-transform: uppercase;
-      letter-spacing: .6px;
-      color: rgba(255, 255, 255, 0.55);
-      font-size: .75rem;
-      margin-bottom: .35rem;
-      font-weight: 700;
-    }
+  .chip {
+    border: 1px solid #e6e6e6;
+    border-radius: 999px;
+    padding: .2rem .55rem;
+    font-size: .8rem;
+  }
 
-    .admin-nav-link {
-      display: flex;
-      align-items: center;
-      gap: .75rem;
-      padding: .65rem .75rem;
-      color: #f5f3ff;
-      text-decoration: none;
-      border-radius: .9rem;
-      transition: all .2s ease;
-      font-weight: 600;
-      width: 100%;
-      max-width: 100%;
-      box-sizing: border-box;
-      overflow: visible;
-    }
+  .actions .btn {
+    padding: .25rem .5rem;
+  }
 
-    .admin-nav-link.btn {
-      border: none;
-      background: transparent;
-      text-align: left;
-    }
+  .empty-state {
+    border: 1px dashed #d8d8d8;
+    border-radius: .9rem;
+    padding: 1.25rem;
+    text-align: center;
+    color: #6c757d;
+  }
+</style>
 
-    .admin-nav-link:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #fff;
-    }
+<div class="container">
 
-    .admin-nav-link.active {
-      background: #f8f7fb;
-      color: #2c1230;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-    }
-
-    .admin-nav-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: .9rem;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255, 255, 255, 0.12);
-      font-weight: 700;
-      font-size: .8rem;
-      letter-spacing: .3px;
-      flex-shrink: 0;
-      color: inherit;
-    }
-
-    .admin-nav-link.active .admin-nav-icon {
-      background: linear-gradient(135deg, #421944, #62305f);
-      color: #fff;
-    }
-
-    .admin-nav-text {
-      flex: 0 0 auto;
-      white-space: nowrap;
-      line-height: 1.2;
-    }
-
-    .admin-topbar {
-      background: #ffffff;
-      border-bottom: 1px solid #e7e8ed;
-      padding: 1rem 1.25rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      position: sticky;
-      top: 0;
-      z-index: 1010;
-      box-sizing: border-box;
-      width: 100%;
-    }
-
-    .admin-topbar__title {
-      font-size: 1rem;
-      margin: 0;
-    }
-
-    .admin-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background: #421944;
-      color: #fff;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-
-    .admin-avatar--image {
-      object-fit: cover;
-      background: #fff;
-      border: 1px solid #e7e8ed;
-    }
-
-    .admin-main {
-      flex: 1 1 auto;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .admin-content {
-      flex: 1 1 auto;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-    }
-
-    .admin-main {
-      width: 100%;
-      overflow-x: hidden;
-    }
-
-    .admin-page-header {
-      background: #fff;
-      border: 1px solid #e7e8ed;
-      border-radius: 1rem;
-      padding: 1rem 1.25rem;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
-    }
-
-    .admin-sidebar-backdrop {
-      display: none;
-    }
-
-    .admin-shell.is-collapsed .admin-sidebar {
-      width: 86px;
-      min-width: 0;
-      max-width: 86px;
-      flex: 0 0 86px;
-      box-sizing: border-box;
-      align-items: center;
-      padding-left: 0.45rem;
-      padding-right: 0.45rem;
-      overflow-x: hidden;
-    }
-
-    .admin-shell.is-collapsed .admin-sidebar__section {
-      justify-items: center;
-    }
-
-    .admin-shell.is-collapsed .admin-nav-text,
-    .admin-shell.is-collapsed .admin-sidebar__label,
-    .admin-shell.is-collapsed .admin-sidebar__brand div.lh-sm {
-      display: none;
-    }
-
-    .admin-shell.is-collapsed .admin-sidebar__logo {
-      height: 34px;
-    }
-
-    .admin-shell.is-collapsed .admin-topbar {
-      padding-left: 1rem;
-    }
-
-    .admin-shell.is-collapsed .admin-sidebar__logo-main {
-      display: none;
-    }
-
-    .admin-shell.is-collapsed .admin-sidebar__logo-mini {
-      display: block;
-    }
-
-    .admin-shell.is-collapsed .admin-sidebar__brand {
-      justify-content: center;
-      padding: 0;
-    }
-
-    .admin-shell.is-collapsed .admin-sidebar__brand a {
-      justify-content: center;
-      gap: 0;
-    }
-
-    .admin-shell.is-collapsed .admin-nav-link {
-      padding: .55rem .35rem;
-      justify-content: center;
-      width: auto;
-      max-width: 100%;
-    }
-
-    .admin-shell.is-collapsed .admin-sidebar form {
-      display: flex;
-      justify-content: center;
-      width: 100%;
-    }
-
-    .admin-shell.is-collapsed .admin-nav-link.btn.w-100 {
-      width: auto !important;
-    }
-
-    .admin-shell.is-collapsed .admin-nav-icon {
-      margin: 0;
-      width: 38px;
-      height: 38px;
-    }
-
-    .admin-shell.is-collapsed .admin-nav-link.active {
-      box-shadow: none;
-    }
-
-    @media (max-width: 991.98px) {
-      .admin-sidebar {
-        position: fixed;
-        inset: 0 auto 0 0;
-        transform: translateX(-105%);
-        width: 260px;
-      }
-
-      .admin-topbar {
-        padding: .85rem 1rem;
-      }
-
-      .admin-sidebar.is-open {
-        transform: translateX(0);
-      }
-
-      .admin-sidebar-backdrop {
-        display: block;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.4);
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity .3s ease;
-        z-index: 1020;
-      }
-
-      .admin-sidebar-backdrop.show {
-        opacity: 1;
-        visibility: visible;
-      }
-    }
-
-    body.sidebar-open {
-      overflow: hidden;
-    }
-  </style>
-  @stack('styles')
-  @livewireStyles
-</head>
-
-@php($useSidebar = auth()->check())
-<body class="{{ $useSidebar ? 'min-vh-100 bg-light' : 'd-flex flex-column min-vh-100' }}">
-  @if($useSidebar)
-    <div class="admin-shell d-flex">
-      @include('layouts.partials.admin-sidebar')
-      <div class="admin-sidebar-backdrop" id="adminSidebarBackdrop"></div>
-      <div class="admin-main">
-        <header class="admin-topbar shadow-sm">
-          <div class="d-flex align-items-center gap-3">
-            <button class="btn btn-outline-primary d-lg-none" type="button" id="sidebarToggle" aria-label="Abrir menu lateral">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M1.5 3.75A.75.75 0 0 1 2.25 3h11.5a.75.75 0 0 1 0 1.5H2.25a.75.75 0 0 1-.75-.75m0 4A.75.75 0 0 1 2.25 7h11.5a.75.75 0 0 1 0 1.5H2.25a.75.75 0 0 1-.75-.75m0 4A.75.75 0 0 1 2.25 11h11.5a.75.75 0 0 1 0 1.5H2.25a.75.75 0 0 1-.75-.75" />
-              </svg>
-            </button>
-            <button class="btn btn-outline-secondary d-none d-lg-inline-flex" type="button" id="sidebarCollapseToggle" aria-label="Recolher menu lateral">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M12.5 2a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 1 0v-11a.5.5 0 0 0-.5-.5M6.646 4.146a.5.5 0 0 1 .708.708L4.707 7.5H7.5a.5.5 0 0 1 0 1H4.707l2.647 2.646a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708z"/>
-              </svg>
-            </button>
-            <div>
-              <div class="text-uppercase text-muted small fw-semibold mb-0">Área interna</div>
-              <p class="admin-topbar__title fw-bold mb-0">Painel Engaja</p>
-            </div>
-          </div>
-          <div class="d-flex align-items-center gap-3">
-            <span class="text-muted small d-none d-md-inline">Olá, {{ Auth::user()->name }}</span>
-            <div class="dropdown">
-              <button class="btn btn-light border dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                @if (Auth::user()->profile_photo_url)
-                  <img src="{{ Auth::user()->profile_photo_url }}" alt="Foto de perfil de {{ Auth::user()->name }}" class="admin-avatar admin-avatar--image">
-                @else
-                  <span class="admin-avatar">{{ Auth::user()->profile_initial }}</span>
-                @endif
-                <span class="d-none d-sm-inline">{{ Auth::user()->name }}</span>
-              </button>
-              <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Meu perfil</a></li>
-                <li><a class="dropdown-item" href="{{ route('profile.certificados') }}">Meus certificados</a></li>
-                <li>
-                  <hr class="dropdown-divider">
-                </li>
-                <li>
-                  <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="dropdown-item">Sair</button>
-                  </form>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </header>
-
-        <div class="admin-content">
-          @include('layouts.partials.flash', ['containerClass' => 'container-fluid px-4 px-lg-5'])
-
-          @isset($header)
-            <div class="container-fluid px-4 px-lg-5 mt-3">
-              <div class="admin-page-header">
-                {{ $header }}
-              </div>
-            </div>
-          @endisset
-
-          <main class="flex-grow-1 py-4">
-            <div class="container-fluid px-4 px-lg-5">
-              @isset($slot) {{ $slot }} @else @yield('content') @endisset
-            </div>
-          </main>
-
-          @include('layouts.footer')
-        </div>
+  {{-- Cabeçalho --}}
+  <div class="row g-4 align-items-center mb-4">
+    <div class="col-md-5">
+      <div class="ev-card bg-light p-4 text-center">
+        <img src="{{ $evento->imagem ? asset('storage/' . $evento->imagem) : asset('images/logo-aeb.png') }}"
+          class="img-fluid rounded" alt="Capa do evento">
       </div>
     </div>
-  @else
-    <div class="d-flex flex-column min-vh-100">
-      @includeWhen(View::exists('layouts.navigation'), 'layouts.navigation')
+    @php
+    $participanteId = optional(auth()->user()?->participante)->id;
+    $jaInscrito = false;
+    if ($participanteId) {
+    $jaInscrito = \Illuminate\Support\Facades\DB::table('inscricaos')
+    ->where('evento_id', $evento->id)
+    ->where('participante_id', $participanteId)
+    ->whereNull('deleted_at')
+    ->exists();
+    }
+    @endphp
+    <div class="col-md-7">
+      <h1 class="h3 fw-bold text-engaja mb-2">{{ $evento->nome }}</h1>
 
-      @isset($header)
-        <header class="bg-white border-bottom py-3">
-          <div class="container">{{ $header }}</div>
-        </header>
-      @endisset
+      @php
+        $dataInicio = $evento->data_inicio ? \Carbon\Carbon::parse($evento->data_inicio) : null;
+        $dataFim = $evento->data_fim ? \Carbon\Carbon::parse($evento->data_fim) : null;
+        $mesmoDia = $dataInicio && $dataFim && $dataInicio->isSameDay($dataFim);
+      @endphp
 
+      <ul class="list-unstyled mb-3">
+        @if($dataInicio || $dataFim)
+        <li class="mb-1">
+          📅
+          {{ $dataInicio ? $dataInicio->locale('pt_BR')->translatedFormat('l, d \d\e F \d\e Y') : 'Início não informado' }}
+          @if($dataFim && !$mesmoDia)
+          <br><small class="text-muted">Até {{ $dataFim->locale('pt_BR')->translatedFormat('l, d \d\e F \d\e Y') }}</small>
+          @endif
+        </li>
+        @endif
 
-      @include('layouts.partials.flash')
+        @if(!empty($evento->local))
+        <li class="mb-1">📍 {{ $evento->local }}</li>
+        @endif
 
-      <main class="flex-grow-1 py-4">
-        <div class="container">
-          @isset($slot) {{ $slot }} @else @yield('content') @endisset
-        </div>
-      </main>
+        @if($evento->modalidade)
+        <li class="mb-1">🛰️ {{ ucfirst($evento->modalidade) }}</li>
+        @endif
 
-      @include('layouts.footer') {{-- <footer class="bg-primary border-top mt-auto pt-5"> ... --}}
+        @if($evento->user?->name)
+        <li class="mb-1">👤 Organizado por: {{ $evento->user->name }}</li>
+        @endif
+      </ul>
 
-    </div>
-  @endif
+      @php
+        $mostrarMenuGerenciar = auth()->user()?->hasAnyRole(['administrador', 'gerente', 'eq_pedagogica', 'articulador'])
+          || auth()->user()?->can('update', $evento);
+      @endphp
 
-  @stack('scripts')
-  @if($useSidebar)
-    <script>
-      (() => {
-        const sidebar = document.getElementById('adminSidebar');
-        const backdrop = document.getElementById('adminSidebarBackdrop');
-        const toggle = document.getElementById('sidebarToggle');
-        const close = document.getElementById('sidebarClose');
-        const collapseTopbarBtn = document.getElementById('sidebarCollapseToggle');
-        const shell = document.querySelector('.admin-shell');
+      <div class="d-flex gap-2 flex-wrap">
+        @if($evento->link)
+        <a href="{{ $evento->link }}" target="_blank" class="btn btn-outline-secondary">Acessar link</a>
+        @endif
 
-        const closeSidebar = () => {
-          sidebar?.classList.remove('is-open');
-          backdrop?.classList.remove('show');
-          document.body.classList.remove('sidebar-open');
-        };
+        <a href="{{ route('eventos.planejamento.pdf', $evento) }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary">
+          <i class="fas fa-file-pdf"></i> Ver Planejamento da Ação
+        </a>
 
-        const openSidebar = () => {
-          // em mobile sempre abre expandido
-          if (window.innerWidth < 992) {
-            shell?.classList.remove('is-collapsed');
-          }
-          sidebar?.classList.add('is-open');
-          backdrop?.classList.add('show');
-          document.body.classList.add('sidebar-open');
-        };
+        @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+          <a href="{{ route('inscricoes.selecionar', $evento)}}" class="btn btn-engaja">Inscrever participantes</a>
+        @endhasanyrole
 
-        const toggleCollapsed = () => {
-          shell?.classList.toggle('is-collapsed');
-        };
+        @can('participante.ver')
+          <a href="{{ route('inscricoes.inscritos', $evento) }}" class="btn btn-outline-secondary">Ver inscritos</a>
+        @endcan
 
-        toggle?.addEventListener('click', (event) => {
-          event.preventDefault();
-          if (sidebar?.classList.contains('is-open')) {
-            closeSidebar();
-          } else {
-            openSidebar();
-          }
-        });
+        @if($mostrarMenuGerenciar)
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="dropdownGerenciarEvento"
+              data-bs-toggle="dropdown" aria-expanded="false">
+              Gerenciar
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownGerenciarEvento">
+              @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+                <li>
+                  <a class="dropdown-item" href="{{ route('inscricoes.import', $evento)}}">Importar participantes</a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{ route('inscricoes.moodle.import', $evento)}}">Importação Moodle</a>
+                </li>
+              @endhasanyrole
 
-        close?.addEventListener('click', closeSidebar);
-        backdrop?.addEventListener('click', closeSidebar);
-        collapseTopbarBtn?.addEventListener('click', toggleCollapsed);
-
-        window.addEventListener('resize', () => {
-          if (window.innerWidth >= 992) {
-            closeSidebar();
-          } else {
-            // ao entrar em mobile, garantir que nao inicie colapsado
-            shell?.classList.remove('is-collapsed');
-          }
-        });
-      })();
-    </script>
-  @endif
-
-  <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content shadow-lg border-0">
-        <div class="modal-header bg-engaja text-white">
-          <h5 class="modal-title" id="confirmModalLabel">Confirmar acao</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
-        </div>
-        <div class="modal-body">
-          <p class="mb-0 js-confirm-message"></p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-engaja js-confirm-accept">Confirmar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  @livewireScripts
-</body>
-
-  @if (!empty($exibirModalCompletarPerfil))
-  <div class="modal fade"
-       id="modalCompletarPerfil"
-       tabindex="-1"
-       aria-labelledby="modalCompletarPerfilLabel"
-       aria-modal="true"
-       role="dialog"
-       data-bs-backdrop="static"
-       data-bs-keyboard="false">
-      <div class="modal-dialog modal-lg modal-dialog-scrollable">
-          <div class="modal-content">
-
-              <div class="modal-header bg-engaja text-white">
-                  <h5 class="modal-title" id="modalCompletarPerfilLabel">
-                      📋 Complete seu perfil demográfico
-                  </h5>
-                  {{-- SEM botão de fechar --}}
-              </div>
-
-              <div class="modal-body">
-                  <p class="text-muted mb-4">
-                      Para continuar usando o Engaja, precisamos de algumas informações demográficas.
-                      Esses dados são utilizados apenas para fins estatísticos e de políticas públicas.
-                  </p>
-
-                  @if ($errors->any())
-                  <div class="alert alert-danger">
-                      <ul class="mb-0">
-                          @foreach ($errors->all() as $error)
-                          <li>{{ $error }}</li>
-                          @endforeach
-                      </ul>
-                  </div>
-                  @endif
-
-                  <form method="POST" action="{{ route('profile.complete-demographics') }}" id="form-demograficos">
-                      @csrf
-
-                      {{-- 1. Identidade de Gênero --}}
-                      <div class="mb-3">
-                          <label for="identidade_genero_modal" class="form-label fw-semibold">
-                              Identidade de Gênero <span class="text-danger">*</span>
-                          </label>
-                          <select name="identidade_genero" id="identidade_genero_modal"
-                                  class="form-select @error('identidade_genero') is-invalid @enderror"
-                                  required onchange="toggleOutro(this, 'identidade_genero_outro_wrap_modal')">
-                              <option value="" disabled selected>Selecione...</option>
-                              <option value="Mulher Cisgênero"   {{ old('identidade_genero') == 'Mulher Cisgênero'   ? 'selected' : '' }}>Mulher Cisgênero</option>
-                              <option value="Mulher Transsexual" {{ old('identidade_genero') == 'Mulher Transsexual' ? 'selected' : '' }}>Mulher Transsexual</option>
-                              <option value="Homem Cisgênero"    {{ old('identidade_genero') == 'Homem Cisgênero'    ? 'selected' : '' }}>Homem Cisgênero</option>
-                              <option value="Homem Transsexual"  {{ old('identidade_genero') == 'Homem Transsexual'  ? 'selected' : '' }}>Homem Transsexual</option>
-                              <option value="Travesti"           {{ old('identidade_genero') == 'Travesti'           ? 'selected' : '' }}>Travesti</option>
-                              <option value="Não binárie"        {{ old('identidade_genero') == 'Não binárie'        ? 'selected' : '' }}>Não binárie</option>
-                              <option value="Prefiro não responder" {{ old('identidade_genero') == 'Prefiro não responder' ? 'selected' : '' }}>Prefiro não responder</option>
-                              <option value="Outro"              {{ old('identidade_genero') == 'Outro'              ? 'selected' : '' }}>Outro</option>
-                          </select>
-                          @error('identidade_genero')
-                          <div class="invalid-feedback">{{ $message }}</div>
-                          @enderror
-                          <div id="identidade_genero_outro_wrap_modal" class="mt-2" style="display:none">
-                              <input type="text" name="identidade_genero_outro"
-                                     class="form-control @error('identidade_genero_outro') is-invalid @enderror"
-                                     placeholder="Especifique sua identidade de gênero"
-                                     value="{{ old('identidade_genero_outro') }}">
-                              @error('identidade_genero_outro')
-                              <div class="invalid-feedback">{{ $message }}</div>
-                              @enderror
-                          </div>
-                      </div>
-
-                      {{-- 2. Raça / Cor --}}
-                      <div class="mb-3">
-                          <label for="raca_cor_modal" class="form-label fw-semibold">
-                              Raça / Cor <span class="text-danger">*</span>
-                          </label>
-                          <select name="raca_cor" id="raca_cor_modal"
-                                  class="form-select @error('raca_cor') is-invalid @enderror"
-                                  required>
-                              <option value="" disabled selected>Selecione...</option>
-                              <option value="Preta"                {{ old('raca_cor') == 'Preta'                ? 'selected' : '' }}>Preta</option>
-                              <option value="Parda"                {{ old('raca_cor') == 'Parda'                ? 'selected' : '' }}>Parda</option>
-                              <option value="Branca"               {{ old('raca_cor') == 'Branca'               ? 'selected' : '' }}>Branca</option>
-                              <option value="Amarela"              {{ old('raca_cor') == 'Amarela'              ? 'selected' : '' }}>Amarela</option>
-                              <option value="Indígena"             {{ old('raca_cor') == 'Indígena'             ? 'selected' : '' }}>Indígena</option>
-                              <option value="Prefere não declarar" {{ old('raca_cor') == 'Prefere não declarar' ? 'selected' : '' }}>Prefere não declarar</option>
-                          </select>
-                          @error('raca_cor')
-                          <div class="invalid-feedback">{{ $message }}</div>
-                          @enderror
-                      </div>
-
-                      {{-- 3. Comunidade Tradicional --}}
-                      <div class="mb-3">
-                          <label for="comunidade_tradicional_modal" class="form-label fw-semibold">
-                              Pertencimento a Povos ou Comunidades Tradicionais <span class="text-danger">*</span>
-                          </label>
-                          <select name="comunidade_tradicional" id="comunidade_tradicional_modal"
-                                  class="form-select @error('comunidade_tradicional') is-invalid @enderror"
-                                  required onchange="toggleOutro(this, 'comunidade_tradicional_outro_wrap_modal')">
-                              <option value="" disabled selected>Selecione...</option>
-                              <option value="Não"                    {{ old('comunidade_tradicional') == 'Não'                    ? 'selected' : '' }}>Não</option>
-                              <option value="Povos indígenas"        {{ old('comunidade_tradicional') == 'Povos indígenas'        ? 'selected' : '' }}>Povos indígenas</option>
-                              <option value="Comunidades Quilombolas" {{ old('comunidade_tradicional') == 'Comunidades Quilombolas' ? 'selected' : '' }}>Comunidades Quilombolas</option>
-                              <option value="Povos Ciganos"          {{ old('comunidade_tradicional') == 'Povos Ciganos'          ? 'selected' : '' }}>Povos Ciganos</option>
-                              <option value="Ribeirinhos"            {{ old('comunidade_tradicional') == 'Ribeirinhos'            ? 'selected' : '' }}>Ribeirinhos</option>
-                              <option value="Extrativistas"          {{ old('comunidade_tradicional') == 'Extrativistas'          ? 'selected' : '' }}>Extrativistas</option>
-                              <option value="Outro"                  {{ old('comunidade_tradicional') == 'Outro'                  ? 'selected' : '' }}>Outro</option>
-                          </select>
-                          @error('comunidade_tradicional')
-                          <div class="invalid-feedback">{{ $message }}</div>
-                          @enderror
-                          <div id="comunidade_tradicional_outro_wrap_modal" class="mt-2" style="display:none">
-                              <input type="text" name="comunidade_tradicional_outro"
-                                     class="form-control @error('comunidade_tradicional_outro') is-invalid @enderror"
-                                     placeholder="Especifique a comunidade tradicional"
-                                     value="{{ old('comunidade_tradicional_outro') }}">
-                              @error('comunidade_tradicional_outro')
-                              <div class="invalid-feedback">{{ $message }}</div>
-                              @enderror
-                          </div>
-                      </div>
-
-                      {{-- 4. Faixa Etária --}}
-                      <div class="mb-3">
-                          <label for="faixa_etaria_modal" class="form-label fw-semibold">
-                              Faixa Etária <span class="text-danger">*</span>
-                          </label>
-                          <select name="faixa_etaria" id="faixa_etaria_modal"
-                                  class="form-select @error('faixa_etaria') is-invalid @enderror"
-                                  required>
-                              <option value="" disabled selected>Selecione...</option>
-                              <option value="Primeira infância (0 a 6 anos)"  {{ old('faixa_etaria') == 'Primeira infância (0 a 6 anos)'  ? 'selected' : '' }}>Primeira infância (0 a 6 anos)</option>
-                              <option value="Criança (7 a 11 anos)"           {{ old('faixa_etaria') == 'Criança (7 a 11 anos)'           ? 'selected' : '' }}>Criança (7 a 11 anos)</option>
-                              <option value="Adolescente (12 a 17 anos)"      {{ old('faixa_etaria') == 'Adolescente (12 a 17 anos)'      ? 'selected' : '' }}>Adolescente (12 a 17 anos)</option>
-                              <option value="Adulto (18 a 59 anos)"           {{ old('faixa_etaria') == 'Adulto (18 a 59 anos)'           ? 'selected' : '' }}>Adulto (18 a 59 anos)</option>
-                              <option value="Idoso (a partir dos 60 anos)"    {{ old('faixa_etaria') == 'Idoso (a partir dos 60 anos)'    ? 'selected' : '' }}>Idoso (a partir dos 60 anos)</option>
-                          </select>
-                          @error('faixa_etaria')
-                          <div class="invalid-feedback">{{ $message }}</div>
-                          @enderror
-                      </div>
-
-                      {{-- 5. PcD --}}
-                      <div class="mb-3">
-                          <label for="pcd_modal" class="form-label fw-semibold">
-                              Pessoa com Deficiência (PcD) <span class="text-danger">*</span>
-                          </label>
-                          <select name="pcd" id="pcd_modal"
-                                  class="form-select @error('pcd') is-invalid @enderror"
-                                  required>
-                              <option value="" disabled selected>Selecione...</option>
-                              <option value="Não"         {{ old('pcd') == 'Não'         ? 'selected' : '' }}>Não</option>
-                              <option value="Física"      {{ old('pcd') == 'Física'      ? 'selected' : '' }}>Física</option>
-                              <option value="Auditiva"    {{ old('pcd') == 'Auditiva'    ? 'selected' : '' }}>Auditiva</option>
-                              <option value="Visual"      {{ old('pcd') == 'Visual'      ? 'selected' : '' }}>Visual</option>
-                              <option value="Intelectual" {{ old('pcd') == 'Intelectual' ? 'selected' : '' }}>Intelectual</option>
-                              <option value="Múltipla"    {{ old('pcd') == 'Múltipla'    ? 'selected' : '' }}>Múltipla</option>
-                          </select>
-                          @error('pcd')
-                          <div class="invalid-feedback">{{ $message }}</div>
-                          @enderror
-                      </div>
-
-                      {{-- 6. Orientação Sexual --}}
-                      <div class="mb-3">
-                          <label for="orientacao_sexual_modal" class="form-label fw-semibold">
-                              Orientação Sexual <span class="text-danger">*</span>
-                          </label>
-                          <select name="orientacao_sexual" id="orientacao_sexual_modal"
-                                  class="form-select @error('orientacao_sexual') is-invalid @enderror"
-                                  required onchange="toggleOutro(this, 'orientacao_sexual_outra_wrap_modal')">
-                              <option value="" disabled selected>Selecione...</option>
-                              <option value="Lésbica"              {{ old('orientacao_sexual') == 'Lésbica'              ? 'selected' : '' }}>Lésbica</option>
-                              <option value="Gay"                  {{ old('orientacao_sexual') == 'Gay'                  ? 'selected' : '' }}>Gay</option>
-                              <option value="Bissexual"            {{ old('orientacao_sexual') == 'Bissexual'            ? 'selected' : '' }}>Bissexual</option>
-                              <option value="Heterossexual"        {{ old('orientacao_sexual') == 'Heterossexual'        ? 'selected' : '' }}>Heterossexual</option>
-                              <option value="Prefere não declarar" {{ old('orientacao_sexual') == 'Prefere não declarar' ? 'selected' : '' }}>Prefere não declarar</option>
-                              <option value="Outra"                {{ old('orientacao_sexual') == 'Outra'                ? 'selected' : '' }}>Outra</option>
-                          </select>
-                          @error('orientacao_sexual')
-                          <div class="invalid-feedback">{{ $message }}</div>
-                          @enderror
-                          <div id="orientacao_sexual_outra_wrap_modal" class="mt-2" style="display:none">
-                              <input type="text" name="orientacao_sexual_outra"
-                                     class="form-control @error('orientacao_sexual_outra') is-invalid @enderror"
-                                     placeholder="Especifique sua orientação sexual"
-                                     value="{{ old('orientacao_sexual_outra') }}">
-                              @error('orientacao_sexual_outra')
-                              <div class="invalid-feedback">{{ $message }}</div>
-                              @enderror
-                          </div>
-                      </div>
-
-                  </form>
-              </div>
-
-              <div class="modal-footer">
-                  <button type="submit" form="form-demograficos" class="btn btn-engaja w-100">
-                      Salvar e continuar
+              @role('administrador|gerente|eq_pedagogica|articulador')
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item" href="{{ route('eventos.avaliacoes.consolidado', $evento) }}">
+                    Consolidação de avaliações
+                  </a>
+                </li>
+                <li>
+                  <button type="button" class="dropdown-item" data-bs-toggle="modal"
+                    data-bs-target="#modalRelatoriosEvento">
+                    Relatórios
                   </button>
-              </div>
+                </li>
+              @endrole
 
+              @hasanyrole('administrador|gerente')
+                <li>
+                  <a class="dropdown-item" href="{{ route('certificados.emitidos', ['evento_id' => $evento->id, 'contexto' => 'evento']) }}">
+                    Certificados
+                  </a>
+                </li>
+              @endhasanyrole
+
+              @can('update', $evento)
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item" href="{{ route('eventos.edit', $evento) }}">Editar</a>
+                </li>
+                @role('administrador')
+                  <li>
+                    <form action="{{ route('eventos.destroy', $evento) }}" method="POST"
+                      class="m-0" data-confirm="Tem certeza que deseja excluir esta ação pedagógica?">
+                      @csrf @method('DELETE')
+                      <button type="submit" class="dropdown-item text-danger">Excluir</button>
+                    </form>
+                  </li>
+                @endrole
+              @endcan
+            </ul>
           </div>
+        @endif
       </div>
+    </div>
   </div>
 
-  <script>
-      document.addEventListener('DOMContentLoaded', function () {
-          const modalEl = document.getElementById('modalCompletarPerfil');
-          if (modalEl) {
-              const modal = new bootstrap.Modal(modalEl);
-              modal.show();
+  {{-- Chips (Modificado para Ação Geral e Sub-ação) --}}
+  @php
+  $totalInscritos = $evento->participantes()->wherePivotNull('deleted_at')->count();
+  @endphp
+  <div class="mb-4">
+    <div class="d-flex flex-wrap gap-2">
+      @if($evento->acao_geral)
+      <span class="ev-chip">
+        Ação: <strong class="ms-1" title="{{ \App\Models\Evento::ACOES_GERAIS[$evento->acao_geral] ?? '' }}">
+            Ação Geral {{ $evento->acao_geral }}
+        </strong>
+      </span>
+      @endif
+      @if($evento->subacao)
+      <span class="ev-chip">
+          Sub-Ação: <strong class="ms-1" title="{{ $evento->subacao }}">
+            {{ \Illuminate\Support\Str::limit($evento->subacao, 50) }}
+          </strong>
+      </span>
+      @endif
+      @if($evento->tipo)
+      <span class="ev-chip">Tipo: <strong class="ms-1">{{ $evento->tipo }}</strong></span>
+      @endif
+      @if($dataInicio || $dataFim)
+      @php
+        $chipInicio = $dataInicio ? $dataInicio->format('d/m/Y') : null;
+        $chipFim = $dataFim && !$mesmoDia ? $dataFim->format('d/m/Y') : null;
+      @endphp
+      <span class="ev-chip">
+        Período:
+        <strong class="ms-1">{{ $chipInicio ?? '—' }}</strong>
+        @if($chipFim)
+        <span class="text-muted px-1">até</span>
+        <strong>{{ $chipFim }}</strong>
+        @endif
+      </span>
+      @endif
+      @if($evento->modalidade)
+      <span class="ev-chip">Modalidade: <strong class="ms-1">{{ $evento->modalidade }}</strong></span>
+      @endif
+      <span class="ev-chip">Inscritos: <strong class="ms-1">{{ $totalInscritos }}</strong></span>
+    </div>
+  </div>
 
-              restoreOutroFields();
-          }
-      });
-
-      function toggleOutro(select, wrapId) {
-          const wrap = document.getElementById(wrapId);
-          if (!wrap) return;
-          const mostrar = select.value === 'Outro' || select.value === 'Outra';
-          wrap.style.display = mostrar ? 'block' : 'none';
-          const input = wrap.querySelector('input');
-          if (input) input.required = mostrar;
-      }
-
-      function restoreOutroFields() {
-          [
-              { selectId: 'identidade_genero_modal',      wrapId: 'identidade_genero_outro_wrap_modal' },
-              { selectId: 'comunidade_tradicional_modal', wrapId: 'comunidade_tradicional_outro_wrap_modal' },
-              { selectId: 'orientacao_sexual_modal',      wrapId: 'orientacao_sexual_outra_wrap_modal' },
-          ].forEach(({ selectId, wrapId }) => {
-              const select = document.getElementById(selectId);
-              if (select && (select.value === 'Outro' || select.value === 'Outra')) {
-                  const wrap = document.getElementById(wrapId);
-                  if (wrap) wrap.style.display = 'block';
-              }
-          });
-      }
-  </script>
+  @if($evento->objetivos_gerais)
+  <div class="mb-4">
+    <h2 class="h5 fw-bold mb-2">Objetivos Gerais</h2>
+    <div class="ev-card p-3">
+      <p class="mb-0">{{ $evento->objetivos_gerais }}</p>
+    </div>
+  </div>
   @endif
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      
-      document.addEventListener('change', function (e) {
-          const cb = e.target;
-          if (!cb.classList.contains('js-checklist-item')) return;
+    {{-- Descrição / Objetivo --}}
+  @if($evento->objetivos_especificos)
+      <div class="mb-4">
+          <h2 class="h5 fw-bold mb-2">Objetivos Específicos</h2>
+          <div class="ev-card p-3">
+              <p class="mb-0">{{ $evento->objetivos_especificos }}</p>
+          </div>
+      </div>
+  @endif
 
-          const modalId = cb.dataset.modal;
-          const total   = parseInt(cb.dataset.total, 10);
-          const checked = document.querySelectorAll(
-              `#${modalId} .js-checklist-item:checked`
-          ).length;
+  {{-- Programação --}}
+  @php
+  use Carbon\Carbon;
+  $porDia = $evento->atividades
+  ->sortBy(fn($a) => Carbon::parse($a->dia)->toDateString() . ' ' . Carbon::parse($a->hora_inicio)->format('H:i'))
+  ->groupBy(fn($a) => Carbon::parse($a->dia)->toDateString());
+  $dias = $porDia->keys()->values();
+  @endphp
 
-          const card = cb.closest('.checklist-card');
-          if (card) card.classList.toggle('checked', cb.checked);
+  <div class="program-sec mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="h5 fw-bold mb-0">Programação</h2>
 
-          // ── Contador ────────────────────────────────────
-          const counter = document.querySelector(`.js-counter[data-modal="${modalId}"]`);
-          if (counter) counter.textContent = `${checked} / ${total}`;
+      <div class="d-flex gap-2">
+        @hasanyrole('administrador|gerente|eq_pedagogica')
+        <button type="button"
+                class="btn btn-engaja btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#modalChecklistPreAcao">
+            + Novo momento
+        </button>
+        @endhasanyrole
 
-          // ── Barra de progresso ──────────────────────────
-          const bar = document.querySelector(`.js-progress[data-modal="${modalId}"]`);
-          if (bar) {
-              const pct = Math.round((checked / total) * 100);
-              bar.style.width = pct + '%';
-              bar.setAttribute('aria-valuenow', pct);
-          }
+        <a href="{{ route('eventos.atividades.index', $evento) }}" class="btn btn-outline-secondary btn-sm">
+          Ver todos
+        </a>
+      </div>
+    </div>
 
-          // ── Botão confirmar ─────────
-          const btn = document.querySelector(`.js-checklist-confirm[data-modal="${modalId}"]`);
-          if (btn) btn.disabled = false; 
-      });
+    @if($porDia->isNotEmpty())
+    <ul class="nav day-tabs mb-3" role="tablist">
+      @foreach($dias as $i => $dia)
+      @php
+      $label = \Carbon\Carbon::parse($dia)
+      ->locale('pt_BR')
+      ->translatedFormat('D\, j M \d\e Y'); // ex.: "seg • 9 de set"
+      @endphp
+      <li class="nav-item" role="presentation">
+        <button class="nav-link {{ $i === 0 ? 'active' : '' }}" id="tab-{{ $i }}" data-bs-toggle="pill"
+          data-bs-target="#pane-{{ $i }}" type="button" role="tab" aria-controls="pane-{{ $i }}"
+          aria-selected="{{ $i === 0 ? 'true' : 'false' }}">
+          {{ $label }}
+        </button>
+      </li>
+      @endforeach
+    </ul>
+    @endif
 
-      // ── Reset ao fechar ─────────────────────────────────
-      document.querySelectorAll('.modal').forEach(function (modalEl) {
-          modalEl.addEventListener('hidden.bs.modal', function () {
-              const id    = modalEl.id;
-              
-              if (id === 'modalCompletarPerfil') return;
+    <div class="tab-content">
+      @if($porDia->isEmpty())
+      <div class="empty-state">
+        <div class="mb-1" style="font-size:1.6rem">🗓️</div>
+        Nenhum momento cadastrado ainda.
+      </div>
+      @else
+      @foreach($dias as $i => $dia)
+      @php $lista = $porDia[$dia]; @endphp
 
-              const btn = modalEl.querySelector('.js-checklist-confirm');
-              if (btn) btn.disabled = false; 
+      <div class="tab-pane fade {{ $i === 0 ? 'show active' : '' }}" id="pane-{{ $i }}" role="tabpanel"
+        aria-labelledby="tab-{{ $i }}">
+        <div class="timeline">
+          @foreach($lista as $at)
+          @php
+
+          $ini = \Carbon\Carbon::parse($at->hora_inicio);
+          $fimObj = !empty($at->hora_fim) ? \Carbon\Carbon::parse($at->hora_fim) : null;
+
+            if ($fimObj && $fimObj->lessThanOrEqualTo($ini)) {
+            $fimObj->addDay();
+            }
+
+            $iniStr = $ini->format('H:i');
+            $fimStr = $fimObj ? $fimObj->format('H:i') : null;
+
+            $chLabel = null;
+            if ($fimObj) {
+            $mins = $ini->diffInMinutes($fimObj, false);
+            if ($mins < 0) { $mins +=24*60; }
+              $h=intdiv($mins, 60);
+              $m=$mins % 60;
+              $chLabel=$h> 0 ? ($h.'h'.($m ? ' '.$m.'min' : '')) : ($m.'min');
+              }
+
+              $momento = trim($at->descricao ?? '') !== '' ? $at->descricao : 'Momento';
+              $local = $at->local ?? null;
+              $municipio = $at->municipios->isNotEmpty()
+                ? $at->municipios->map(fn($m) => $m->nome_com_estado ?? $m->nome)->join(', ')
+                : null;
+              $publicoEsperado = $at->publico_esperado;
+              $cargaHoraria = $at->carga_horaria;
+              $cargaLabel = !is_null($cargaHoraria) ? \App\Support\CargaHoraria::formatMinutos((int) $cargaHoraria) : null;
+              $minhaPresenca = ($presencasPorAtividade ?? collect())[$at->id] ?? null;
+              $primeiraAvaliacao = $at->avaliacoes->first();
+              @endphp
+
+              <div class="t-item">
+                <span class="t-dot"></span>
+                <div class="program-card">
+                  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                    <div class="flex-grow-1">
+                      <div class="program-time">{{ $iniStr }}{{ $fimStr ? ' – ' . $fimStr : '' }}</div>
+
+                      <div class="program-title d-flex align-items-center flex-wrap gap-2">
+                        <span>{{ $momento }}</span>
+                        @if($at->checklists_incompletos)
+                          <button type="button"
+                                  class="badge bg-warning text-dark border-0 btn-checklist-reabrir"
+                                  data-atividade-id="{{ $at->id }}"
+                                  data-checklist-pl="{{ json_encode($at->checklist_planejamento ?? []) }}"
+                                  data-checklist-en="{{ json_encode($at->checklist_encerramento ?? []) }}"
+                                  style="cursor:pointer; font-size: 0.75rem; padding: 0.35rem 0.5rem;">
+                            ⚠️ Checklist incompleto
+                          </button>
+                        @endif
+                      </div>
+
+                      @if($local || $municipio || $chLabel || $publicoEsperado || $cargaLabel)
+                      <div class="program-meta">
+                        @if($municipio) <span class="chip">Município: {{ $municipio }}</span> @endif
+                        @if($local) <span class="chip">Local: {{ $local }}</span> @endif
+                        @if($chLabel) <span class="chip">Duração: {{ $chLabel }}</span> @endif
+                        @if($publicoEsperado) <span class="chip">Público esperado: {{ number_format($publicoEsperado, 0, ',', '.') }} pessoas</span> @endif
+                        @if($cargaLabel) <span class="chip">Carga horária: {{ $cargaLabel }}</span> @endif
+                      </div>
+                      @endif
+                    </div>
+
+                    <div class="actions d-flex flex-wrap gap-2 justify-content-end align-items-center flex-shrink-0">
+                      {{--
+                      Avaliação para o participante (se tem presença neste momento)
+                      @if($minhaPresenca && $primeiraAvaliacao)
+                        @if($minhaPresenca->avaliacao_respondida)
+                          <span class="badge bg-success py-2 px-3" style="font-size:.8rem;">✅ Avaliado</span>
+                        @else
+                          <a href="{{ route('avaliacao.formulario', ['avaliacao' => $primeiraAvaliacao->id, 'token' => encrypt($minhaPresenca->id)]) }}"
+                             class="btn btn-sm btn-outline-success">
+                            ✏️ Avaliar
+                          </a>
+                        @endif
+                      @endif
+                      --}}
+
+                      {{--
+                      @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+                        @if($primeiraAvaliacao)
+                          <a href="{{ route('atividades.avaliacoes', $at) }}"
+                             class="btn btn-sm btn-outline-info">
+                            📊 Ver Avaliações
+                          </a>
+                        @endif
+                      @endhasanyrole
+                      --}}
+
+                      @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+                        <a href="{{ $at->avaliacaoAtividade
+                              ? route('avaliacao-atividade.edit',   $at)
+                              : route('avaliacao-atividade.create', $at) }}"
+                           class="btn btn-sm {{ $at->avaliacaoAtividade ? 'btn-warning' : 'btn-outline-warning' }}">
+                          📝 {{ $at->avaliacaoAtividade ? 'Relatório' : 'Criar relatório' }}
+                        </a>
+                      @endhasanyrole
+
+                      @can('atividade.ver')
+                        <a href="{{ route('atividades.show', $at) }}" class="btn btn-sm btn-outline-primary">
+                          👁️ Ver
+                        </a>
+                      @endcan
+
+                      @hasanyrole('administrador|gerente|eq_pedagogica')
+                        <a href="{{ route('atividades.edit', $at) }}" class="btn btn-sm btn-outline-secondary">
+                          ✏️ Editar
+                        </a>
+                      @endhasanyrole
+
+                      @hasanyrole('administrador|gerente')
+                        <form action="{{ route('atividades.destroy', $at) }}" method="POST"
+                              class="d-inline m-0 p-0"
+                              data-confirm="Tem certeza que deseja excluir este momento?">
+                          @csrf @method('DELETE')
+                          <button class="btn btn-sm btn-outline-danger">🗑️ Excluir</button>
+                        </form>
+                      @endhasanyrole
+                    </div>
+                  </div>
+                </div>
+              </div>
+              @endforeach
+        </div>
+      </div>
+      @endforeach
+
+      @endif
+    </div>
+  </div>
+
+</div>
+@hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+<div class="modal fade" id="modalRelatoriosEvento" tabindex="-1" aria-labelledby="modalRelatoriosEventoLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold" id="modalRelatoriosEventoLabel">Relatórios da ação pedagógica</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-4">
+          Apenas participantes com presença confirmada serão considerados.
+        </p>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="h-100 border rounded p-3 d-flex flex-column">
+              <h6 class="fw-bold mb-1">Participantes únicos</h6>
+              <p class="text-muted small mb-3">Consolida todos os participantes que tiveram presença confirmada em
+                qualquer momento desta ação.</p>
+              <div class="d-grid gap-2 mt-auto">
+                <a href="{{ route('eventos.relatorios', ['evento' => $evento, 'tipo' => 'geral']) }}"
+                  class="btn btn-engaja w-100">
+                  Baixar XLSX
+                </a>
+                <a href="{{ route('eventos.relatorios', ['evento' => $evento, 'tipo' => 'geral', 'sem_ouvintes' => 1]) }}"
+                  class="btn btn-outline-secondary w-100">
+                  Baixar XLSX sem ouvintes
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="h-100 border rounded p-3 d-flex flex-column">
+              <h6 class="fw-bold mb-1">Participantes por momento</h6>
+              <p class="text-muted small mb-3">Lista os presentes por momento, com data e horários.</p>
+              <div class="d-grid gap-2 mt-auto">
+                <a href="{{ route('eventos.relatorios', ['evento' => $evento, 'tipo' => 'momentos']) }}"
+                  class="btn btn-outline-secondary w-100">
+                  Baixar XLSX
+                </a>
+                <a href="{{ route('eventos.relatorios', ['evento' => $evento, 'tipo' => 'momentos', 'sem_ouvintes' => 1]) }}"
+                  class="btn btn-outline-secondary w-100">
+                  Baixar XLSX sem ouvintes
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+@endhasanyrole
+
+{{-- Instância do Modal de Pré-ação --}}
+<x-checklist-modal
+    id="modalChecklistPreAcao"
+    title="Checklist de Planejamento"
+    btn-label="Prosseguir para criar momento"
+    tipo="planejamento"
+    :marcados="[]"
+    :items="[
+        'Ao planejar cada ação, recorri aos objetivos gerais do projeto, em diálogo com os dados da Leitura do Mundo?',
+        'Ao planejar, estabeleci conexão com as outras ações do projeto? (Ex: Cartas para Esperançar, Semear Palavras)',
+        'Preparei listas de presença impressas de acordo com os dados a serem inseridos no sistema ENGAJA?',
+        'Preparei formulários de avaliação de cada ação de formação, para medir os impactos?',
+        'Organizei a lista de materiais necessários e apresentei à coordenação com antecedência?',
+        'Organizei a demanda de infraestrutura local com antecedência?',
+        'A inscrição do público esperado na formação foi feita?',
+        'A informação sobre o dia e horário chegou com antecedência aos públicos participantes?',
+        'Os materiais institucionais do projeto para entregar aos participantes estão organizados?',
+        'Equipe Pedagógica e Educadores estão com clareza de quem fará o que durante os encontros?',
+        'Planejei os momentos de registros audiovisual de cada ação?',
+        'Sei como nomear os arquivos e o local onde compartilhar os registros processuais?',
+        'Estou de posse de todos os contatos estratégicos em caso de necessidade?'
+    ]"
+/>
+
+{{-- Modal de reabertura de checklist --}}
+<div class="modal fade" id="modalReopenChecklist" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-engaja text-white border-0">
+        <h5 class="modal-title fw-bold">⚠️ Checklist Incompleto</h5>
+      </div>
+      <div class="modal-body" id="reopen-checklist-body">
+        {{-- preenchido por JS --}}
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button type="button" class="btn btn-engaja" id="btn-salvar-checklist-reopen">Salvar progresso</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{-- Modal de pessoas não encontradas após importação Moodle --}}
+@if(session('usuarios_nao_encontrados') && count(session('usuarios_nao_encontrados')) > 0)
+<div class="modal fade" id="modalUsuariosNaoEncontrados" tabindex="-1" aria-labelledby="modalUsuariosNaoEncontradosLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-warning-subtle">
+        <h5 class="modal-title text-warning-emphasis" id="modalUsuariosNaoEncontradosLabel">⚠️ Pessoas não inseridas na importação</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+        <div class="alert alert-danger mb-3">
+          <strong>{{ count(session('usuarios_nao_encontrados')) }}</strong> pessoa(s) da planilha <strong>NÃO foram inseridas para criação de certificado</strong>
+          pois não possuem cadastro no Engaja.
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 80px;">Linha</th>
+                <th>Nome</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach(session('usuarios_nao_encontrados') as $usuario)
+              <tr>
+                <td>{{ $usuario['linha'] ?? '—' }}</td>
+                <td>{{ $usuario['nome'] }}</td>
+                <td>{{ $usuario['email'] }}</td>
+              </tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+@endif
+
+@endsection
+
+@push('scripts')
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+
+      // Auto-abrir modal de usuários não encontrados após importação Moodle
+      const modalNaoEncontrados = document.getElementById('modalUsuariosNaoEncontrados');
+      if (modalNaoEncontrados) {
+          const modal = new bootstrap.Modal(modalNaoEncontrados);
+          modal.show();
+      }
+
+      // Lógica 1: Criação de novo Momento
+      const btnConfirmarPreAcao = document.querySelector('.js-checklist-confirm[data-modal="modalChecklistPreAcao"]');
+
+      if (btnConfirmarPreAcao) {
+          btnConfirmarPreAcao.addEventListener('click', function () {
+              const marcados = [];
+              document.querySelectorAll('#modalChecklistPreAcao .js-checklist-item:checked').forEach(cb => {
+                  marcados.push(cb.dataset.index);
+              });
+
+              const url = new URL("{{ route('eventos.atividades.create', $evento) }}");
+
+              if (marcados.length > 0) {
+                  url.searchParams.append('marcados', marcados.join(','));
+              }
+
+              const modalEl = document.getElementById('modalChecklistPreAcao');
+              bootstrap.Modal.getInstance(modalEl)?.hide();
+
+              window.location.href = url.toString();
+          });
+      }
+
+      // Lógica 2: Edição/Reabertura de Checklist existente (Tarefa 2)
+      const ITENS_PLANEJAMENTO = [
+          'Ao planejar cada ação, recorri aos objetivos gerais do projeto, em diálogo com os dados da Leitura do Mundo?',
+          'Ao planejar, estabeleci conexão com as outras ações do projeto? (Ex: Cartas para Esperançar, Semear Palavras)',
+          'Preparei listas de presença impressas de acordo com os dados a serem inseridos no sistema ENGAJA?',
+          'Preparei formulários de avaliação de cada ação de formação, para medir os impactos?',
+          'Organizei a lista de materiais necessários e apresentei à coordenação com antecedência?',
+          'Organizei a demanda de infraestrutura local com antecedência?',
+          'A inscrição do público esperado na formação foi feita?',
+          'A informação sobre o dia e horário chegou com antecedência aos públicos participantes?',
+          'Os materiais institucionais do projeto para entregar aos participantes estão organizados?',
+          'Equipe Pedagógica e Educadores estão com clareza de quem fará o que durante os encontros?',
+          'Planejei os momentos de registros audiovisual de cada ação?',
+          'Sei como nomear os arquivos e o local onde compartilhar os registros processuais?',
+          'Estou de posse de todos os contatos estratégicos em caso de necessidade?'
+      ];
+      const ITENS_ENCERRAMENTO = [
+          'Verifiquei se os municípios estão corretos?',
+          'Confirmei a carga horária e os horários de início e término?',
+          'O público esperado e os dados do momento estão preenchidos corretamente?'
+      ];
+
+      let atividadeIdAtual = null;
+
+      document.querySelectorAll('.btn-checklist-reabrir').forEach(btn => {
+          btn.addEventListener('click', function () {
+              atividadeIdAtual = this.dataset.atividadeId;
+            const marcadosPl = normalizeMarkedIndexes(ITENS_PLANEJAMENTO, JSON.parse(this.dataset.checklistPl || '[]'));
+            const marcadosEn = normalizeMarkedIndexes(ITENS_ENCERRAMENTO, JSON.parse(this.dataset.checklistEn || '[]'));
+
+              const body = document.getElementById('reopen-checklist-body');
+              body.innerHTML = renderChecklist('planejamento', ITENS_PLANEJAMENTO, marcadosPl)
+                             + renderChecklist('encerramento', ITENS_ENCERRAMENTO, marcadosEn);
+
+              new bootstrap.Modal(document.getElementById('modalReopenChecklist')).show();
           });
       });
 
-  });
-  </script>
+        function normalizeMarkedIndexes(itens, marcados) {
+          if (!Array.isArray(marcados)) {
+            return [];
+          }
 
-</body>
-</html>
+          const normalizedTextToIndex = new Map(
+            itens.map((item, index) => [String(item).trim().toLowerCase(), index])
+          );
+
+          return [...new Set(
+            marcados
+              .map((valor) => {
+                if (Number.isInteger(valor)) {
+                  return valor;
+                }
+
+                const asNumber = Number(valor);
+                if (Number.isInteger(asNumber)) {
+                  return asNumber;
+                }
+
+                const textKey = String(valor).trim().toLowerCase();
+                return normalizedTextToIndex.has(textKey) ? normalizedTextToIndex.get(textKey) : null;
+              })
+              .filter((index) => Number.isInteger(index) && index >= 0 && index < itens.length)
+          )];
+        }
+
+      function renderChecklist(tipo, itens, marcados) {
+          let html = `<h6 class="fw-bold mt-2" style="color: #421944;">${tipo === 'planejamento' ? '📋 Planejamento' : '✅ Encerramento'}</h6><div class="vstack gap-2 mb-4">`;
+          itens.forEach((item, i) => {
+              const checked = marcados.includes(i) ? 'checked' : '';
+              html += `<label class="checklist-card d-flex align-items-center gap-3 ${checked ? 'checked' : ''}" style="cursor:pointer;border:2px solid #dee2e6;border-radius:10px;padding:12px 16px; ${checked ? 'background-color: #421944; color: #fff; border-color: #421944;' : ''}">
+                  <input type="checkbox" class="js-reopen-item" data-tipo="${tipo}" data-index="${i}" ${checked} style="display:none">
+                  <span class="checklist-check-icon" style="width:22px;height:22px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#421944;font-weight:900;opacity:${checked ? 1 : 0}">✓</span>
+                  <span>${item}</span>
+              </label>`;
+          });
+          html += '</div>';
+          return html;
+      }
+
+      // Toggle visual dos cards no modal de reabertura
+      document.getElementById('reopen-checklist-body')?.addEventListener('change', function(e) {
+          if (e.target.classList.contains('js-reopen-item')) {
+              const label = e.target.closest('label');
+              label.classList.toggle('checked', e.target.checked);
+              label.style.backgroundColor = e.target.checked ? '#421944' : '';
+              label.style.color = e.target.checked ? '#fff' : '';
+              label.style.borderColor = e.target.checked ? '#421944' : '#dee2e6';
+              label.querySelector('.checklist-check-icon').style.opacity = e.target.checked ? 1 : 0;
+          }
+      });
+
+      document.getElementById('btn-salvar-checklist-reopen')?.addEventListener('click', function () {
+          if (!atividadeIdAtual) return;
+
+          // Salva planejamento
+          const pl = [...document.querySelectorAll('.js-reopen-item[data-tipo="planejamento"]:checked')].map(c => parseInt(c.dataset.index));
+          const en = [...document.querySelectorAll('.js-reopen-item[data-tipo="encerramento"]:checked')].map(c => parseInt(c.dataset.index));
+
+          const salvar = (tipo, itens) => fetch(`/atividades/${atividadeIdAtual}/checklist`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+              },
+              body: JSON.stringify({ tipo, itens })
+          });
+
+          Promise.all([salvar('planejamento', pl), salvar('encerramento', en)])
+              .then(() => { window.location.reload(); })
+              .catch(() => alert('Erro ao salvar. Tente novamente.'));
+      });
+  });
+</script>
+@endpush
