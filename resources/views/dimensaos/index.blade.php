@@ -15,7 +15,7 @@
           value="{{ request('search') }}" placeholder="Digite parte da descrição">
       </div>
       <div class="col-md-4 col-lg-3">
-        <label for="has_indicators" class="form-label">Filtro por indicadores</label>
+        <label for="has_indicators" class="form-label">Filtro por indicador</label>
         <select id="has_indicators" name="has_indicators" class="form-select">
           <option value="">Todas</option>
           <option value="with" @selected(request('has_indicators') === 'with')>Com indicadores</option>
