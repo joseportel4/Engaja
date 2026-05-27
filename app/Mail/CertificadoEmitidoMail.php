@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\Certificado;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -25,14 +26,27 @@ class CertificadoEmitidoMail extends Mailable implements ShouldQueue
 
     public function build(): self
     {
-        $logoPath = public_path('images/engaja-bg-white.png');
-        if (file_exists($logoPath)) {
-            $data = base64_encode(file_get_contents($logoPath));
-            $this->logoData = 'data:image/png;base64,'.$data;
-        }
+        $bannerPath = public_path('images/ppt-banner.png');
 
-        return $this->subject('Certificado disponivel - '.$this->acao)
+        $certificado = Certificado::with('modelo')->findOrFail($this->certificadoId);
+
+        $pdf = app('dompdf.wrapper');
+        $pdf->setOptions([
+            'isRemoteEnabled' => true,
+            'isHtml5ParserEnabled' => true,
+            'dpi' => 72,
+            'defaultMediaType' => 'print',
+        ]);
+        $pdf->setPaper('a4', 'landscape');
+        $pdf->loadView('certificados.pdf', ['certificado' => $certificado]);
+
+        $pdfContent = $pdf->output();
+
+        return $this->subject('Seu Certificado do Engaja: '.$this->acao)
             ->view('emails.certificados.emitido')
-            ->with(['logoData' => $this->logoData]);
+            ->with(['bannerPath' => $bannerPath])
+            ->attachData($pdfContent, 'Certificado_Engaja.pdf', [
+                'mime' => 'application/pdf',
+            ]);
     }
 }
