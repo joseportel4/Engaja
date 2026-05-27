@@ -26,6 +26,7 @@ class CertificadoEmitidoMail extends Mailable implements ShouldQueue
 
     public function build(): self
     {
+        $logoPath = public_path('images/ppt-logo.png');
         $bannerPath = public_path('images/ppt-banner.png');
 
         $certificado = Certificado::with('modelo')->findOrFail($this->certificadoId);
@@ -44,7 +45,10 @@ class CertificadoEmitidoMail extends Mailable implements ShouldQueue
 
         return $this->subject('Seu Certificado do Engaja: '.$this->acao)
             ->view('emails.certificados.emitido')
-            ->with(['bannerPath' => $bannerPath])
+            ->with([
+                'bannerPath' => $bannerPath,
+                'logoPath' => $logoPath,
+            ])
             ->attachData($pdfContent, 'Certificado_Engaja.pdf', [
                 'mime' => 'application/pdf',
             ]);

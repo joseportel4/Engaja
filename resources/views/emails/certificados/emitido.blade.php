@@ -19,14 +19,32 @@
       padding: 32px 16px;
       text-align: center;
     }
-    .logo {
-      display: inline-block;
-      margin-bottom: 16px;
+    .top-header {
+        text-align: center;
+        margin-bottom: 40px;
     }
-    .logo img {
-        max-width: 100%;
+    .top-header img {
+        max-width: 200px;
         height: auto;
-        border-radius: 8px;
+        margin-bottom: 16px;
+    }
+    .quote-box {
+        font-size: 13px;
+        color: #07474d;
+        font-style: italic;
+        line-height: 1.6;
+        margin-bottom: 32px;
+        text-align: center;
+        padding: 0 40px;
+    }
+    .quote-author {
+        text-align: right;
+        font-size: 12px;
+        font-style: normal;
+        margin-top: 8px;
+    }
+    .content {
+        text-align: left;
     }
     .card {
       background: #fff;
@@ -37,84 +55,68 @@
     }
     .card-title {
         font-size: 20px;
-        color: #000000;
+        color: #07474d;
         margin: 0 0 16px 0;
         font-weight: 600;
     }
     .card-text {
-        color: #000000;
+        color: #07474d;
         font-size: 15px;
         line-height: 1.7;
         margin: 0 0 16px 0;
         font-weight: 400;
         text-align: justify;
     }
-    .card-info {
-        color: #000000;
-        font-size: 15px;
-        margin-bottom: 8px;
-        font-weight: 400;
-        text-align: justify;
-    }
     p {
-      color: #000000;
+      color: #07474d;
       font-size: 15px;
       line-height: 1.6;
       margin: 0 0 14px 0;
     }
-    .hashtags {
-        color: #000000;
-        font-weight: bold;
-        font-size: 14px;
-        line-height: 1.5;
-        margin-bottom: 16px;
-        text-align: justify;
-
-    }
     .signature {
         font-size: 16px;
-        color: #000000;
+        color: #07474d;
         margin-top: 24px;
     }
-    .btn {
-      display: inline-block;
-      background: #4a0e4e;
-      color: #fff;
-      padding: 12px 24px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 700;
-      margin: 6px 0 14px 0;
+    .footer-banner {
+        margin-top: 24px;
+        text-align: left;
     }
-    .muted {
-      font-size: 13px;
-      color: #6b7280;
-      word-break: break-all;
+    .footer-banner img {
+        max-width: 350px;
+        height: auto;
     }
   </style>
 </head>
 <body>
   <div class="wrapper">
-      <div class="logo">
-          @if(isset($bannerPath) && file_exists($bannerPath))
-              <img src="{{ $message->embed($bannerPath) }}" alt="Banner - Participar Para Transformar">
+      <div class="top-header">
+          @if(isset($logoPath) && file_exists($logoPath))
+              <img src="{{ $message->embed($logoPath) }}" alt="Logo Participar Para Transformar">
           @endif
+
+          <div class="quote-box">
+              "Precisamos contribuir para criar a escola que é aventura, que marcha, que não tem medo do risco. A escola em que se pensa, em que se cria, em que se fala, em que se adivinha, a escola que, apaixonadamente, diz sim à vida".
+              <div class="quote-author">Paulo Freire</div>
+          </div>
       </div>
-      <div class="card">
-          <p class="card-title">Caro(a) {{ $nome }},</p>
+      <div class="content">
+          <p class="card-title">Olá, {{ $nome }}!</p>
+          <p class="card-text">Desejamos que esteja tudo bem com você.</p>
 
           <p class="card-text">
-              O seu certificado referente à ação pedagógica <strong>{{ $acao }}</strong> foi emitido com sucesso e <strong>encontra-se em anexo neste e-mail!</strong>
+              Segue anexo o certificado do curso Participar para Transformar. Verifique todos os seus dados, por gentileza, e caso haja algum dado errado, basta nos responder informando e indicando o dado correto, ok?
           </p>
 
-          <p class="card-info"><strong>Realização:</strong> Instituto Paulo Freire. <strong>Parceria:</strong> SMDHC de São Paulo e apoio do CRECE Central.</p>
-          <p class="card-info"><strong>Dúvidas:</strong> participarparatransformar@paulofreire.org</p>
-
-          <br>
-
-          <div class="hashtags">
-              #InstitutoPauloFreire #IPF34anos #EaDFreiriana #PauloFreire #PauloFreireSim #PauloFreireSempre #PauloFreireVive #PauloFreirePresente #patronodaeducaçãobrasileira #Educação #DireitosHumanos
-          </div>
+          <p class="card-text">
+              Foi uma grande alegria contar com a sua participação nesse curso.
+          </p>
+          <p class="card-text">
+              Agradecemos pela confiança no trabalho do Instituto Paulo Freire e esperamos contar com a sua participação em outras oportunidades.
+          </p>
+          <p class="card-text">
+              Sigamos juntos/as/es, fortalecendo a Escola Cidadã, a educação pública, popular, democrática, que promove a educação de qualidade social.
+          </p>
 
           <div class="signature">
               <p style="margin-bottom: 4px;">Grande abraço,</p>
@@ -122,9 +124,11 @@
               Instituto Paulo Freire
           </div>
 
-          <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;">
-
-          <p class="muted">Esta é uma mensagem automática. Não responda a este e-mail.</p>
+          <div class="footer-banner">
+              @if(isset($bannerPath) && file_exists($bannerPath))
+                  <img src="{{ $message->embed($bannerPath) }}" alt="Banner Institucional">
+              @endif
+          </div>
       </div>
   </div>
 </body>
