@@ -205,7 +205,7 @@ class CertificadoController extends Controller
             }
         }
 
-        // $this->notificarLote($paraNotificar);
+        $this->notificarLote($paraNotificar);
 
         $message = "{$created} certificado(s) emitidos com sucesso.";
         if ($skippedZeroWorkload > 0) {
@@ -481,7 +481,7 @@ class CertificadoController extends Controller
             }
         }
 
-        // $this->notificarLote($paraNotificar);
+        $this->notificarLote($paraNotificar);
 
         $message = "{$created} certificado(s) emitidos com sucesso.";
         if ($skippedZeroWorkload > 0) {
