@@ -72,6 +72,7 @@ class ParticipantesPreviewImport implements SkipsEmptyRows, ToCollection, WithHe
             $nome = $this->firstValue($raw, ['nome', 'name']) ?? '';
             $email = $this->firstValue($raw, ['email', 'e_mail', 'e-mail', 'mail']) ?? '';
             $cpfRaw = $this->firstValue($raw, ['cpf', 'documento']) ?? '';
+            $rfRaw = $this->firstValue($raw, ['rf']) ?? '';
             $telefoneRaw = $this->firstValue($raw, ['telefone', 'celular', 'fone', 'telefone_celular']) ?? '';
 
             // Resolve municipio_id via cache (se existir)
@@ -113,6 +114,7 @@ class ParticipantesPreviewImport implements SkipsEmptyRows, ToCollection, WithHe
                 'nome' => (string) $nome,
                 'email' => (string) $email,
                 'cpf' => preg_replace('/\D+/', '', (string) $cpfRaw) ?: null,
+                'rf' => preg_replace('/\D+/', '', (string) $rfRaw) ?: null,
                 'telefone' => preg_replace('/\D+/', '', (string) $telefoneRaw) ?: null,
                 'municipio' => $municipioNome,
                 'municipio_id' => $municipioId,

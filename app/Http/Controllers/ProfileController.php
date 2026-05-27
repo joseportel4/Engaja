@@ -213,6 +213,7 @@ class ProfileController extends Controller
 
         $participanteData = [
             'cpf'              => $data['cpf']              ?? null,
+            'rf'               => $data['rf']               ?? null,
             'telefone'         => $data['telefone']         ?? null,
             'municipio_id'     => $data['municipio_id']     ?? null,
             'escola_unidade'   => $data['escola_unidade']   ?? null,

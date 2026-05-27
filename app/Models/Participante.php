@@ -23,6 +23,7 @@ class Participante extends Model
         'user_id',
         'municipio_id',
         'cpf',
+        'rf',
         'telefone',
         'escola_unidade',
         'tipo_organizacao',

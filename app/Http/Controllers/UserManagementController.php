@@ -146,6 +146,7 @@ class UserManagementController extends Controller
                 ['user_id' => $user->id],
                 [
                     'cpf'              => $data['cpf'] ?? null,
+                    'rf'               => $data['rf'] ?? null,
                     'telefone'         => $data['telefone'] ?? null,
                     'municipio_id'     => $data['municipio_id'] ?? null,
                     'escola_unidade'   => $data['escola_unidade'] ?? null,
@@ -236,6 +237,7 @@ class UserManagementController extends Controller
             ['user_id' => $managedUser->id],
             [
                 'cpf'              => $data['cpf']              ?? null,
+                'rf'               => $data['rf']               ?? null,
                 'telefone'         => $data['telefone']         ?? null,
                 'municipio_id'     => $data['municipio_id']     ?? null,
                 'escola_unidade'   => $data['escola_unidade']   ?? null,

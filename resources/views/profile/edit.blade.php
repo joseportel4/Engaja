@@ -154,6 +154,17 @@
                                 @error('cpf') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
+                            {{-- RF --}}
+                            <div class="col-md-6">
+                                <label for="rf" class="form-label">RF</label>
+                                <input id="rf" type="text" name="rf"
+                                    inputmode="numeric" autocomplete="off"
+                                    maxlength="30" pattern="\d*"
+                                    value="{{ old('rf', $participante->rf ?? '') }}"
+                                    class="form-control @error('rf') is-invalid @enderror">
+                                @error('rf') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+
                             {{-- Telefone --}}
                             <div class="col-md-6">
                                 <label for="telefone" class="form-label">Telefone</label>
@@ -227,6 +238,7 @@
 
                             {{-- campo de autorização de imagem --}}
                             <div class="col-md-6">
+                                <label for="municipio_id" class="form-label"></label>
                                 <style>
                                     /* div externa */
                                     .auth-image-container {
@@ -257,7 +269,6 @@
                                 </style>
 
                                 <div class="auth-image-container d-flex align-items-center justify-content-between shadow-sm" id="auth_container">
-
                                     <div class="d-flex align-items-center gap-3">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-camera text-muted" id="camera_icon" viewBox="0 0 16 16">
                                             <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"/>
@@ -632,6 +643,7 @@
     }
 
     const cpfEl = document.getElementById('cpf');
+    const rfEl = document.getElementById('rf');
     const telEl = document.getElementById('telefone');
 
     if (cpfEl) {
@@ -640,6 +652,11 @@
             e.target.value = maskCPF(e.target.value);
             // caret: joga pro final (simples e suficiente)
             e.target.setSelectionRange(e.target.value.length, e.target.value.length);
+        });
+    }
+    if (rfEl) {
+        rfEl.addEventListener('input', e => {
+            e.target.value = onlyDigits(e.target.value).slice(0, 30);
         });
     }
     if (telEl) {

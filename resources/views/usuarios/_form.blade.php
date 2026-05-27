@@ -92,6 +92,16 @@
             </div>
 
             <div class="col-md-6">
+              <label for="rf" class="form-label">RF</label>
+              <input id="rf" type="text" name="rf"
+                inputmode="numeric" autocomplete="off"
+                maxlength="30" pattern="\d*"
+                value="{{ old('rf', $participante->rf ?? '') }}"
+                class="form-control @error('rf') is-invalid @enderror">
+              @error('rf') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="col-md-6">
               <label for="telefone" class="form-label">Telefone</label>
               <input id="telefone" type="text" name="telefone"
                 inputmode="numeric" maxlength="15"
@@ -149,6 +159,7 @@
 
               {{--campo de autorização de imagem--}}
               <div class="col-md-6">
+                <label for="municipio_id" class="form-label"></label>
                   <style>
                       /* div externa */
                       .auth-image-container {
@@ -391,12 +402,19 @@
   }
 
   const cpfEl = document.getElementById('cpf');
+  const rfEl = document.getElementById('rf');
   const telEl = document.getElementById('telefone');
 
   if (cpfEl) {
     cpfEl.addEventListener('input', e => {
       e.target.value = maskCPF(e.target.value);
       e.target.setSelectionRange(e.target.value.length, e.target.value.length);
+    });
+  }
+
+  if (rfEl) {
+    rfEl.addEventListener('input', e => {
+      e.target.value = onlyDigits(e.target.value).slice(0, 30);
     });
   }
 

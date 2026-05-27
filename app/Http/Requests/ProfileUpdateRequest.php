@@ -17,12 +17,14 @@ class ProfileUpdateRequest extends FormRequest
     {
         $toNull = fn ($v) => ($v === '' || $v === null) ? null : $v;
         $cpfDigits = preg_replace('/\D+/', '', (string) ($this->cpf ?? ''));
+        $rf = isset($this->rf) ? trim((string) $this->rf) : null;
         $telDigits = preg_replace('/\D+/', '', (string) ($this->telefone ?? ''));
 
         $this->merge([
             'name'         => isset($this->name) ? trim((string) $this->name) : null,
             'email'        => isset($this->email) ? trim((string) $this->email) : null,
             'cpf'          => $toNull($cpfDigits ?: null),
+            'rf'           => $toNull($rf),
             'telefone'     => $toNull($telDigits ?: null),
             'municipio_id' => $toNull($this->municipio_id ?? null),
             'remove_profile_photo' => $this->boolean('remove_profile_photo'),
@@ -38,6 +40,7 @@ class ProfileUpdateRequest extends FormRequest
             'name'         => ['required', 'string', 'max:255'],
             'email'        => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
             'cpf'          => ['required', 'digits:11'],
+            'rf'           => ['nullable', 'regex:/^\d+$/', 'max:30'],
             'telefone'     => ['nullable', 'regex:/^\d{10,11}$/'],
             'municipio_id' => ['nullable', 'exists:municipios,id'],
             'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
@@ -129,6 +132,8 @@ class ProfileUpdateRequest extends FormRequest
             'email.unique'        => 'Este e-mail já está em uso.',
             'cpf.required'        => 'CPF e obrigatorio.',
             'cpf.digits'          => 'CPF deve conter 11 digitos.',
+            'rf.regex'            => 'RF deve conter apenas numeros.',
+            'rf.max'              => 'RF deve ter no maximo 30 digitos.',
             'telefone.regex'      => 'Telefone deve ter DDD e 10 ou 11 digitos.',
             'municipio_id.exists' => 'Municipio invalido.',
             'profile_photo.image' => 'Envie um arquivo de imagem valido.',

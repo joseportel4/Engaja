@@ -85,7 +85,7 @@
         </div>
         <div class="mb-3">
           <div class="form-text">
-            Colunas: nome, email, cpf, telefone, municipio, tipo_de_organizacao, organizacao, tag
+            Colunas: nome, email, cpf, rf, telefone, municipio, tipo_de_organizacao, organizacao, tag
           </div>
           <div class="mt-2">
             <a href="{{ asset('modelos/modelo_inscricoes_engaja.xlsx') }}" class="btn btn-sm btn-outline-primary">

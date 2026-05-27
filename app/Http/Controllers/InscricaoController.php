@@ -585,7 +585,7 @@ class InscricaoController extends Controller
         }
 
         $naoMomentos = [
-            'nome', 'name', 'email', 'mail', 'e_mail', 'cpf', 'telefone', 'municipio', 'tag',
+            'nome', 'name', 'email', 'mail', 'e_mail', 'cpf', 'rf', 'telefone', 'municipio', 'tag',
             'tipo_organizacao', 'tipo_de_organizacao', 'organizacao', 'escola_unidade',
             'nome_completo', 'primeiro_nome', 'first_name', 'endereco_de_e_mail', 'endereco_de_email',
             'concluido', 'concluida', 'nao_concluido', 'nao_concluida', 'status',
@@ -1065,9 +1065,10 @@ class InscricaoController extends Controller
                     $nome = trim((string) ($row['nome'] ?? ''));
                     $email = trim((string) ($row['email'] ?? ''));
                     $cpf = trim((string) ($row['cpf'] ?? ''));
+                    $rf = trim((string) ($row['rf'] ?? ''));
                     $telefone = trim((string) ($row['telefone'] ?? ''));
 
-                    return $nome !== '' || $email !== '' || $cpf !== '' || $telefone !== '';
+                    return $nome !== '' || $email !== '' || $cpf !== '' || $rf !== '' || $telefone !== '';
                 })->count();
 
                 if ($score > $bestScore) {
@@ -1081,10 +1082,11 @@ class InscricaoController extends Controller
                     $nome = trim((string) ($row['nome'] ?? ''));
                     $email = trim((string) ($row['email'] ?? ''));
                     $cpf = trim((string) ($row['cpf'] ?? ''));
+                    $rf = trim((string) ($row['rf'] ?? ''));
                     $telefone = trim((string) ($row['telefone'] ?? ''));
                     $municipio = trim((string) ($row['municipio'] ?? ''));
 
-                    return $nome !== '' || $email !== '' || $cpf !== '' || $telefone !== '' || $municipio !== '';
+                    return $nome !== '' || $email !== '' || $cpf !== '' || $rf !== '' || $telefone !== '' || $municipio !== '';
                 })
                 ->values()
                 ->all();
@@ -1135,6 +1137,7 @@ class InscricaoController extends Controller
             'nome' => ['nome', 'name'],
             'email' => ['email', 'e mail', 'e_mail', 'mail'],
             'cpf' => ['cpf', 'documento'],
+            'rf' => ['rf'],
             'telefone' => ['telefone', 'celular', 'fone', 'telefone celular', 'telefone_celular'],
             'municipio' => ['municipio', 'município', 'cidade'],
             'tipo_organizacao' => ['tipo de organizacao', 'tipo_da_organizacao', 'tipo organizacao', 'tipoorganizacao'],
@@ -1194,6 +1197,7 @@ class InscricaoController extends Controller
                     $nome = $this->sheetCellValue($sheet, $fieldToColumn['nome'] ?? null, $rowNumber);
                     $email = $this->sheetCellValue($sheet, $fieldToColumn['email'] ?? null, $rowNumber);
                     $cpfRaw = $this->sheetCellValue($sheet, $fieldToColumn['cpf'] ?? null, $rowNumber);
+                    $rfRaw = $this->sheetCellValue($sheet, $fieldToColumn['rf'] ?? null, $rowNumber);
                     $telefoneRaw = $this->sheetCellValue($sheet, $fieldToColumn['telefone'] ?? null, $rowNumber);
                     $municipioNome = $this->sheetCellValue($sheet, $fieldToColumn['municipio'] ?? null, $rowNumber);
                     $tipoOrganizacao = $this->sheetCellValue($sheet, $fieldToColumn['tipo_organizacao'] ?? null, $rowNumber);
@@ -1205,6 +1209,7 @@ class InscricaoController extends Controller
                         $nome === '' &&
                         $email === '' &&
                         $cpfRaw === '' &&
+                        $rfRaw === '' &&
                         $telefoneRaw === '' &&
                         $municipioNome === '' &&
                         $tipoOrganizacao === '' &&
@@ -1227,6 +1232,7 @@ class InscricaoController extends Controller
                         'nome' => $nome,
                         'email' => $email,
                         'cpf' => preg_replace('/\D+/', '', $cpfRaw) ?: null,
+                        'rf' => preg_replace('/\D+/', '', $rfRaw) ?: null,
                         'telefone' => preg_replace('/\D+/', '', $telefoneRaw) ?: null,
                         'municipio' => $municipioNome,
                         'municipio_id' => $municipioId,
@@ -1621,10 +1627,12 @@ class InscricaoController extends Controller
                     : (is_scalar($telefoneRaw) ? trim((string) $telefoneRaw) : null);
 
                 $telefoneValue = $telefoneValue !== '' ? $telefoneValue : null;
+                $rfValue = isset($row['rf']) ? preg_replace('/\D+/', '', (string) $row['rf']) : '';
 
                 $dados = [
                     'municipio_id' => ($row['municipio_id'] ?? null) ?: null,
                     'cpf' => (($row['cpf'] ?? '') !== '') ? trim((string) $row['cpf']) : null,
+                    'rf' => $rfValue !== '' ? $rfValue : null,
                     'telefone' => $telefoneValue,
                     'escola_unidade' => ($org !== '') ? $org : null,
                     'tipo_organizacao' => ($tipoOrg !== '') ? $tipoOrg : null,
@@ -1633,7 +1641,7 @@ class InscricaoController extends Controller
                 ];
 
                 if ($participantesExistentes->has($userId)) {
-                    $camposProtegidos = ['municipio_id', 'cpf', 'telefone', 'escola_unidade', 'tipo_organizacao', 'tag', 'data_entrada'];
+                    $camposProtegidos = ['municipio_id', 'cpf', 'rf', 'telefone', 'escola_unidade', 'tipo_organizacao', 'tag', 'data_entrada'];
                     foreach ($camposProtegidos as $campo) {
                         if (array_key_exists($campo, $dados) && $dados[$campo] === null) {
                             unset($dados[$campo]);
@@ -1663,7 +1671,7 @@ class InscricaoController extends Controller
 
             if (count($atualizacoes)) {
                 $idsToUpdate = array_column($atualizacoes, 'user_id');
-                $campos = ['municipio_id', 'cpf', 'telefone', 'escola_unidade', 'tipo_organizacao', 'tag', 'data_entrada'];
+                $campos = ['municipio_id', 'cpf', 'rf', 'telefone', 'escola_unidade', 'tipo_organizacao', 'tag', 'data_entrada'];
                 $cases = [];
                 foreach ($campos as $field) {
                     $sql = "$field = CASE user_id\n";

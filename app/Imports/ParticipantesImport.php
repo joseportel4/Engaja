@@ -122,6 +122,7 @@ class ParticipantesImport implements ToModel, WithHeadingRow, SkipsEmptyRows
             [
                 'municipio_id'     => $municipioId,
                 'cpf'              => $row['cpf'] ?? null,
+                'rf'               => isset($row['rf']) ? (preg_replace('/\D+/', '', (string) $row['rf']) ?: null) : null,
                 'telefone'         => $row['telefone'] ?? null,
                 'escola_unidade'   => $organizacaoOut ?: null,
                 'tipo_organizacao' => $tipoOut,

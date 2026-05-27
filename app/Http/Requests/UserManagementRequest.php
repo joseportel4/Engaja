@@ -21,6 +21,7 @@ class UserManagementRequest extends FormRequest
         $toNull = fn($v) => ($v === '' || $v === null) ? null : $v;
 
         $cpfDigits = preg_replace('/\D+/', '', (string)($this->cpf ?? ''));
+        $rf = isset($this->rf) ? trim((string) $this->rf) : null;
         $telDigits = preg_replace('/\D+/', '', (string)($this->telefone ?? ''));
 
         $this->merge([
@@ -28,6 +29,7 @@ class UserManagementRequest extends FormRequest
             'email'            => isset($this->email) ? trim((string)$this->email) : null,
             'role'             => isset($this->role) ? trim((string)$this->role) : null,
             'cpf'              => $toNull($cpfDigits ?: null),
+            'rf'               => $toNull($rf),
             'telefone'         => $toNull($telDigits ?: null),
             'municipio_id'     => $toNull($this->municipio_id ?? null),
             'escola_unidade'   => $toNull(isset($this->escola_unidade) ? trim((string)$this->escola_unidade) : null),
@@ -53,6 +55,7 @@ class UserManagementRequest extends FormRequest
             'role'  => ['nullable','string', Rule::in($this->assignableRoleNames())],
 
             'cpf'              => ['nullable','digits:11'],
+            'rf'               => ['nullable', 'regex:/^\d+$/', 'max:30'],
             'telefone'         => ['nullable','regex:/^\\d{10,11}$/'],
             'municipio_id'     => ['nullable','exists:municipios,id'],
             'escola_unidade'   => ['nullable','string','max:255'],
@@ -152,6 +155,8 @@ class UserManagementRequest extends FormRequest
             'role.in'             => 'O papel selecionado nao e permitido.',
             'cpf.required'        => 'CPF e obrigatorio.',
             'cpf.digits'          => 'CPF deve conter 11 digitos.',
+            'rf.regex'            => 'RF deve conter apenas numeros.',
+            'rf.max'              => 'RF deve ter no maximo 30 digitos.',
             'telefone.regex'      => 'Telefone deve ter DDD e 10 ou 11 digitos.',
             'municipio_id.exists' => 'Municipio invalido.',
             'tipo_organizacao.in' => 'Selecione um tipo de organizacao valido.',

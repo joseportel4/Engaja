@@ -96,6 +96,7 @@
             <th style="min-width:220px;">Nome *</th>
             <th style="min-width:240px;">Email *</th>
             <th style="min-width:140px;">CPF</th>
+            <th style="min-width:120px;">RF</th>
             <th style="min-width:140px;">Telefone</th>
             <th style="min-width:260px;">Município</th>
             <th style="min-width:220px;">Tipo de Organização</th>
@@ -111,6 +112,7 @@
             <td><input class="form-control form-control-sm" name="rows[{{ $idx }}][nome]" value="{{ old("rows.$idx.nome", $r['nome']) }}" required></td>
             <td><input type="email" class="form-control form-control-sm" name="rows[{{ $idx }}][email]" value="{{ old("rows.$idx.email", $r['email']) }}" required></td>
             <td><input class="form-control form-control-sm" name="rows[{{ $idx }}][cpf]" value="{{ old("rows.$idx.cpf", $r['cpf']) }}"></td>
+            <td><input class="form-control form-control-sm" name="rows[{{ $idx }}][rf]" value="{{ old("rows.$idx.rf", $r['rf'] ?? '') }}" inputmode="numeric" pattern="\d*"></td>
             <td><input class="form-control form-control-sm" name="rows[{{ $idx }}][telefone]" value="{{ old("rows.$idx.telefone", $r['telefone']) }}"></td>
 
             <td>
