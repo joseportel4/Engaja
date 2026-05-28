@@ -129,20 +129,24 @@
                 <h2 class="h6 fw-bold mb-2">Confirmação de presença (QR)</h2>
                 <div class="d-flex align-items-center gap-3 flex-wrap">
                     <div class="p-2 border rounded bg-white">
-                        <img src="data:image/png;base64, {!! base64_encode(
-          QrCode::format('png')
-              ->style('round')
-              ->color(129,18,131)
-              ->eye('circle')
-              ->eyeColor(0, 0,156,209,0,156,209)
-              ->eyeColor(1, 44,181,124,44,181,124)
-              ->eyeColor(2, 192,12,142,192,12,142)
-              ->size(200)
-              ->margin(0)
-              ->merge(public_path('/images/favicon-eja.png'), 0.3, true)
-              ->errorCorrection('H')
-              ->generate(route('presenca.confirmar', $atividade))
-        ) !!}" alt="QR Code">
+                        @php
+                            $qrFormat = env('QR_CODE_FORMAT', 'png');
+                            $qrData = QrCode::format($qrFormat)
+                                ->style('round')
+                                ->color(129,18,131)
+                                ->eye('circle')
+                                ->eyeColor(0, 0,156,209,0,156,209)
+                                ->eyeColor(1, 44,181,124,44,181,124)
+                                ->eyeColor(2, 192,12,142,192,12,142)
+                                ->size(200)
+                                ->margin(0)
+                                ->merge(public_path('/images/favicon-eja.png'), 0.3, true)
+                                ->errorCorrection('H')
+                                ->generate(route('presenca.confirmar', $atividade));
+                            $qrMime = $qrFormat === 'svg' ? 'image/svg+xml' : 'image/'.$qrFormat;
+                            $qrSrc = 'data:'.$qrMime.';base64,'.base64_encode($qrData);
+                        @endphp
+                        <img src="{{ $qrSrc }}" alt="QR Code">
                     </div>
                 </div>
             </div>

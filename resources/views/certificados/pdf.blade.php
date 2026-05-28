@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <style>
     @page { size: A4 landscape; margin: 0; }
-    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    html, body { margin: 0; padding: 0; width: 297mm; height: 210mm; font-family: Arial, sans-serif; }
     .page {
       position: relative;
-      width: 100%;
-      height: 100%;
+      width: 297mm;
+      height: 210mm;
       page-break-after: always;
       overflow: hidden;
     }
@@ -56,7 +56,8 @@
         hexdec(substr($qrColorHex, 4, 2)),
     ];
     if ($qrLink && class_exists(\SimpleSoftwareIO\QrCode\Facades\QrCode::class)) {
-        $qrPng = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
+        $qrFormat = env('QR_CODE_FORMAT', 'png');
+        $qrData = \SimpleSoftwareIO\QrCode\Facades\QrCode::format($qrFormat)
             ->style('round')
             ->eye('circle')
             ->eyeColor(0, $qrRGB[0], $qrRGB[1], $qrRGB[2], $qrRGB[0], $qrRGB[1], $qrRGB[2])
@@ -67,7 +68,8 @@
             ->size(280)
             ->errorCorrection('H')
             ->generate($qrLink);
-        $qrBase64 = 'data:image/png;base64,'.base64_encode($qrPng);
+        $qrMime = $qrFormat === 'svg' ? 'image/svg+xml' : 'image/'.$qrFormat;
+        $qrBase64 = "data:{$qrMime};base64,".base64_encode($qrData);
     }
     $frenteInfo = ($frenteFile && file_exists($frenteFile)) ? @getimagesize($frenteFile) : null;
     $versoInfo  = ($versoFile && file_exists($versoFile)) ? @getimagesize($versoFile) : null;
@@ -190,8 +192,8 @@
       $imgH = max(1, (float)($frenteInfo[1] ?? 1100));
       $cw = max(1, (float)($layoutFrente['canvas_w'] ?? $imgW));
       $ch = max(1, (float)($layoutFrente['canvas_h'] ?? $imgH));
-      $pageW = 842.0;
-      $pageH = 595.0;
+      $pageW = 1122.52;
+      $pageH = 793.70;
       $scale = min($pageW / $imgW, $pageH / $imgH);
       $renderW = $imgW * $scale;
       $renderH = $imgH * $scale;
@@ -259,8 +261,8 @@
       $imgH = max(1, (float)($versoInfo[1] ?? 1100));
       $cw = max(1, (float)($layoutVerso['canvas_w'] ?? $imgW));
       $ch = max(1, (float)($layoutVerso['canvas_h'] ?? $imgH));
-      $pageW = 842.0;
-      $pageH = 595.0;
+      $pageW = 1122.52;
+      $pageH = 793.70;
       $scale = min($pageW / $imgW, $pageH / $imgH);
       $renderW = $imgW * $scale;
       $renderH = $imgH * $scale;
