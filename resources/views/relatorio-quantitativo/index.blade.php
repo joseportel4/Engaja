@@ -38,10 +38,10 @@
                     <i class="bi bi-file-earmark-spreadsheet"></i> Excel
                 </a>
             @else
-                <a href="{{ route('relatorio-quantitativo.exportar-total-geral') }}?{{ http_build_query(array_merge(request()->query(), ['formato' => 'pdf'])) }}" class="btn btn-sm btn-outline-danger" title="Exportar como PDF">
+                <a id="btn-export-total-geral-pdf" href="{{ route('relatorio-quantitativo.exportar-total-geral') }}?{{ http_build_query(array_merge(request()->query(), ['formato' => 'pdf'])) }}" class="btn btn-sm btn-outline-danger" title="Exportar como PDF">
                     <i class="bi bi-filetype-pdf"></i> PDF
                 </a>
-                <a href="{{ route('relatorio-quantitativo.exportar-total-geral') }}?{{ http_build_query(array_merge(request()->query(), ['formato' => 'xlsx'])) }}" class="btn btn-sm btn-outline-success" title="Exportar como Excel">
+                <a id="btn-export-total-geral-xlsx" href="{{ route('relatorio-quantitativo.exportar-total-geral') }}?{{ http_build_query(array_merge(request()->query(), ['formato' => 'xlsx'])) }}" class="btn btn-sm btn-outline-success" title="Exportar como Excel">
                     <i class="bi bi-file-earmark-spreadsheet"></i> Excel
                 </a>
             @endif
@@ -278,6 +278,17 @@
         </div>
     </div>
 
+    {{-- Botões de alternância de dimensões --}}
+    <div class="mb-3 d-flex gap-2 flex-wrap align-items-center">
+        <span class="text-muted small fw-semibold me-1">Exibir:</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary dim-toggle active" data-dim="cpf">CPF</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary dim-toggle" data-dim="raca_cor">Raça/Cor</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary dim-toggle" data-dim="genero">Gênero</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary dim-toggle" data-dim="pcd">PcD</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary dim-toggle" data-dim="certificados">Certificados</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary dim-toggle" data-dim="tag">Tag</button>
+    </div>
+
     <div class="card shadow-sm">
         <div class="card-body p-0">
             @php
@@ -297,46 +308,156 @@
             @if($totalGeral->filter(fn($r) => !isset($r['_is_total']))->isEmpty())
                 <div class="p-4 text-center text-muted">Nenhum dado encontrado com os filtros aplicados.</div>
             @else
+            @php
+                $fmtPct = fn($v) => $v > 0 ? number_format($v, 1, ',', '.') . '%' : '—';
+            @endphp
             <div class="table-responsive">
                 <table class="table table-sm table-bordered align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>{!! tg_sort_link('Região', 'regiao') !!}</th>
-                            <th>{!! tg_sort_link('Município', 'municipio') !!}</th>
-                            <th class="text-end">{!! tg_sort_link('Previstos', 'previstos') !!}</th>
-                            <th class="text-end">{!! tg_sort_link('Com CPF', 'com_cpf') !!}</th>
-                            <th class="text-end">{!! tg_sort_link('Sem CPF', 'sem_cpf') !!}</th>
-                            <th class="text-end">{!! tg_sort_link('% Com CPF', 'pct_cpf') !!}</th>
+                            <th rowspan="2">{!! tg_sort_link('Região', 'regiao') !!}</th>
+                            <th rowspan="2">{!! tg_sort_link('Município', 'municipio') !!}</th>
+                            <th rowspan="2" class="text-end">{!! tg_sort_link('Previstos', 'previstos') !!}</th>
+                            <th rowspan="2" class="text-end">{!! tg_sort_link('Total Presentes', 'total_presentes') !!}</th>
+                            <th colspan="3" class="text-center dim-col dim-cpf" style="border-bottom:1px solid #dee2e6;">CPF</th>
+                            <th colspan="10" class="text-center dim-col dim-raca_cor d-none" style="border-bottom:1px solid #dee2e6;">Raça/Cor</th>
+                            <th colspan="6" class="text-center dim-col dim-genero d-none" style="border-bottom:1px solid #dee2e6;">Gênero</th>
+                            <th colspan="2" class="text-center dim-col dim-pcd d-none" style="border-bottom:1px solid #dee2e6;">PcD</th>
+                            <th colspan="2" class="text-center dim-col dim-certificados d-none" style="border-bottom:1px solid #dee2e6;">Certificados</th>
+                            <th colspan="4" class="text-center dim-col dim-tag d-none" style="border-bottom:1px solid #dee2e6;">Tag</th>
+                        </tr>
+                        <tr id="tg-header-row2">
+                            <th class="text-end dim-col dim-cpf">{!! tg_sort_link('Com CPF', 'com_cpf') !!}</th>
+                            <th class="text-end dim-col dim-cpf">{!! tg_sort_link('Sem CPF', 'sem_cpf') !!}</th>
+                            <th class="text-end dim-col dim-cpf">{!! tg_sort_link('% Com CPF', 'pct_cpf') !!}</th>
+                            <th class="text-end dim-col dim-raca_cor d-none">Branca</th>
+                            <th class="text-end dim-col dim-raca_cor d-none">%</th>
+                            <th class="text-end dim-col dim-raca_cor d-none">Parda</th>
+                            <th class="text-end dim-col dim-raca_cor d-none">%</th>
+                            <th class="text-end dim-col dim-raca_cor d-none">Preta</th>
+                            <th class="text-end dim-col dim-raca_cor d-none">%</th>
+                            <th class="text-end dim-col dim-raca_cor d-none">Amarela</th>
+                            <th class="text-end dim-col dim-raca_cor d-none">%</th>
+                            <th class="text-end dim-col dim-raca_cor d-none">Indígena</th>
+                            <th class="text-end dim-col dim-raca_cor d-none">%</th>
+                            <th class="text-end dim-col dim-genero d-none">Mulheres</th>
+                            <th class="text-end dim-col dim-genero d-none">%</th>
+                            <th class="text-end dim-col dim-genero d-none">Homens</th>
+                            <th class="text-end dim-col dim-genero d-none">%</th>
+                            <th class="text-end dim-col dim-genero d-none">Outros/NB</th>
+                            <th class="text-end dim-col dim-genero d-none">%</th>
+                            <th class="text-end dim-col dim-pcd d-none">Qtd</th>
+                            <th class="text-end dim-col dim-pcd d-none">%</th>
+                            <th class="text-end dim-col dim-certificados d-none">Qtd</th>
+                            <th class="text-end dim-col dim-certificados d-none">%</th>
+                            <th class="text-end dim-col dim-tag d-none">Rede Ensino</th>
+                            <th class="text-end dim-col dim-tag d-none">%</th>
+                            <th class="text-end dim-col dim-tag d-none">Mov. Social</th>
+                            <th class="text-end dim-col dim-tag d-none">%</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($totalGeral as $row)
-                            @if(isset($row['_is_total']) || isset($row['_is_unidentified']))
-                                @if(isset($row['_is_unidentified']))
-                                <tr style="background-color:#f8f5f0;">
-                                    <td colspan="2">{{ $row['municipio_nome'] }}</td>
-                                    <td class="text-end">{{ $row['previstos'] ?: '—' }}</td>
-                                    <td class="text-end">{{ $row['metricas']['cpf']['com'] }}</td>
-                                    <td class="text-end">{{ $row['metricas']['cpf']['sem'] }}</td>
-                                    <td class="text-end">{{ ($row['metricas']['cpf']['com'] + $row['metricas']['cpf']['sem']) > 0 ? number_format($row['metricas']['cpf']['pct'], 2, ',', '.') . '%' : '—' }}</td>
-                                </tr>
-                                @else
-                                <tr style="background-color:#e8daea; font-weight:700;">
-                                    <td colspan="2" class="text-end pe-3">{{ $row['municipio_nome'] }}</td>
-                                    <td class="text-end">{{ $row['previstos'] ?: '—' }}</td>
-                                    <td class="text-end">{{ $row['metricas']['cpf']['com'] }}</td>
-                                    <td class="text-end">{{ $row['metricas']['cpf']['sem'] }}</td>
-                                    <td class="text-end">{{ ($row['metricas']['cpf']['com'] + $row['metricas']['cpf']['sem']) > 0 ? number_format($row['metricas']['cpf']['pct'], 2, ',', '.') . '%' : '—' }}</td>
-                                </tr>
-                                @endif
+                            @php $tp = $row['metricas']['total_presentes']; @endphp
+                            @if(isset($row['_is_unidentified']))
+                            <tr style="background-color:#f8f5f0;">
+                                <td colspan="2">{{ $row['municipio_nome'] }}</td>
+                                <td class="text-end">{{ $row['previstos'] ?: '—' }}</td>
+                                <td class="text-end">{{ $tp ?: '—' }}</td>
+                                <td class="text-end dim-col dim-cpf">{{ $row['metricas']['cpf']['com'] }}</td>
+                                <td class="text-end dim-col dim-cpf">{{ $row['metricas']['cpf']['sem'] }}</td>
+                                <td class="text-end dim-col dim-cpf">{{ $tp > 0 ? $fmtPct($row['metricas']['cpf']['pct']) : '—' }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['branca'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_branca']) }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['parda'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_parda']) }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['preta'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_preta']) }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['amarela'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_amarela']) }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['indigena'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_indigena']) }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['mulheres'] }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_mulheres']) }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['homens'] }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_homens']) }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['outros'] }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_outros']) }}</td>
+                                <td class="text-end dim-col dim-pcd d-none">{{ $row['metricas']['pcd']['n'] }}</td>
+                                <td class="text-end dim-col dim-pcd d-none">{{ $fmtPct($row['metricas']['pcd']['pct']) }}</td>
+                                <td class="text-end dim-col dim-certificados d-none">{{ $row['metricas']['certificados']['n'] }}</td>
+                                <td class="text-end dim-col dim-certificados d-none">{{ $fmtPct($row['metricas']['certificados']['pct']) }}</td>
+                                <td class="text-end dim-col dim-tag d-none">{{ $row['metricas']['tag']['rede_ensino'] }}</td>
+                                <td class="text-end dim-col dim-tag d-none">{{ $fmtPct($row['metricas']['tag']['pct_rede_ensino']) }}</td>
+                                <td class="text-end dim-col dim-tag d-none">{{ $row['metricas']['tag']['movimento_social'] }}</td>
+                                <td class="text-end dim-col dim-tag d-none">{{ $fmtPct($row['metricas']['tag']['pct_movimento_social']) }}</td>
+                            </tr>
+                            @elseif(isset($row['_is_total']))
+                            <tr style="background-color:#e8daea; font-weight:700;">
+                                <td colspan="2" class="text-end pe-3">{{ $row['municipio_nome'] }}</td>
+                                <td class="text-end">{{ $row['previstos'] ?: '—' }}</td>
+                                <td class="text-end">{{ $tp ?: '—' }}</td>
+                                <td class="text-end dim-col dim-cpf">{{ $row['metricas']['cpf']['com'] }}</td>
+                                <td class="text-end dim-col dim-cpf">{{ $row['metricas']['cpf']['sem'] }}</td>
+                                <td class="text-end dim-col dim-cpf">{{ $tp > 0 ? $fmtPct($row['metricas']['cpf']['pct']) : '—' }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['branca'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_branca']) }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['parda'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_parda']) }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['preta'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_preta']) }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['amarela'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_amarela']) }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['indigena'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_indigena']) }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['mulheres'] }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_mulheres']) }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['homens'] }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_homens']) }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['outros'] }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_outros']) }}</td>
+                                <td class="text-end dim-col dim-pcd d-none">{{ $row['metricas']['pcd']['n'] }}</td>
+                                <td class="text-end dim-col dim-pcd d-none">{{ $fmtPct($row['metricas']['pcd']['pct']) }}</td>
+                                <td class="text-end dim-col dim-certificados d-none">{{ $row['metricas']['certificados']['n'] }}</td>
+                                <td class="text-end dim-col dim-certificados d-none">{{ $fmtPct($row['metricas']['certificados']['pct']) }}</td>
+                                <td class="text-end dim-col dim-tag d-none">{{ $row['metricas']['tag']['rede_ensino'] }}</td>
+                                <td class="text-end dim-col dim-tag d-none">{{ $fmtPct($row['metricas']['tag']['pct_rede_ensino']) }}</td>
+                                <td class="text-end dim-col dim-tag d-none">{{ $row['metricas']['tag']['movimento_social'] }}</td>
+                                <td class="text-end dim-col dim-tag d-none">{{ $fmtPct($row['metricas']['tag']['pct_movimento_social']) }}</td>
+                            </tr>
                             @else
                             <tr>
                                 <td>{{ $row['regiao'] }}</td>
                                 <td>{{ $row['municipio_nome'] }}</td>
                                 <td class="text-end">{{ $row['previstos'] ?: '—' }}</td>
-                                <td class="text-end">{{ $row['metricas']['cpf']['com'] }}</td>
-                                <td class="text-end">{{ $row['metricas']['cpf']['sem'] }}</td>
-                                <td class="text-end">{{ ($row['metricas']['cpf']['com'] + $row['metricas']['cpf']['sem']) > 0 ? $row['metricas']['cpf']['pct'] . '%' : '—' }}</td>
+                                <td class="text-end">{{ $tp ?: '—' }}</td>
+                                <td class="text-end dim-col dim-cpf">{{ $row['metricas']['cpf']['com'] }}</td>
+                                <td class="text-end dim-col dim-cpf">{{ $row['metricas']['cpf']['sem'] }}</td>
+                                <td class="text-end dim-col dim-cpf">{{ $tp > 0 ? $fmtPct($row['metricas']['cpf']['pct']) : '—' }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['branca'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_branca']) }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['parda'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_parda']) }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['preta'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_preta']) }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['amarela'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_amarela']) }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['indigena'] }}</td>
+                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_indigena']) }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['mulheres'] }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_mulheres']) }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['homens'] }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_homens']) }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['outros'] }}</td>
+                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_outros']) }}</td>
+                                <td class="text-end dim-col dim-pcd d-none">{{ $row['metricas']['pcd']['n'] }}</td>
+                                <td class="text-end dim-col dim-pcd d-none">{{ $fmtPct($row['metricas']['pcd']['pct']) }}</td>
+                                <td class="text-end dim-col dim-certificados d-none">{{ $row['metricas']['certificados']['n'] }}</td>
+                                <td class="text-end dim-col dim-certificados d-none">{{ $fmtPct($row['metricas']['certificados']['pct']) }}</td>
+                                <td class="text-end dim-col dim-tag d-none">{{ $row['metricas']['tag']['rede_ensino'] }}</td>
+                                <td class="text-end dim-col dim-tag d-none">{{ $fmtPct($row['metricas']['tag']['pct_rede_ensino']) }}</td>
+                                <td class="text-end dim-col dim-tag d-none">{{ $row['metricas']['tag']['movimento_social'] }}</td>
+                                <td class="text-end dim-col dim-tag d-none">{{ $fmtPct($row['metricas']['tag']['pct_movimento_social']) }}</td>
                             </tr>
                             @endif
                         @endforeach
@@ -427,6 +548,52 @@
             municipioSelect.value = '';
         }
     });
+})();
+</script>
+
+{{-- Script de alternância de dimensões na aba Total Geral --}}
+<script>
+(function () {
+    var toggleBtns = document.querySelectorAll('.dim-toggle');
+    if (!toggleBtns.length) return;
+
+    function updateHeaderRow2() {
+        var row2 = document.getElementById('tg-header-row2');
+        if (!row2) return;
+        var anyVisible = Array.from(row2.querySelectorAll('th')).some(function (th) {
+            return !th.classList.contains('d-none');
+        });
+        row2.style.display = anyVisible ? '' : 'none';
+    }
+
+    function updateExportUrls() {
+        var activeDims = Array.from(document.querySelectorAll('.dim-toggle.active')).map(function (b) { return b.dataset.dim; });
+
+        ['btn-export-total-geral-pdf', 'btn-export-total-geral-xlsx'].forEach(function (id) {
+            var btn = document.getElementById(id);
+            if (!btn) return;
+            var url = new URL(btn.href);
+            url.searchParams.delete('dimensoes[]');
+            activeDims.forEach(function (d) { url.searchParams.append('dimensoes[]', d); });
+            btn.href = url.toString();
+        });
+    }
+
+    toggleBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var dim = this.dataset.dim;
+            var isActive = this.classList.toggle('active');
+            document.querySelectorAll('.dim-' + dim).forEach(function (el) {
+                el.classList.toggle('d-none', !isActive);
+            });
+            updateHeaderRow2();
+            updateExportUrls();
+        });
+    });
+
+    // Inicializar: CPF já está ativo (não precisa de toggle), demais dimensões ocultas
+    // Acionar updateExportUrls para preencher URL inicial com cpf
+    updateExportUrls();
 })();
 </script>
 

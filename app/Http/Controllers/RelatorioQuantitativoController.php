@@ -113,7 +113,7 @@ class RelatorioQuantitativoController extends Controller
     private function buildTotalGeralData(Request $request)
     {
         $eventoId = $request->integer('evento_id');
-        $municipioId = $request->integer('municipio_id');
+        $municipioIdFiltro = $request->integer('municipio_id');
         $regiaoId = $request->integer('regiao_id');
         $de = $request->date('de');
         $ate = $request->date('ate');
@@ -126,7 +126,7 @@ class RelatorioQuantitativoController extends Controller
             ->select('municipio_id')
             ->selectRaw('SUM(publico_esperado) as previstos')
             ->when($eventoId, fn ($q) => $q->where('evento_id', $eventoId))
-            ->when($municipioId, fn ($q) => $q->where('municipio_id', $municipioId))
+            ->when($municipioIdFiltro, fn ($q) => $q->where('municipio_id', $municipioIdFiltro))
             ->when($de && $ate, fn ($q) => $q->whereBetween('dia', [$de, $ate]))
             ->when($de && ! $ate, fn ($q) => $q->where('dia', '>=', $de))
             ->when(! $de && $ate, fn ($q) => $q->where('dia', '<=', $ate))
@@ -136,19 +136,32 @@ class RelatorioQuantitativoController extends Controller
             ->get()
             ->keyBy('municipio_id');
 
-        // Query 2: Contagens de CPF por município
+        // Query 2: Contagens de CPF e métricas demográficas por município
         $cpfCounts = \DB::table('presencas')
             ->selectRaw('atividades.municipio_id')
             ->selectRaw('COUNT(DISTINCT CASE WHEN participantes.cpf IS NOT NULL AND participantes.cpf != \'\' THEN participantes.id END) as com_cpf')
             ->selectRaw('COUNT(DISTINCT CASE WHEN participantes.cpf IS NULL OR participantes.cpf = \'\' THEN participantes.id END) as sem_cpf')
+            ->selectRaw("COUNT(DISTINCT CASE WHEN users.raca_cor = 'Branca'   THEN participantes.id END) as raca_branca")
+            ->selectRaw("COUNT(DISTINCT CASE WHEN users.raca_cor = 'Parda'    THEN participantes.id END) as raca_parda")
+            ->selectRaw("COUNT(DISTINCT CASE WHEN users.raca_cor = 'Preta'    THEN participantes.id END) as raca_preta")
+            ->selectRaw("COUNT(DISTINCT CASE WHEN users.raca_cor = 'Amarela'  THEN participantes.id END) as raca_amarela")
+            ->selectRaw("COUNT(DISTINCT CASE WHEN users.raca_cor = 'Indígena' THEN participantes.id END) as raca_indigena")
+            ->selectRaw("COUNT(DISTINCT CASE WHEN users.identidade_genero ILIKE '%Mulher%' OR users.identidade_genero ILIKE '%Travesti%' THEN participantes.id END) as genero_mulheres")
+            ->selectRaw("COUNT(DISTINCT CASE WHEN users.identidade_genero ILIKE '%Homem%' THEN participantes.id END) as genero_homens")
+            ->selectRaw("COUNT(DISTINCT CASE WHEN users.identidade_genero IS NOT NULL AND users.identidade_genero NOT ILIKE '%Mulher%' AND users.identidade_genero NOT ILIKE '%Travesti%' AND users.identidade_genero NOT ILIKE '%Homem%' THEN participantes.id END) as genero_outros")
+            ->selectRaw("COUNT(DISTINCT CASE WHEN users.pcd IS NOT NULL AND users.pcd <> '' AND users.pcd <> 'Não' THEN participantes.id END) as com_pcd")
+            ->selectRaw('COUNT(DISTINCT CASE WHEN presencas.certificado_emitido = true THEN participantes.id END) as certificados_emitidos')
+            ->selectRaw("COUNT(DISTINCT CASE WHEN participantes.tag = 'Rede de Ensino'   THEN participantes.id END) as tag_rede_ensino")
+            ->selectRaw("COUNT(DISTINCT CASE WHEN participantes.tag = 'Movimento Social' THEN participantes.id END) as tag_movimento_social")
             ->join('atividades', 'presencas.atividade_id', '=', 'atividades.id')
             ->join('inscricaos', 'presencas.inscricao_id', '=', 'inscricaos.id')
             ->join('participantes', 'inscricaos.participante_id', '=', 'participantes.id')
+            ->join('users', 'users.id', '=', 'participantes.user_id')
             ->where('presencas.status', 'presente')
             ->whereNull('atividades.deleted_at')
             ->whereNotNull('atividades.evento_id')
             ->when($eventoId, fn ($q) => $q->where('atividades.evento_id', $eventoId))
-            ->when($municipioId, fn ($q) => $q->where('atividades.municipio_id', $municipioId))
+            ->when($municipioIdFiltro, fn ($q) => $q->where('atividades.municipio_id', $municipioIdFiltro))
             ->when($de && $ate, fn ($q) => $q->whereBetween('atividades.dia', [$de, $ate]))
             ->when($de && ! $ate, fn ($q) => $q->where('atividades.dia', '>=', $de))
             ->when(! $de && $ate, fn ($q) => $q->where('atividades.dia', '<=', $ate))
@@ -164,71 +177,127 @@ class RelatorioQuantitativoController extends Controller
         $municipios = $municipiosQuery->get()->keyBy('id');
 
         // Mesclar dados
+        $pct = fn (int $n, int $total): float => $total > 0 ? round($n / $total * 100, 1) : 0.0;
+
+        $buildMetricas = function (int $tp, ?object $counts) use ($pct): array {
+            $comCpf = (int) ($counts?->com_cpf ?? 0);
+            $semCpf = (int) ($counts?->sem_cpf ?? 0);
+            $racaBranca = (int) ($counts?->raca_branca ?? 0);
+            $racaParda = (int) ($counts?->raca_parda ?? 0);
+            $racaPreta = (int) ($counts?->raca_preta ?? 0);
+            $racaAmarela = (int) ($counts?->raca_amarela ?? 0);
+            $racaIndigena = (int) ($counts?->raca_indigena ?? 0);
+            $genMulheres = (int) ($counts?->genero_mulheres ?? 0);
+            $genHomens = (int) ($counts?->genero_homens ?? 0);
+            $genOutros = (int) ($counts?->genero_outros ?? 0);
+            $comPcd = (int) ($counts?->com_pcd ?? 0);
+            $certificados = (int) ($counts?->certificados_emitidos ?? 0);
+            $tagRede = (int) ($counts?->tag_rede_ensino ?? 0);
+            $tagMov = (int) ($counts?->tag_movimento_social ?? 0);
+
+            return [
+                'total_presentes' => $tp,
+                'cpf' => ['com' => $comCpf, 'sem' => $semCpf, 'pct' => $pct($comCpf, $tp)],
+                'raca_cor' => [
+                    'branca' => $racaBranca,   'pct_branca' => $pct($racaBranca, $tp),
+                    'parda' => $racaParda,    'pct_parda' => $pct($racaParda, $tp),
+                    'preta' => $racaPreta,    'pct_preta' => $pct($racaPreta, $tp),
+                    'amarela' => $racaAmarela,  'pct_amarela' => $pct($racaAmarela, $tp),
+                    'indigena' => $racaIndigena, 'pct_indigena' => $pct($racaIndigena, $tp),
+                ],
+                'genero' => [
+                    'mulheres' => $genMulheres, 'pct_mulheres' => $pct($genMulheres, $tp),
+                    'homens' => $genHomens,   'pct_homens' => $pct($genHomens, $tp),
+                    'outros' => $genOutros,   'pct_outros' => $pct($genOutros, $tp),
+                ],
+                'pcd' => ['n' => $comPcd,       'pct' => $pct($comPcd, $tp)],
+                'certificados' => ['n' => $certificados, 'pct' => $pct($certificados, $tp)],
+                'tag' => [
+                    'rede_ensino' => $tagRede, 'pct_rede_ensino' => $pct($tagRede, $tp),
+                    'movimento_social' => $tagMov,  'pct_movimento_social' => $pct($tagMov, $tp),
+                ],
+            ];
+        };
+
         $rows = [];
         $totais = [
             'previstos' => 0,
-            'com_cpf' => 0,
-            'sem_cpf' => 0,
+            'com_cpf' => 0, 'sem_cpf' => 0,
+            'raca_branca' => 0, 'raca_parda' => 0, 'raca_preta' => 0, 'raca_amarela' => 0, 'raca_indigena' => 0,
+            'genero_mulheres' => 0, 'genero_homens' => 0, 'genero_outros' => 0,
+            'pcd' => 0, 'certificados' => 0,
+            'tag_rede_ensino' => 0, 'tag_movimento_social' => 0,
         ];
 
         // Linhas de municípios identificados
-        foreach ($municipios as $municipioId => $municipio) {
-            if ($municipioId === null) {
+        foreach ($municipios as $mId => $municipio) {
+            if ($mId === null) {
                 continue;
             }
 
-            $prev = $previstos->get($municipioId)?->previstos ?? 0;
-            $comCpf = $cpfCounts->get($municipioId)?->com_cpf ?? 0;
-            $semCpf = $cpfCounts->get($municipioId)?->sem_cpf ?? 0;
-            $total = $comCpf + $semCpf;
-            $pctCpf = $total > 0 ? round($comCpf / $total * 100, 2) : 0;
+            $prev = $previstos->get($mId)?->previstos ?? 0;
+            $counts = $cpfCounts->get($mId);
+            $comCpf = (int) ($counts?->com_cpf ?? 0);
+            $semCpf = (int) ($counts?->sem_cpf ?? 0);
+            $tp = $comCpf + $semCpf;
 
             $rows[] = [
-                'municipio_id' => $municipioId,
+                'municipio_id' => $mId,
                 'municipio_nome' => $municipio->nome,
                 'regiao' => $municipio->estado->regiao->nome ?? 'Desconhecida',
                 'previstos' => (int) $prev,
-                'metricas' => [
-                    'cpf' => [
-                        'com' => (int) $comCpf,
-                        'sem' => (int) $semCpf,
-                        'pct' => $pctCpf,
-                    ],
-                ],
+                'metricas' => $buildMetricas($tp, $counts),
             ];
 
             $totais['previstos'] += $prev;
             $totais['com_cpf'] += $comCpf;
             $totais['sem_cpf'] += $semCpf;
+            $totais['raca_branca'] += (int) ($counts?->raca_branca ?? 0);
+            $totais['raca_parda'] += (int) ($counts?->raca_parda ?? 0);
+            $totais['raca_preta'] += (int) ($counts?->raca_preta ?? 0);
+            $totais['raca_amarela'] += (int) ($counts?->raca_amarela ?? 0);
+            $totais['raca_indigena'] += (int) ($counts?->raca_indigena ?? 0);
+            $totais['genero_mulheres'] += (int) ($counts?->genero_mulheres ?? 0);
+            $totais['genero_homens'] += (int) ($counts?->genero_homens ?? 0);
+            $totais['genero_outros'] += (int) ($counts?->genero_outros ?? 0);
+            $totais['pcd'] += (int) ($counts?->com_pcd ?? 0);
+            $totais['certificados'] += (int) ($counts?->certificados_emitidos ?? 0);
+            $totais['tag_rede_ensino'] += (int) ($counts?->tag_rede_ensino ?? 0);
+            $totais['tag_movimento_social'] += (int) ($counts?->tag_movimento_social ?? 0);
         }
 
         // Linha "Municípios não identificados"
         $prevNull = $previstos->get(null)?->previstos ?? 0;
-        $comCpfNull = $cpfCounts->get(null)?->com_cpf ?? 0;
-        $semCpfNull = $cpfCounts->get(null)?->sem_cpf ?? 0;
+        $countsNull = $cpfCounts->get(null);
+        $comCpfNull = (int) ($countsNull?->com_cpf ?? 0);
+        $semCpfNull = (int) ($countsNull?->sem_cpf ?? 0);
+        $tpNull = $comCpfNull + $semCpfNull;
 
-        if ($prevNull > 0 || $comCpfNull > 0 || $semCpfNull > 0) {
-            $totalNull = $comCpfNull + $semCpfNull;
-            $pctCpfNull = $totalNull > 0 ? round($comCpfNull / $totalNull * 100, 2) : 0;
-
+        if ($prevNull > 0 || $tpNull > 0) {
             $rows[] = [
                 'municipio_id' => null,
                 'municipio_nome' => 'Municípios não identificados',
                 'regiao' => '',
                 'previstos' => (int) $prevNull,
-                'metricas' => [
-                    'cpf' => [
-                        'com' => (int) $comCpfNull,
-                        'sem' => (int) $semCpfNull,
-                        'pct' => $pctCpfNull,
-                    ],
-                ],
+                'metricas' => $buildMetricas($tpNull, $countsNull),
                 '_is_unidentified' => true,
             ];
 
             $totais['previstos'] += $prevNull;
             $totais['com_cpf'] += $comCpfNull;
             $totais['sem_cpf'] += $semCpfNull;
+            $totais['raca_branca'] += (int) ($countsNull?->raca_branca ?? 0);
+            $totais['raca_parda'] += (int) ($countsNull?->raca_parda ?? 0);
+            $totais['raca_preta'] += (int) ($countsNull?->raca_preta ?? 0);
+            $totais['raca_amarela'] += (int) ($countsNull?->raca_amarela ?? 0);
+            $totais['raca_indigena'] += (int) ($countsNull?->raca_indigena ?? 0);
+            $totais['genero_mulheres'] += (int) ($countsNull?->genero_mulheres ?? 0);
+            $totais['genero_homens'] += (int) ($countsNull?->genero_homens ?? 0);
+            $totais['genero_outros'] += (int) ($countsNull?->genero_outros ?? 0);
+            $totais['pcd'] += (int) ($countsNull?->com_pcd ?? 0);
+            $totais['certificados'] += (int) ($countsNull?->certificados_emitidos ?? 0);
+            $totais['tag_rede_ensino'] += (int) ($countsNull?->tag_rede_ensino ?? 0);
+            $totais['tag_movimento_social'] += (int) ($countsNull?->tag_movimento_social ?? 0);
         }
 
         // Ordenação
@@ -241,6 +310,7 @@ class RelatorioQuantitativoController extends Controller
                 'municipio' => $a['municipio_nome'],
                 'regiao' => $a['regiao'],
                 'previstos' => $a['previstos'],
+                'total_presentes' => $a['metricas']['total_presentes'],
                 'com_cpf' => $a['metricas']['cpf']['com'],
                 'sem_cpf' => $a['metricas']['cpf']['sem'],
                 'pct_cpf' => $a['metricas']['cpf']['pct'],
@@ -251,6 +321,7 @@ class RelatorioQuantitativoController extends Controller
                 'municipio' => $b['municipio_nome'],
                 'regiao' => $b['regiao'],
                 'previstos' => $b['previstos'],
+                'total_presentes' => $b['metricas']['total_presentes'],
                 'com_cpf' => $b['metricas']['cpf']['com'],
                 'sem_cpf' => $b['metricas']['cpf']['sem'],
                 'pct_cpf' => $b['metricas']['cpf']['pct'],
@@ -280,22 +351,31 @@ class RelatorioQuantitativoController extends Controller
             });
         }
 
-        // Linha de total
-        $totalCpf = $totais['com_cpf'] + $totais['sem_cpf'];
-        $pctTotal = $totalCpf > 0 ? round($totais['com_cpf'] / $totalCpf * 100, 2) : 0;
+        // Linha de total — pcts calculados sobre os totais acumulados
+        $tpTotal = $totais['com_cpf'] + $totais['sem_cpf'];
+        $totalCounts = (object) [
+            'com_cpf' => $totais['com_cpf'],
+            'sem_cpf' => $totais['sem_cpf'],
+            'raca_branca' => $totais['raca_branca'],
+            'raca_parda' => $totais['raca_parda'],
+            'raca_preta' => $totais['raca_preta'],
+            'raca_amarela' => $totais['raca_amarela'],
+            'raca_indigena' => $totais['raca_indigena'],
+            'genero_mulheres' => $totais['genero_mulheres'],
+            'genero_homens' => $totais['genero_homens'],
+            'genero_outros' => $totais['genero_outros'],
+            'com_pcd' => $totais['pcd'],
+            'certificados_emitidos' => $totais['certificados'],
+            'tag_rede_ensino' => $totais['tag_rede_ensino'],
+            'tag_movimento_social' => $totais['tag_movimento_social'],
+        ];
 
         $rows[] = [
             'municipio_id' => 'total',
             'municipio_nome' => 'TOTAL',
             'regiao' => '',
             'previstos' => $totais['previstos'],
-            'metricas' => [
-                'cpf' => [
-                    'com' => $totais['com_cpf'],
-                    'sem' => $totais['sem_cpf'],
-                    'pct' => $pctTotal,
-                ],
-            ],
+            'metricas' => $buildMetricas($tpTotal, $totalCounts),
             '_is_total' => true,
         ];
 
@@ -358,8 +438,9 @@ class RelatorioQuantitativoController extends Controller
 
         if ($formato === 'pdf') {
             $totalGeral = $this->buildTotalGeralData($request);
+            $dimensoes = $request->input('dimensoes', []);
 
-            return Pdf::view('relatorio-quantitativo.pdf-total-geral', compact('totalGeral'))
+            return Pdf::view('relatorio-quantitativo.pdf-total-geral', compact('totalGeral', 'dimensoes'))
                 ->format('a4')
                 ->landscape()
                 ->withAlfaEjaBrand(35, 10, 25, 10)
