@@ -40,6 +40,16 @@ return [
          */
         'write_options_to_file' => env('LARAVEL_PDF_WRITE_OPTIONS_TO_FILE', true),
         'no_sandbox' => env('LARAVEL_PDF_NO_SANDBOX', false),
+
+        /*
+         * Instância remota do Chrome (browserless). Quando 'host' está definido,
+         * o AppServiceProvider configura o Browsershot para conectar nela via
+         * setRemoteInstance(). Vazio (ex.: local) → Browsershot local, sem alteração.
+         */
+        'remote_instance' => [
+            'host' => env('LARAVEL_PDF_REMOTE_HOST'),
+            'port' => env('LARAVEL_PDF_REMOTE_PORT', 3000),
+        ],
     ],
 
     /*

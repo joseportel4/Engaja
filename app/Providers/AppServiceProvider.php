@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
+use Spatie\Browsershot\Browsershot;
+use Spatie\LaravelPdf\Facades\Pdf;
 use Spatie\LaravelPdf\PdfBuilder;
 
 class AppServiceProvider extends ServiceProvider
@@ -24,6 +26,32 @@ class AppServiceProvider extends ServiceProvider
         Paginator::useBootstrapFive();
 
         $this->registerPdfMacros();
+        $this->configureRemotePdfRendering();
+    }
+
+    /**
+     * Em produção, aponta o Browsershot para o Chromium remoto (browserless).
+     * Ativado apenas quando LARAVEL_PDF_REMOTE_HOST está definido (via .env de produção);
+     * ausente em local → Browsershot local, comportamento inalterado.
+     *
+     * Usa o builder default do spatie/laravel-pdf, herdado por todos os Pdf::view(),
+     * cobrindo todos os call sites sem alterá-los nem o macro withAlfaEjaBrand().
+     */
+    private function configureRemotePdfRendering(): void
+    {
+        $host = config('laravel-pdf.browsershot.remote_instance.host');
+
+        if (! $host) {
+            return;
+        }
+
+        $port = (int) config('laravel-pdf.browsershot.remote_instance.port', 3000);
+
+        Pdf::default()->withBrowsershot(function (Browsershot $browsershot) use ($host, $port) {
+            $browsershot
+                ->setRemoteInstance($host, $port)
+                ->noSandbox();
+        });
     }
 
     private function registerPdfMacros(): void
