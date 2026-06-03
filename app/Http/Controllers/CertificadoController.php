@@ -135,6 +135,10 @@ class CertificadoController extends Controller
 
                 foreach ($presencas as $presenca) {
                     $presenca->certificado_emitido = true;
+
+                    //remove o atributo dinamico para nao ter loop de JSON no eloquent
+                    unset($presenca->evento_pai);
+
                     $presenca->save();
                 }
                 $created++;
