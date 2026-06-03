@@ -28,6 +28,7 @@ class ModeloCertificadoRequest extends FormRequest
             'imagem_frente' => ['nullable', 'image', 'max:5120'],
             'imagem_verso'  => ['nullable', 'image', 'max:5120'],
             'texto_frente'  => ['nullable', 'string'],
+            'layout_frente.date_text' => ['nullable', 'string'],
             'texto_verso'   => ['nullable', 'string'],
             'layout_frente' => ['nullable', 'array'],
             'layout_frente.x' => ['nullable', 'numeric'],

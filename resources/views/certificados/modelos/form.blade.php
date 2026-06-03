@@ -64,6 +64,7 @@
                   @endforeach
               </div>
           </div>
+          <div class="form-text">Adicione estas tags no texto, que o sistema automaticamente substituirá pelo dado respectivo durante a emissão do certificado.</div>
       </div>
 
       <div class="col-12">
@@ -440,7 +441,7 @@
       const dy = parseFloat(dateYInput.value || '0') || canvas.getHeight() * 0.74;
 
       const defaultDateText = dateTextInput ? dateTextInput.value : 'São Paulo, 21 de fevereiro de 2026.';
-      dateObj = new fabric.Textbox('S\u00e3o Paulo, 21 de fevereiro de 2026.', {
+      dateObj = new fabric.Textbox(defaultDateText, {
         left: dx,
         top: dy,
         width: parseFloat(dateWInput.value) || 320,
