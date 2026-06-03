@@ -111,6 +111,7 @@ class CertificadoController extends Controller
                     '%participante%' => $participante->user->name,
                     '%acao%' => $eventoNomeFormatado,
                     '%carga_horaria%' => CargaHoraria::formatMinutos($cargaTotal),
+                    '%cpf%' => $participante->cpf ?? '',
                 ];
 
                 $textoFrente = $this->renderPlaceholders($modelo->texto_frente ?? '', $map);
@@ -183,6 +184,7 @@ class CertificadoController extends Controller
                         '%participante%' => $participante->user->name,
                         '%acao%' => $evento->nome,
                         '%carga_horaria%' => CargaHoraria::formatMinutos($cargaTotal),
+                        '%cpf%' => $participante->cpf ?? '',
                     ];
 
                     $textoFrente = $this->renderPlaceholders($modelo->texto_frente ?? '', $map);
@@ -465,6 +467,7 @@ class CertificadoController extends Controller
                     '%participante%' => $participante->user->name,
                     '%acao%' => $evento->nome,
                     '%carga_horaria%' => CargaHoraria::formatMinutos($cargaTotal),
+                    '%cpf%' => $participante->cpf ?? '',
                 ];
 
                 $textoFrente = $this->renderPlaceholders($modelo->texto_frente ?? '', $map);
@@ -693,6 +696,7 @@ class CertificadoController extends Controller
             '%participante%' => '[NOME DO PARTICIPANTE]',
             '%acao%' => '[NOME DA AÇÃO PEDAGÓGICA]',
             '%carga_horaria%' => CargaHoraria::formatMinutos(600),
+            '%cpf%' => '[CPF DO PARTICIPANTE]',
         ];
 
         $certificado = new Certificado;

@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <style>
+
+    @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,400;0,600;0,700;1,400&family=Open+Sans:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Roboto:ital,wght@0,400;0,700;1,400&display=swap');
+
     @page { size: A4 landscape; margin: 0; }
     html, body { margin: 0; padding: 0; width: 297mm; height: 210mm; font-family: Arial, sans-serif; }
     .page {
@@ -43,8 +46,8 @@
     $layoutVerso  = $modelo->layout_verso ?? [];
     $textoFrente = trim($certificado->texto_frente ?? '');
     $textoVerso  = trim($certificado->texto_verso ?? '');
-    $dataEmissao = ($certificado->created_at ?? now())->locale('pt_BR')->translatedFormat('j \d\e F \d\e Y');
-    $textoDataEmissao = "São Paulo, {$dataEmissao}.";
+    $dataEmissaoPadrao = ($certificado->created_at ?? now())->locale('pt_BR')->translatedFormat('j \d\e F \d\e Y');
+    $textoDataEmissao = $layoutFrente['date_text'] ?? "São Paulo, {$dataEmissaoPadrao}.";
     $qrLink = $certificado->codigo_validacao ? route('certificados.validacao', $certificado->codigo_validacao) : null;
     $qrBase64 = null;
     $qrColorHex = $layoutVerso['qr_color'] ?? '#811283';
