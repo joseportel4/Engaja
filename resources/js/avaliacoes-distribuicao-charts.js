@@ -193,17 +193,203 @@ function bootFetch(root) {
     async function loadData() {
         setLoading(true);
         try {
-            const url = `${endpoint}?${buildParams()}`;
+            const baseParams = buildParams();
+            const url = `${endpoint}?${baseParams}&page=1`;
             const response = await fetch(url, { headers: { Accept: "application/json" } });
             const payload = await response.json();
 
             renderTotals(payload.totais || {});
             renderCharts(payload.perguntas || []);
+
+            const meta = payload.meta || {};
+            if (meta.last_page && meta.last_page > 1) {
+                loadRemainingPages(baseParams, meta.last_page);
+            }
         } catch {
             if (cardsQuestoes)
                 cardsQuestoes.innerHTML =
                     '<div class="card border-0 shadow-sm"><div class="card-body text-danger">Erro ao carregar dados.</div></div>';
         }
+    }
+
+    async function loadRemainingPages(baseParams, lastPage) {
+        for (let page = 2; page <= lastPage; page++) {
+            try {
+                const url = `${endpoint}?${baseParams}&page=${page}`;
+                const response = await fetch(url, { headers: { Accept: "application/json" } });
+                const payload = await response.json();
+                const novasPerguntas = payload.perguntas || [];
+                if (novasPerguntas.length === 0) break;
+
+                cachedPerguntas = [...cachedPerguntas, ...novasPerguntas];
+                appendCharts(novasPerguntas);
+            } catch {
+                break;
+            }
+        }
+    }
+
+    function appendCharts(perguntas) {
+        if (!cardsQuestoes || !perguntas.length) return;
+
+        perguntas.forEach((pergunta) => {
+            const numQuestao = cardsQuestoes.querySelectorAll(".col-12.col-md-6").length + 1;
+            const totalRespostas = pergunta.total || 0;
+            const titulo = cleanText(pergunta.texto);
+            const resumo = cleanText(pergunta.resumo || "");
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "col-12 col-md-6";
+            const card = document.createElement("div");
+            card.className = "card border-0 shadow-sm h-100";
+            card.innerHTML = `
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-start mb-2 question-header">
+            <div>
+              <div class="fw-bold">${titulo}</div>
+              <small class="text-muted">${totalRespostas} resposta(s)</small>
+            </div>
+            <div class="d-flex align-items-start gap-2 controls-slot question-controls">
+              ${resumo ? `<span class="badge bg-primary-subtle text-primary">${resumo}</span>` : ""}
+            </div>
+          </div>
+          <div class="question-body mt-2"></div>
+        </div>
+      `;
+            const body = card.querySelector(".question-body");
+            const controlsSlot = card.querySelector(".controls-slot");
+
+            const isText = pergunta.tipo === "texto";
+            const respostas = Array.isArray(pergunta.respostas) ? pergunta.respostas : [];
+            const exemplos = Array.isArray(pergunta.exemplos) ? pergunta.exemplos : [];
+
+            if (isText) {
+                const listaFonte = respostas.length ? respostas : exemplos;
+                const limitePreview = 5;
+                const list = document.createElement("div");
+                list.className = "vstack gap-2";
+                const itens = listaFonte.slice(0, limitePreview);
+                if (itens.length === 0) {
+                    list.innerHTML = '<div class="text-muted">Sem respostas abertas.</div>';
+                } else {
+                    itens.forEach((resp) => {
+                        const item = document.createElement("div");
+                        item.className = "p-2 rounded border bg-light";
+                        item.textContent = cleanText(resp);
+                        list.appendChild(item);
+                    });
+                }
+                if (listaFonte.length > limitePreview) {
+                    const hint = document.createElement("div");
+                    hint.className = "text-muted small";
+                    hint.textContent = `Mostrando ${limitePreview} de ${listaFonte.length} resposta(s)`;
+                    list.appendChild(hint);
+                    const toggleBtn = document.createElement("button");
+                    toggleBtn.type = "button";
+                    toggleBtn.className = "btn btn-outline-primary btn-sm align-self-start mt-1";
+                    toggleBtn.textContent = `Ver todas as respostas (${listaFonte.length})`;
+                    toggleBtn.addEventListener("click", () => openTextModal(pergunta, listaFonte));
+                    body.appendChild(list);
+                    body.appendChild(toggleBtn);
+                } else {
+                    body.appendChild(list);
+                }
+            } else {
+                const canvas = document.createElement("canvas");
+                canvas.height = 120;
+                body.appendChild(canvas);
+
+                const labels = (pergunta.labels || []).map((label) =>
+                    cleanText(label === "Nao" ? "Não" : label)
+                );
+                const values = normalizeValues(pergunta);
+                const bg = labels.map((_, idx) => palette[idx % palette.length]);
+                const chartType = resolveChartType(pergunta, labels);
+
+                const typeOptions = [
+                    { value: "auto", label: "Auto" },
+                    { value: "bar", label: "Barras (vertical)" },
+                    { value: "bar-horizontal", label: "Barras (horizontal)" },
+                    { value: "doughnut", label: "Pizza" },
+                    { value: "polarArea", label: "Polar" },
+                    { value: "line", label: "Linha" },
+                ];
+                if (controlsSlot) {
+                    const select = document.createElement("select");
+                    select.className = "form-select form-select-sm";
+                    select.style.minWidth = "150px";
+                    typeOptions.forEach((opt) => {
+                        const option = document.createElement("option");
+                        option.value = opt.value;
+                        option.textContent = opt.label;
+                        select.appendChild(option);
+                    });
+                    const userPref = chartPreferences.get(pergunta.id);
+                    select.value = userPref || "auto";
+                    select.addEventListener("change", (event) => {
+                        const value = event.target.value;
+                        if (value === "auto") {
+                            chartPreferences.delete(pergunta.id);
+                        } else {
+                            chartPreferences.set(pergunta.id, value);
+                        }
+                        renderChartsInner({ ...buildRenderOpts(), perguntas: cachedPerguntas });
+                    });
+                    controlsSlot.appendChild(select);
+                }
+
+                const baseChartType = chartType === "bar-horizontal" ? "bar" : chartType;
+                const userPref = chartPreferences.get(pergunta.id);
+                const autoHorizontal = !userPref && baseChartType === "bar" && labels.length > 4 && !defaultHorizontalMode;
+                const chartOptions = {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: "#64748b" } },
+                        y: { ticks: { color: "#64748b", precision: 0 } },
+                    },
+                };
+                if (baseChartType === "doughnut" || baseChartType === "polarArea") {
+                    delete chartOptions.scales;
+                }
+                if (baseChartType === "bar" && (chartType === "bar-horizontal" || autoHorizontal)) {
+                    chartOptions.indexAxis = "y";
+                }
+                const chart = new window.Chart(canvas, {
+                    type: baseChartType,
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: "Respostas",
+                            data: values,
+                            backgroundColor: baseChartType === "line" ? "rgba(66,25,68,0.15)" : bg,
+                            borderColor: palette[0],
+                            tension: 0.2,
+                            fill: baseChartType === "line",
+                        }],
+                    },
+                    options: chartOptions,
+                });
+                chartInstances.set(pergunta.id, chart);
+            }
+
+            wrapper.appendChild(card);
+            cardsQuestoes.appendChild(wrapper);
+        });
+    }
+
+    function buildRenderOpts() {
+        return {
+            cardsQuestoes,
+            chartInstances,
+            chartPreferences,
+            cachedPerguntasRef: () => cachedPerguntas,
+            setCachedPerguntas: (p) => { cachedPerguntas = p; },
+            openTextModal,
+            resolveChartType,
+            defaultHorizontalMode,
+            groupSections,
+        };
     }
 
     document.querySelectorAll(".js-filter").forEach((input) => {

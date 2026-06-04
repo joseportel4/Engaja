@@ -191,6 +191,11 @@ class DashboardController extends Controller
     {
         $this->authorizeAvaliacoesDashboardRequest($request);
 
+        $request->validate([
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
         return response()->json($avaliacaoRespostas->buildDashboardPayload($request));
     }
 

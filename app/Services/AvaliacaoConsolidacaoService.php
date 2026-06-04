@@ -8,9 +8,7 @@ use Illuminate\Support\Collection;
 
 class AvaliacaoConsolidacaoService
 {
-    public function __construct(private AvaliacaoRespostasDashboardService $dashboard)
-    {
-    }
+    public function __construct(private AvaliacaoRespostasDashboardService $dashboard) {}
 
     public function build(Evento $evento, string $agrupamento = 'geral'): array
     {
@@ -57,7 +55,7 @@ class AvaliacaoConsolidacaoService
         $groups = collect($grouped)->map(function (array $templates, string $groupName) use ($templateNames) {
             $templatesPayload = collect($templates)->map(function (array $items, int $templateId) use ($templateNames) {
                 $collection = collect($items);
-                $perguntas = $this->dashboard->montarPerguntas($collection)
+                $perguntas = $this->dashboard->montarPerguntasFromRespostas($collection)
                     ->map(fn (array $pergunta) => $this->enrichPerguntaResumo($pergunta))
                     ->values();
 
@@ -113,6 +111,7 @@ class AvaliacaoConsolidacaoService
         $total = (int) ($pergunta['total'] ?? 0);
         if ($total === 0) {
             $pergunta['resumo'] = 'Sem respostas';
+
             return $pergunta;
         }
 
@@ -121,6 +120,7 @@ class AvaliacaoConsolidacaoService
             $values = $pergunta['values'] ?? [];
             if (empty($labels) || empty($values)) {
                 $pergunta['resumo'] = 'Respostas: '.$total;
+
                 return $pergunta;
             }
 
@@ -132,16 +132,19 @@ class AvaliacaoConsolidacaoService
 
             $textoQuantidade = $maxValue === 1 ? '1 resposta' : $maxValue.' respostas';
             $pergunta['resumo'] = 'Mais citado: '.$label.' ('.$textoQuantidade.', '.$percent.'%)';
+
             return $pergunta;
         }
 
         if ($tipo === 'texto') {
             $totalTexto = (int) ($pergunta['respostas_total'] ?? $total);
             $pergunta['resumo'] = 'Respostas abertas: '.$totalTexto;
+
             return $pergunta;
         }
 
         $pergunta['resumo'] = 'Respostas: '.$total;
+
         return $pergunta;
     }
 

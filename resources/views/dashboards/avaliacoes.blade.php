@@ -126,7 +126,7 @@
     <div class="col-12">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <h2 class="h5 fw-bold mb-0">Distribuição por questão</h2>
-        <span class="badge bg-primary-subtle text-primary">Interativo</span>
+        <span class="badge bg-primary-subtle text-primary" id="badge-pagina" style="display:none!important"></span>
       </div>
       <div class="row g-3" id="cards-questoes">
         <div class="col-12" id="placeholder-card">
@@ -137,6 +137,13 @@
           </div>
         </div>
       </div>
+
+      <nav id="paginacao-questoes" aria-label="Paginação de questões" class="mt-4" style="display:none">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="text-muted small" id="paginacao-info"></div>
+          <ul class="pagination mb-0" id="paginacao-lista"></ul>
+        </div>
+      </nav>
     </div>
   </div>
 </div>
@@ -164,6 +171,18 @@
       flex: 0 0 100%;
       max-width: 100%;
     }
+  }
+  #paginacao-questoes .page-link {
+    color: #421944;
+    border-color: #e2d5e8;
+  }
+  #paginacao-questoes .page-item.active .page-link {
+    background-color: #421944;
+    border-color: #421944;
+    color: #fff;
+  }
+  #paginacao-questoes .page-item.disabled .page-link {
+    color: #adb5bd;
   }
   @media (max-width: 576px) {
     #cards-questoes .question-header,
@@ -549,17 +568,106 @@
     });
   }
 
-  async function loadData() {
+  const paginacaoNav = document.getElementById('paginacao-questoes');
+  const paginacaoInfo = document.getElementById('paginacao-info');
+  const paginacaoLista = document.getElementById('paginacao-lista');
+  const badgePagina = document.getElementById('badge-pagina');
+
+  let currentPage = 1;
+  let lastMeta = null;
+
+  function renderPagination(meta) {
+    lastMeta = meta;
+    if (!meta || meta.last_page <= 1) {
+      paginacaoNav.style.display = 'none';
+      badgePagina.style.setProperty('display', 'none', 'important');
+      return;
+    }
+
+    paginacaoNav.style.display = '';
+    badgePagina.style.setProperty('display', '', 'important');
+    badgePagina.textContent = `Página ${meta.page} / ${meta.last_page}`;
+
+    const start = (meta.page - 1) * meta.per_page + 1;
+    const end = Math.min(meta.page * meta.per_page, meta.total);
+    paginacaoInfo.textContent = `Mostrando questões ${start}–${end} de ${meta.total}`;
+
+    paginacaoLista.innerHTML = '';
+
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item${meta.page <= 1 ? ' disabled' : ''}`;
+    prevLi.innerHTML = `<button class="page-link" ${meta.page <= 1 ? 'disabled' : ''}>&lsaquo; Anterior</button>`;
+    prevLi.querySelector('button').addEventListener('click', () => {
+      if (meta.page > 1) loadData(meta.page - 1);
+    });
+    paginacaoLista.appendChild(prevLi);
+
+    const maxButtons = 7;
+    const half = Math.floor(maxButtons / 2);
+    let pageStart = Math.max(1, meta.page - half);
+    let pageEnd = Math.min(meta.last_page, pageStart + maxButtons - 1);
+    if (pageEnd - pageStart < maxButtons - 1) {
+      pageStart = Math.max(1, pageEnd - maxButtons + 1);
+    }
+
+    if (pageStart > 1) {
+      appendPageBtn(1);
+      if (pageStart > 2) appendEllipsis();
+    }
+    for (let p = pageStart; p <= pageEnd; p++) {
+      appendPageBtn(p);
+    }
+    if (pageEnd < meta.last_page) {
+      if (pageEnd < meta.last_page - 1) appendEllipsis();
+      appendPageBtn(meta.last_page);
+    }
+
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item${meta.page >= meta.last_page ? ' disabled' : ''}`;
+    nextLi.innerHTML = `<button class="page-link" ${meta.page >= meta.last_page ? 'disabled' : ''}>Próximo &rsaquo;</button>`;
+    nextLi.querySelector('button').addEventListener('click', () => {
+      if (meta.page < meta.last_page) loadData(meta.page + 1);
+    });
+    paginacaoLista.appendChild(nextLi);
+  }
+
+  function appendPageBtn(p) {
+    const li = document.createElement('li');
+    li.className = `page-item${p === lastMeta?.page ? ' active' : ''}`;
+    const btn = document.createElement('button');
+    btn.className = 'page-link';
+    btn.textContent = p;
+    if (p === lastMeta?.page) btn.setAttribute('aria-current', 'page');
+    btn.addEventListener('click', () => loadData(p));
+    li.appendChild(btn);
+    paginacaoLista.appendChild(li);
+  }
+
+  function appendEllipsis() {
+    const li = document.createElement('li');
+    li.className = 'page-item disabled';
+    li.innerHTML = '<span class="page-link">&hellip;</span>';
+    paginacaoLista.appendChild(li);
+  }
+
+  async function loadData(page = 1) {
+    currentPage = page;
     setLoading(true);
     try {
-      const url = `${endpoint}?${buildParams()}`;
+      const url = `${endpoint}?${buildParams()}&page=${page}&per_page=50`;
       const response = await fetch(url, { headers: { Accept: 'application/json' } });
       const payload = await response.json();
 
       renderTotals(payload.totais || {});
       renderCharts(payload.perguntas || []);
+      renderPagination(payload.meta || null);
+
+      if (page > 1) {
+        cardsQuestoes.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     } catch (error) {
       cardsQuestoes.innerHTML = '<div class=\"card border-0 shadow-sm\"><div class=\"card-body text-danger\">Erro ao carregar dados.</div></div>';
+      paginacaoNav.style.display = 'none';
     }
   }
 
@@ -571,14 +679,14 @@
       if (input === filters.tipoMomento || input === filters.tipoUniversal) {
         updateModeUi();
       }
-      loadData();
+      loadData(1);
     });
   });
   filters.evento?.addEventListener('change', () => {
     updateAtividadeFilter();
-    loadData();
+    loadData(1);
   });
-  loadData();
+  loadData(1);
 })();
 </script>
 @endsection
