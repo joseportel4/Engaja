@@ -1,6 +1,23 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    .transition-icon {
+        transition: transform 0.2s ease-in-out;
+        display: inline-block;
+    }
+    [aria-expanded="true"] .transition-icon {
+        transform: rotate(90deg);
+    }
+    .btn-engaja-outline {
+        color: #421944;
+        border-color: #421944;
+    }
+    .btn-engaja-outline:hover {
+        background-color: #421944;
+        color: #fff;
+    }
+</style>
 <div class="container py-4">
     <div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
         <div>
@@ -96,6 +113,7 @@
                         }
                         @endphp
                         <tr>
+                            <th style="width: 40px;"></th>
                             <th style="min-width:110px;">{!! sort_link('Data','dia') !!}</th>
                             <th style="min-width:80px;">{!! sort_link('Hora','hora') !!}</th>
                             <th>{!! sort_link('Momento','momento') !!}</th>
@@ -104,6 +122,7 @@
                             <th class="text-end" style="min-width:90px;">{!! sort_link('Inscritos','inscritos') !!}</th>
                             <th class="text-end" style="min-width:90px;">{!! sort_link('Presentes','presentes') !!}</th>
                             <th class="text-end" style="min-width:90px;">{!! sort_link('Ausentes','ausentes') !!}</th>
+                            <th class="text-center" style="width: 130px;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -122,6 +141,16 @@
                         @endphp
 
                         <tr>
+                            <td class="text-center">
+                                <a class="text-muted d-block"
+                                   data-bs-toggle="collapse"
+                                   href="#{{ $collapseId }}"
+                                   role="button"
+                                   aria-expanded="false"
+                                   aria-controls="{{ $collapseId }}">
+                                    <i class="fas fa-chevron-right transition-icon"></i>
+                                </a>
+                            </td>
                             <td>{{ $data }}</td>
                             <td>{{ $hora }}</td>
                             <td>{{ $a->descricao ?? 'Momento' }}</td>
@@ -155,10 +184,19 @@
                                     <span class="text-muted">0</span>
                                 @endif
                             </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-engaja-outline"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#{{ $collapseId }}"
+                                        aria-expanded="false"
+                                        aria-controls="{{ $collapseId }}">
+                                    <i class="fas fa-users me-1"></i> Ver lista
+                                </button>
+                            </td>
                         </tr>
                         {{-- Linha de detalhes: agora o .collapse fica dentro do TD --}}
                         <tr>
-                            <td colspan="8" class="bg-light p-0">
+                            <td colspan="10" class="bg-light p-0">
                                 <div id="{{ $collapseId }}" class="collapse presentes-collapse">
                                     <div class="px-3 py-2 border-bottom small text-muted">
                                         Inscritos: <strong>{{ $inscritosCount }}</strong> |
@@ -178,7 +216,7 @@
                                                             <th style="width: 35%;">Nome</th>
                                                             <th style="width: 25%;">E-mail</th>
                                                             <th style="width: 15%;">CPF</th>
-                                                            <th style="width: 13%;">Tag</th>
+                                                            <th style="width: 13%;">Vínculo</th>
                                                             <th style="width: 12%;">Status</th>
                                                         </tr>
                                                     </thead>
@@ -216,7 +254,7 @@
                                                             <th style="width: 35%;">Nome</th>
                                                             <th style="width: 30%;">E-mail</th>
                                                             <th style="width: 18%;">CPF</th>
-                                                            <th style="width: 17%;">Tag</th>
+                                                            <th style="width: 17%;">Vínculo</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>

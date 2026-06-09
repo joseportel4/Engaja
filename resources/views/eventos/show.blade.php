@@ -234,6 +234,11 @@
               @role('administrador|gerente|eq_pedagogica|articulador')
                 <li><hr class="dropdown-divider"></li>
                 <li>
+                  <a class="dropdown-item" href="{{ route('dashboards.presencas', ['evento_id' => $evento->id]) }}">
+                    Relação de Inscritos/Presentes da Ação
+                  </a>
+                </li>
+                <li>
                   <a class="dropdown-item" href="{{ route('eventos.avaliacoes.consolidado', $evento) }}">
                     Consolidação de avaliações
                   </a>
