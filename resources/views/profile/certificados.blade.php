@@ -27,7 +27,7 @@
           <tbody>
             @foreach ($certificados as $c)
               <tr>
-                <td>{{ $c->evento_nome ?? $c->modelo?->nome ?? 'Evento' }}</td>
+                <td class="text-truncate" style="max-width: 300px;" title="{{ $c->evento_nome ?? $c->modelo?->nome ?? 'Evento' }}">{{ $c->evento_nome ?? $c->modelo?->nome ?? 'Evento' }}</td>
                 <td>{{ $c->created_at?->format('d/m/Y H:i') }}</td>
                 <td>{{ \App\Support\CargaHoraria::formatMinutos(isset($c->carga_horaria) ? (int) $c->carga_horaria : null) }}</td>
                 <td class="text-end pe-4">
