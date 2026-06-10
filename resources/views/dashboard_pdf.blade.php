@@ -53,6 +53,17 @@
         </div>
     </header>
 
+    @if(!empty($truncado))
+        <div class="filters-applied" style="border-color:#f0c36d; background:#fff8e8;">
+            <span class="title" style="color:#8a6d1a;">Resultado parcial</span>
+            <div>
+                Exibindo as primeiras <strong>{{ number_format($maxAtividades, 0, ',', '.') }}</strong>
+                de <strong>{{ number_format($totalAtividades, 0, ',', '.') }}</strong> atividades.
+                Refine os filtros (ação pedagógica, município, momento ou período) para gerar um relatório completo.
+            </div>
+        </div>
+    @endif
+
     @if(!empty($filtroResumo ?? []))
         <div class="filters-applied">
             <span class="title">Filtros aplicados</span>

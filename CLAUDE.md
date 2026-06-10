@@ -154,6 +154,19 @@ Imports follow a multi-step preview/confirm pattern:
 
 **Stack:** `Pdf::view()` → `BrowsershotDriver` → Puppeteer/Chromium. Node.js instalado via fnm; path configurado em `.env` como `LARAVEL_PDF_NODE_BINARY`.
 
+**Local vs Produção (renderização):** `AppServiceProvider::configureRemotePdfRendering()` customiza o builder default conforme o ambiente:
+- **Local** — sem `LARAVEL_PDF_REMOTE_HOST` definido, o método retorna cedo e **nenhuma** customização de Browsershot é aplicada. O PDF é renderizado pelo Chromium local (via Node binary), com o comportamento default do pacote. Não registrar callback aqui é proposital — preserva o fluxo local intocado.
+- **Produção** — com `LARAVEL_PDF_REMOTE_HOST` definido, o Browsershot aponta para um **Chromium remoto (browserless)** via `setRemoteInstance($host, $port)->noSandbox()` e aplica o timeout amplo. Não há Chromium local em produção.
+
+O teste `tests/Feature/PdfRemoteInstanceTest.php` cobre os dois casos (sem host → callback nulo; com host → remote + timeout). **Ao mexer nesse método, mantenha o early return sem host** e atualize esse teste.
+
+**Geração de PDFs extensos (timeout/memória):** relatórios sem filtro podem hidratar muitos models e gerar HTML grande, causando estouro de memória (PHP) e timeout (Browsershot/Chromium). Mitigações em `config/dashboard.php` (`dashboard.pdf.*`):
+- `max_atividades` (padrão 200) — teto de linhas no `DashboardController::export()`; quando excedido, o PDF é truncado e a view exibe banner "Resultado parcial". Conta o universo filtrado com `(clone $query)->count()` antes de aplicar `->limit()`.
+- `memory_limit` (padrão 512M) — `ini_set` pontual na exportação.
+- `timeout` (padrão 120s) — aplicado ao Browsershot remoto no provider.
+
+Os defaults moram **só** no config (lendo `env()`); os pontos de uso chamam `config(...)` **sem** segundo argumento, evitando defaults duplicados.
+
 **Macro `withAlfaEjaBrand()`** — registrada em `AppServiceProvider::registerPdfMacros()`:
 ```php
 Pdf::view('minha.view', $dados)

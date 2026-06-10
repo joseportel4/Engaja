@@ -30,9 +30,12 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Em produção, aponta o Browsershot para o Chromium remoto (browserless).
-     * Ativado apenas quando LARAVEL_PDF_REMOTE_HOST está definido (via .env de produção);
-     * ausente em local → Browsershot local, comportamento inalterado.
+     * Em produção, aponta o Browsershot para o Chromium remoto (browserless) e
+     * aplica um timeout amplo (config dashboard.pdf.timeout, padrão 120s) para
+     * suportar relatórios extensos sem estourar o timeout default (~60s).
+     *
+     * Ativado apenas quando LARAVEL_PDF_REMOTE_HOST está definido (via .env de
+     * produção); ausente em local → Browsershot local, comportamento inalterado.
      *
      * Usa o builder default do spatie/laravel-pdf, herdado por todos os Pdf::view(),
      * cobrindo todos os call sites sem alterá-los nem o macro withAlfaEjaBrand().
@@ -46,11 +49,13 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $port = (int) config('laravel-pdf.browsershot.remote_instance.port', 3000);
+        $timeout = (int) config('dashboard.pdf.timeout');
 
-        Pdf::default()->withBrowsershot(function (Browsershot $browsershot) use ($host, $port) {
+        Pdf::default()->withBrowsershot(function (Browsershot $browsershot) use ($host, $port, $timeout) {
             $browsershot
                 ->setRemoteInstance($host, $port)
-                ->noSandbox();
+                ->noSandbox()
+                ->timeout($timeout);
         });
     }
 

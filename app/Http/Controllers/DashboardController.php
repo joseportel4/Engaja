@@ -232,6 +232,15 @@ class DashboardController extends Controller
 
     public function export(Request $request)
     {
+        /*
+         * Relatórios extensos hidratam muitos models com eager loading profundo
+         * (presencas.inscricao.participante.user e inscricoes.participante.user).
+         * Eleva o limite de memória da requisição e impõe um teto de atividades
+         * para evitar estouro de memória e timeout do Browsershot/Chromium.
+         */
+        ini_set('memory_limit', config('dashboard.pdf.memory_limit'));
+        $maxAtividades = (int) config('dashboard.pdf.max_atividades');
+
         $pdfEventoId = $request->integer('pdf_evento_id');
         $eventoId = $pdfEventoId ?? $request->integer('evento_id');
         $municipioId = $request->integer('pdf_municipio_id');
@@ -256,7 +265,7 @@ class DashboardController extends Controller
         $orderByCol = $sortable[$sort] ?? 'atividades.dia';
 
         // mesma query do index, mas sem paginate() e com eager até user
-        $atividades = Atividade::query()
+        $atividadesQuery = Atividade::query()
             ->select([
                 'atividades.id',
                 'atividades.evento_id',
@@ -283,7 +292,6 @@ class DashboardController extends Controller
                     ->with('participante.user'),
             ])
             ->withCount([
-                'presencas as presencas_total',
                 'presencas as presentes_count' => fn ($q) => $q->where('status', 'presente'),
             ])
             ->selectRaw('(
@@ -319,10 +327,18 @@ class DashboardController extends Controller
                     $w->where('atividades.descricao', 'like', $like)
                         ->orWhere('eventos.nome', 'like', $like);
                 });
-            })
+            });
+
+        // Conta o universo filtrado antes de aplicar o teto, para sinalizar truncamento na view.
+        $totalAtividades = (clone $atividadesQuery)->count('atividades.id');
+
+        $atividades = $atividadesQuery
             ->orderBy($orderByCol, $dir)
             ->orderBy('atividades.id', 'desc')
+            ->limit($maxAtividades)
             ->get();
+
+        $truncado = $totalAtividades > $maxAtividades;
 
         $eventoSelecionado = $eventoId ? Evento::find($eventoId) : null;
         $municipioSelecionado = $municipioId
@@ -348,6 +364,9 @@ class DashboardController extends Controller
             'atividades' => $atividades,
             'filtroResumo' => $filtroResumo,
             'filtros' => $request->query(),
+            'truncado' => $truncado,
+            'totalAtividades' => $totalAtividades,
+            'maxAtividades' => $maxAtividades,
         ])
             ->format('a4')
             ->withAlfaEjaBrand()
