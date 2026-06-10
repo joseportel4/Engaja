@@ -22,3 +22,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# graphify knowledge graph (rebuildable artifacts)
+/graphify-out

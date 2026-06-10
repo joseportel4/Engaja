@@ -1,61 +1,36 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code in this repo. For **code structure/navigation** (where things live, what calls what) query graphify (`graphify query "..."`; see `## graphify`). This file holds the **conventions, domain semantics, and gotchas** the code doesn't express.
 
 ## Project Overview
 
-**Engaja** is a Laravel 12 application for managing educational events, enrollments, attendance, and engagement reports for the Alfa-EJA project. It tracks formations, workshops, meetings, and live sessions for educational institutions.
+**Engaja** — Laravel 12 app to manage educational events, enrollments, attendance, and engagement reports for the Alfa-EJA project (formations, workshops, meetings, lives).
 
 ## Tech Stack
 
-- **Backend:** Laravel 12 (PHP 8.2+)
-- **Frontend:** Bootstrap 5 + Blade + Livewire 4
-- **Database:** PostgreSQL
-- **Auth:** Laravel Breeze + Spatie Laravel Permission
-- **PDF:** spatie/laravel-pdf (Browsershot/Puppeteer/Chromium)
-- **Imports:** maatwebsite/excel (xlsx)
-- **QR Code:** simplesoftwareio/simple-qrcode
+- **Backend:** Laravel 12 (PHP 8.2+) · **Frontend:** Bootstrap 5 + Blade + Livewire 4
+- **DB:** PostgreSQL · **Auth:** Breeze + Spatie Laravel Permission
+- **PDF:** spatie/laravel-pdf (Browsershot/Puppeteer) · **Imports:** maatwebsite/excel · **QR:** simplesoftwareio/simple-qrcode
 
 ## Common Commands
 
 ```bash
-# Development
-php artisan serve        # Start dev server (http://localhost:8000)
-npm run dev              # Compile assets (Vite, watch mode)
-npm run build            # Compile for production
-
-# Database
-php artisan migrate
-php artisan migrate --seed   # Fresh setup with roles, permissions, seed data
-php artisan migrate:fresh --seed
-
-# Code quality
-./vendor/bin/pint        # Laravel Pint (PSR-12 code style fixer)
-
-# Tests
-php artisan test
-php artisan test --filter TestClassName   # Run single test
-
-# Scheduling & Cache
-php artisan schedule:list                 # List all scheduled tasks
-php artisan schedule:run                  # Simulate scheduler (runs due tasks)
-php artisan limesurvey:importar-dados     # Import LimeSurvey data to cache (24h TTL)
+php artisan serve                        # dev server :8000
+npm run dev                              # Vite watch (prod: npm run build)
+php artisan migrate --seed               # fresh setup (roles, permissions, seed)
+./vendor/bin/pint                        # code style (PSR-12)
+php artisan test --filter TestClassName  # single test
+php artisan limesurvey:importar-dados    # warm LimeSurvey cache (24h TTL)
 ```
 
-## Architecture
+## Domain Model
 
-### Domain Model
+Hierarchy: **Evento → Atividade → Presença/Inscrição**. Non-obvious bits:
+- `Atividade.carga_horaria` is in **minutes** (column name is legacy). Tied to a `Municipio`; planning/closure checklists are JSON columns.
+- `Evento` ties to `Eixo`, `acao_geral`, `subacao` (Alfa-EJA constants defined in the model); has planning/closure checklists.
+- `Participante` is **separate** from `User`. `Inscricao` = enrollment in an Evento. `Presenca` = attendance at an Atividade, with `avaliacao_respondida` (bool). `Agendamento` schedules a Participante for an AtividadeAcao.
 
-The core hierarchy is: **Evento → Atividade → Presença/Inscrição**
-
-- `Evento` — an educational event, tied to an `Eixo` (thematic axis), `acao_geral`, and `subacao` (from Alfa-EJA project constants defined in the model). Has checklists for planning/closure.
-- `Atividade` — a session/moment within an event, tied to a `Municipio`. Stores `carga_horaria` in **minutes** (column name is legacy). Has planning and closure checklists (JSON columns).
-- `Participante` — person participating; separate from `User`.
-- `Inscricao` — enrollment of a Participante in an Evento.
-- `Presenca` — attendance record of a Participante at an Atividade. Has `avaliacao_respondida` (bool) flag.
-- `Agendamento` — scheduling of a Participante for an AtividadeAcao.
-
-### Naming Conventions
+### UI ↔ Model ↔ Table naming
 
 | Term in UI | Model | Table |
 |---|---|---|
@@ -63,160 +38,47 @@ The core hierarchy is: **Evento → Atividade → Presença/Inscrição**
 | Momento / Encontro | `Atividade` | `atividades` |
 | Relatório do Momento | `AvaliacaoAtividade` | `avaliacao_atividades` |
 
-### Authorization
+## Authorization (Spatie Permission)
 
-Uses **Spatie Laravel Permission** with roles and permissions.
+Roles: `administrador`, `gerente`, `eq_pedagogica`, `articulador`, `participante`, `SME`. Permissions follow `resource.action` (e.g. `evento.criar`, `presenca.abrir`), guarded via `role:`/`permission:` middleware. Most management routes require `administrador|gerente|eq_pedagogica|articulador`.
 
-Roles: `administrador`, `gerente`, `eq_pedagogica`, `articulador`, `participante`, `SME`
+## Conventions & Patterns
 
-Permissions follow the pattern `resource.action` (e.g., `evento.criar`, `presenca.abrir`). Route middleware uses `role:` and `permission:` guards. Most management routes require role `administrador|gerente|eq_pedagogica|articulador`.
+- **Filter+sort (Blade reports)** — used in `DashboardController::index` / `RelatorioQuantitativoController::index`: `$sortable = ['key'=>'db_column']` map, direction validated to `asc`/`desc`; filters via `->when(...)`; aggregated counts via `->withCount(['rel as alias' => fn($q)=>...])`; `->appends($request->query())` to keep filters across pagination; sort links built inline with `http_build_query` (no shared helper).
+- **Import flow (Presença/Inscrição)** — upload→parse xlsx→session → paginated preview → confirm→persist. Headers parsed tolerantly.
+- **Seeding** — `RolesPermissionsSeeder` (roles/permissions) + `DatabaseSeeder` (admin `admin@engaja.local` + sample data). Always `--seed` on fresh installs.
 
-### Key Patterns
+## Reports
 
-- **Repositories:** `app/Repositories/` — currently only `BiValorRepository` for BI queries.
-- **Services:** `app/Services/` — `LimeSurveyDashboardService`, `ParticipantesExclusivosService`, and BI services.
-- **Console Commands:** `app/Console/Commands/` — `ImportLimeSurveyData` (daily cache warm-up), `ImportBiGeral` (CSV import).
-- **Livewire:** `app/Livewire/Dashboards/` and `app/Livewire/Graficos/` — interactive dashboard components.
-- **Imports:** `app/Imports/` — Excel importers via maatwebsite/excel with tolerant header parsing.
-- **Exports:** `app/Exports/` — Excel exports.
-- **PDF:** gerado via `spatie/laravel-pdf` (Browsershot/Puppeteer). Macro `->withAlfaEjaBrand()` em `AppServiceProvider` aplica cabeçalho, rodapé e margens institucionais. Layouts em `resources/views/layouts/pdf-alfa-eja.blade.php` (portrait) e `pdf-alfa-eja-landscape.blade.php` (landscape).
-- **ViewModels:** `app/ViewModels/` — view data transformation.
-- **Policies:** `app/Policies/` — model-level authorization.
+- **Relatórios do Momento** (`/relatorios-avaliacao`, `AvaliacaoAtividadeController`) — qualitative reports per atividade, grouped by ação/momento.
+- **Relatório Quantitativo** (`/relatorio-quantitativo`, `RelatorioQuantitativoController`) — attendance/evaluation counts per encontro. Filters: ação, momento, município, date range, período (manhã/tarde/noite via `hora_inicio`). Grouped by ação with subtotal rows, all columns sortable. Cascading filters fetch `GET /relatorio-quantitativo/momentos` (JSON) → filtered `momentos`+`municipios`.
 
-### Filter + Sort Pattern (Blade reports)
+## LimeSurvey Integration & Avaliações Dashboard
 
-Used in `DashboardController::index()` and `RelatorioQuantitativoController::index()`:
-- `$sortable = ['key' => 'db_column']` map; direction validated to `asc`/`desc`.
-- Filters applied with `->when($value, fn($q) => ...)`.
-- `->withCount(['relation as alias' => fn($q) => $q->where(...)])` for aggregated counts.
-- `->appends($request->query())` preserves filter state across pagination.
-- Sort links built inline in Blade with `http_build_query` — no shared helper function.
+- **Entry:** `GET /dashboards/avaliacoes?fonte=limesurvey&survey_id=X`; AJAX `GET /dashboards/avaliacoes/dados` → `DashboardController::avaliacoesDataLimeSurvey()` → `LimeSurveyDashboardService::buildPayload()`. Survey list at `/dashboards/leitura-mundo`. Payload: `{totais, perguntas, bi_matrizes, question_blocks, recentes}`.
+- **Client** (`LimeSurveyClient`) — JSON-RPC 2.0, session auto-acquired/released per call. Config in `config/services.php` (`LIMESURVEY_*` env).
+- **Cache (database driver):** TTL via `LIMESURVEY_CACHE_MINUTES` (default 5). Keys: `limesurvey:{id}:questions`, `:responses`, `:answer_options:{qid}` (type-L only). Daily warm-up `limesurvey:importar-dados` at 00:00 UTC (`routes/console.php`) caches active surveys 24h; on-demand fallback if scheduler fails.
+- **Service** — infers question types (`texto`/`boolean`/`escala`/`numero`); município-level aggregation via email→município mapping; `de`/`ate` date filters applied **post-cache**.
+- **Frontend (Chart.js, not ApexCharts):** two render paths — new `question_blocks` (`renderSimpleQuestionCard`/`renderMatrixBlockCard`) and legacy `perguntas`/`bi_matrizes` (`renderLegacyCharts`). Circular charts (doughnut/polarArea): `maintainAspectRatio:false` + `canvas.style.height` to avoid runaway height.
 
-### Import Flow (Presença/Inscrição)
+## PDF Generation (spatie/laravel-pdf + Browsershot/Puppeteer)
 
-Imports follow a multi-step preview/confirm pattern:
-1. Upload → parse xlsx → store in session
-2. Preview page (paginated)
-3. Confirm → persist to database
+`Pdf::view()` → Puppeteer/Chromium. Node via fnm; path in `.env` `LARAVEL_PDF_NODE_BINARY`.
 
-### Seeding
+- **Local vs prod** (`AppServiceProvider::configureRemotePdfRendering()`): without `LARAVEL_PDF_REMOTE_HOST`, early-return with **no** Browsershot customization (local Chromium, package defaults) — the early return is **intentional, keep it**. With the host set, Browsershot points at remote browserless (`setRemoteInstance($host,$port)->noSandbox()`) + wide timeout. `tests/Feature/PdfRemoteInstanceTest.php` covers both cases — update it when touching this method.
+- **Large PDFs (timeout/memory)** — config in `config/dashboard.php` (`dashboard.pdf.*`): `max_atividades` (200) caps rows in `DashboardController::export()` (count the filtered universe with `(clone $query)->count()` before `->limit()`; truncated PDFs show a "Resultado parcial" banner); `memory_limit` (512M) via pointful `ini_set`; `timeout` (120s) on the remote Browsershot. Defaults live **only** in config (reading `env()`); call sites use `config(...)` with no 2nd arg.
+- **Macro `->withAlfaEjaBrand()`** (`AppServiceProvider::registerPdfMacros()`) — sets Puppeteer margins + native header/footer templates with the institutional base64 images. Portrait: `->withAlfaEjaBrand()` (margins `28 14 22 14`mm); landscape: `->withAlfaEjaBrand(35,10,25,10)`.
+- **Controller return type:** `PdfBuilder` implements `Responsable` — return it directly (declare `: PdfBuilder` or omit the type). **Never** `: Symfony\Component\HttpFoundation\Response`.
 
-`RolesPermissionsSeeder` sets up all roles and permissions. `DatabaseSeeder` creates a default admin user (`admin@engaja.local`) with sample events/activities. Always run `--seed` on fresh installs.
-
-### Reports (Relatórios)
-
-**Relatórios do Momento** (`/relatorios-avaliacao`):
-- `AvaliacaoAtividadeController` — qualitative reports per atividade, grouped by ação/momento.
-- Views: `resources/views/avaliacao-atividade/`.
-
-**Relatório Quantitativo** (`/relatorio-quantitativo`):
-- `RelatorioQuantitativoController` — attendance and evaluation counts per encontro.
-- Filters: ação, momento, município, date range, período (manhã/tarde/noite via `hora_inicio`).
-- Table grouped by ação with subtotal rows; all columns sortable.
-- Cascading filters: selecting ação triggers a `fetch` to `GET /relatorio-quantitativo/momentos` (JSON) which returns filtered `momentos` and `municipios`.
-- Views: `resources/views/relatorio-quantitativo/`.
-
-### LimeSurvey Integration & Avaliacoes Dashboard
-
-**Routes & Views:**
-- `GET /dashboards/leitura-mundo` (`dashboards.leitura-mundo`) — survey list via `DashboardController::leituraMundo()`.
-- `GET /dashboards/avaliacoes?fonte=limesurvey&survey_id=X` (`dashboards.avaliacoes`) — dashboard entry point.
-- `GET /dashboards/avaliacoes/dados?...` (`dashboards.avaliacoes.data`) — AJAX endpoint returning `{totais, perguntas, bi_matrizes, question_blocks, recentes}`.
-- View partials in `resources/views/dashboards/avaliacoes/`: `_filtros`, `_cards-totais`, `_bi-matriz`, `_modal-respostas`.
-
-**Data Flow:**
-1. Frontend JS (`resources/js/dashboards/avaliacoes.js`) fetches `/dashboards/avaliacoes/dados` with filters.
-2. `DashboardController::avaliacoesDataLimeSurvey()` → `LimeSurveyDashboardService::buildPayload($request)`.
-3. Service returns structured payload with questions, responses, matrix analyses, organized blocks.
-
-**Caching & Scheduling:**
-- Service uses `Cache::remember()` with **database driver** (configurable TTL via `LIMESURVEY_CACHE_MINUTES`, default 5 min).
-- **Cache keys:** `limesurvey:{surveyId}:questions`, `limesurvey:{surveyId}:responses`, `limesurvey:{surveyId}:answer_options:{qid}` (type-L questions only).
-- **Daily warm-up:** `php artisan limesurvey:importar-dados` runs at 00:00 UTC (see `routes/console.php` for schedule), caching all active surveys for 24 hours. Fallback to on-demand fetch if scheduler fails.
-- Manual trigger: `php artisan limesurvey:importar-dados` or `php artisan limesurvey:importar-dados --survey_id=X`.
-
-**LimeSurvey Client** (`app/Services/LimeSurvey/LimeSurveyClient.php`):
-- JSON-RPC 2.0 client; session-based (auto-acquired/released per call).
-- Methods: `listQuestions(surveyId)`, `exportResponses(surveyId)` (CSV base64), `listParticipants()`, `getQuestionProperties(qid)`, `listSurveys()`.
-- Config via `config/services.php` (env: `LIMESURVEY_URL`, `USERNAME`, `PASSWORD`, `SURVEY_ID`, `CACHE_MINUTES`, `VERIFY_SSL`, `TIMEOUT`).
-
-**Service** (`app/Services/LimeSurvey/LimeSurveyDashboardService.php`):
-- Normalizes questions, builds simple questions and matrix blocks.
-- Supports município-level aggregation (email-to-município mapping).
-- Infers question types: `texto`, `boolean`, `escala`, `numero`.
-- Date filters from `de` / `ate` request params applied post-cache.
-
-**Frontend Rendering** (Chart.js, not ApexCharts):
-- Two paths: **new** (`question_blocks`) uses `renderSimpleQuestionCard`/`renderMatrixBlockCard`; **legacy** (`perguntas`/`bi_matrizes`) uses `renderLegacyCharts`.
-- Circular charts (doughnut, polarArea): use `maintainAspectRatio: false` + `canvas.style.height` to prevent excessive height.
-
-### PDF Generation (spatie/laravel-pdf + Browsershot)
-
-**Stack:** `Pdf::view()` → `BrowsershotDriver` → Puppeteer/Chromium. Node.js instalado via fnm; path configurado em `.env` como `LARAVEL_PDF_NODE_BINARY`.
-
-**Local vs Produção (renderização):** `AppServiceProvider::configureRemotePdfRendering()` customiza o builder default conforme o ambiente:
-- **Local** — sem `LARAVEL_PDF_REMOTE_HOST` definido, o método retorna cedo e **nenhuma** customização de Browsershot é aplicada. O PDF é renderizado pelo Chromium local (via Node binary), com o comportamento default do pacote. Não registrar callback aqui é proposital — preserva o fluxo local intocado.
-- **Produção** — com `LARAVEL_PDF_REMOTE_HOST` definido, o Browsershot aponta para um **Chromium remoto (browserless)** via `setRemoteInstance($host, $port)->noSandbox()` e aplica o timeout amplo. Não há Chromium local em produção.
-
-O teste `tests/Feature/PdfRemoteInstanceTest.php` cobre os dois casos (sem host → callback nulo; com host → remote + timeout). **Ao mexer nesse método, mantenha o early return sem host** e atualize esse teste.
-
-**Geração de PDFs extensos (timeout/memória):** relatórios sem filtro podem hidratar muitos models e gerar HTML grande, causando estouro de memória (PHP) e timeout (Browsershot/Chromium). Mitigações em `config/dashboard.php` (`dashboard.pdf.*`):
-- `max_atividades` (padrão 200) — teto de linhas no `DashboardController::export()`; quando excedido, o PDF é truncado e a view exibe banner "Resultado parcial". Conta o universo filtrado com `(clone $query)->count()` antes de aplicar `->limit()`.
-- `memory_limit` (padrão 512M) — `ini_set` pontual na exportação.
-- `timeout` (padrão 120s) — aplicado ao Browsershot remoto no provider.
-
-Os defaults moram **só** no config (lendo `env()`); os pontos de uso chamam `config(...)` **sem** segundo argumento, evitando defaults duplicados.
-
-**Macro `withAlfaEjaBrand()`** — registrada em `AppServiceProvider::registerPdfMacros()`:
-```php
-Pdf::view('minha.view', $dados)
-    ->format('a4')
-    ->withAlfaEjaBrand()              // portrait: margens 28 14 22 14 mm (padrão)
-    ->download('arquivo.pdf');
-
-->withAlfaEjaBrand(35, 10, 25, 10)   // landscape
-```
-O macro define as margens do Puppeteer e os templates de header/footer com as imagens institucionais (`public/images/Alfa-Eja Header.png` e `Alfa-Eja Footer.png`) em base64.
-
-**Return type dos controllers:** `PdfBuilder` implementa `Responsable`; retorná-lo de um controller é válido — Laravel chama `toResponse()` automaticamente. Declare `: PdfBuilder` ou omita o tipo. **Não use** `: Symfony\Component\HttpFoundation\Response`.
-
-**Armadilhas críticas do Puppeteer — leia antes de mexer em PDFs:**
-
-1. **Header/footer rodam em contexto HTML completamente isolado.** Não herdam CSS nem recursos do documento principal. Sempre incluir reset completo no template:
-   ```html
-   <style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100%;font-size:0;line-height:0;overflow:hidden}</style>
-   ```
-
-2. **Imagens base64 no header/footer podem não renderizar.** O contexto isolado do Puppeteer não carrega dados base64 não previamente "vistos". Solução: adicionar `<img>` invisíveis com o mesmo `src` nos layouts Blade para pré-carregar:
-   ```html
-   {{-- em pdf-alfa-eja.blade.php e pdf-alfa-eja-landscape.blade.php --}}
-   <img src="data:image/png;base64,..." style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" aria-hidden="true">
-   ```
-
-3. **Header descolado do topo: usar `position:absolute`, não confiar em `margin:0`.** Chrome print tem espaçamento padrão que `margin:0` no body não elimina. Solução robusta:
-   ```html
-   <body style='position:relative'>
-     <img src='...' style='position:absolute;top:0;left:0;width:100%;display:block'>
-   </body>
-   ```
-
-4. **Footer desalinhado: `display:flex` no body pode não funcionar** porque a largura do body no contexto isolado não corresponde à página. Solução:
-   ```html
-   <body style='position:relative;width:100%;height:100%'>
-     <img src='...' style='position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:61mm;display:block'>
-   </body>
-   ```
-
-5. **`position:fixed` em Chrome PDF NÃO repete em cada página** (ao contrário do wkhtmltopdf). Cria uma página extra em branco no final. Nunca use `position:fixed` para header/footer — use os templates nativos `headerHtml`/`footerHtml` via macro.
-
-6. **Rodapés legados das views wkhtmltopdf.** Views migradas podem ter `<div class="footer">` com texto no corpo — isso vira conteúdo normal e cria páginas extras. Verificar e remover ao migrar:
-   ```bash
-   grep -rn 'class="footer"' resources/views/ --include="*.blade.php" | grep -v vendor | grep -v mail
-   ```
-
-7. **Cache de views.** Ao modificar layouts PDF rodar `php artisan view:clear`.
-
-8. **Alturas em CSS não herdam a altura da página.** No navegador, `min-height: 100%` funciona porque a viewport tem altura definida. Em Puppeteer, a página size não é exposta ao CSS. Para centrar verticalmente, usar `height: XXmm` explícito baseado nas margens. Exemplo para A4 landscape com margens 35 10 25 10: altura disponível = 210mm - 35mm (top) - 25mm (bottom) = 150mm.
+**Puppeteer pitfalls (read before touching PDFs):**
+1. Header/footer render in **isolated HTML** — no inherited CSS/resources. Always include a full reset (`*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100%;font-size:0;line-height:0;overflow:hidden}`).
+2. **base64 images may not render** in header/footer — preload by adding invisible `<img>` with the same `src` in the Blade layouts (`pdf-alfa-eja*.blade.php`).
+3. Header off the top: use `position:absolute;top:0`, not `margin:0` (Chrome print has default spacing).
+4. Footer misaligned: body `display:flex` is unreliable (isolated body width ≠ page); use `position:absolute;bottom:0;left:50%;transform:translateX(-50%)`.
+5. **`position:fixed` does NOT repeat per page** in Chrome PDF (unlike wkhtmltopdf) and adds a blank trailing page — use the native `headerHtml`/`footerHtml` templates via the macro.
+6. Legacy `<div class="footer">` from migrated wkhtmltopdf views becomes body content → extra pages. Grep & remove when migrating.
+7. After editing PDF layouts: `php artisan view:clear`.
+8. CSS heights don't inherit page height in Puppeteer — center vertically with explicit `height: XXmm` (A4 landscape, margins 35/25 → 150mm available).
 
 ===
 
@@ -425,3 +287,13 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - To filter on a particular test name: `php artisan test --compact --filter=testName` (recommended after making a change to a related file).
 
 </laravel-boost-guidelines>
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
