@@ -193,42 +193,90 @@
         @endif
       </ul>
 
+      @php
+        $mostrarMenuGerenciar = auth()->user()?->hasAnyRole(['administrador', 'gerente', 'eq_pedagogica', 'articulador'])
+          || auth()->user()?->can('update', $evento);
+      @endphp
+
       <div class="d-flex gap-2 flex-wrap">
         @if($evento->link)
         <a href="{{ $evento->link }}" target="_blank" class="btn btn-outline-secondary">Acessar link</a>
         @endif
 
-        {{-- BOTÃO GERAR PDF --}}
-        <a href="{{ route('eventos.planejamento.pdf', $evento) }}" target="_blank" class="btn btn-outline-danger">
-          <i class="fas fa-file-pdf"></i> Gerar PDF do Planejamento
+        <a href="{{ route('eventos.planejamento.pdf', $evento) }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary">
+          <i class="fas fa-file-pdf"></i> Ver Planejamento da Ação
         </a>
 
-        @hasanyrole('administrador|gerente|eq_pedagogica')
-          <a href="{{ route('inscricoes.selecionar', $evento)}}" class="btn btn-engaja">Selecionar participantes</a>
-          <a href="{{ route('inscricoes.import', $evento)}}" class="btn btn-outline-primary">Importar planilha</a>
+        @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+          <a href="{{ route('inscricoes.selecionar', $evento)}}" class="btn btn-engaja">Inscrever participantes</a>
         @endhasanyrole
 
         @can('participante.ver')
-          <a href="{{ route('inscricoes.inscritos', $evento) }}" class="btn btn-outline-primary">Ver inscritos</a>
+          <a href="{{ route('inscricoes.inscritos', $evento) }}" class="btn btn-outline-secondary">Ver inscritos</a>
         @endcan
 
-        @role('administrador|gerente')
-          <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
-            data-bs-target="#modalRelatoriosEvento">
-            Relatórios
-          </button>
-        @endrole
+        @if($mostrarMenuGerenciar)
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="dropdownGerenciarEvento"
+              data-bs-toggle="dropdown" aria-expanded="false">
+              Gerenciar
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownGerenciarEvento">
+              @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+                <li>
+                  <a class="dropdown-item" href="{{ route('inscricoes.import', $evento)}}">Importar participantes</a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{ route('inscricoes.moodle.import', $evento)}}">Importação Moodle</a>
+                </li>
+              @endhasanyrole
 
-        @can('update', $evento)
-          <a href="{{ route('eventos.edit', $evento) }}" class="btn btn-outline-secondary">Editar</a>
-          @role('administrador')
-          <form action="{{ route('eventos.destroy', $evento) }}" method="POST"
-            class="d-flex m-0 p-0" data-confirm="Tem certeza que deseja excluir esta ação pedagógica?">
-            @csrf @method('DELETE')
-            <button class="btn btn-outline-danger">Excluir</button>
-          </form>
-          @endrole
-        @endcan
+              @role('administrador|gerente|eq_pedagogica|articulador')
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item" href="{{ route('dashboards.presencas', ['evento_id' => $evento->id]) }}">
+                    Relação de Inscritos/Presentes da Ação
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{ route('eventos.avaliacoes.consolidado', $evento) }}">
+                    Consolidação de avaliações
+                  </a>
+                </li>
+                <li>
+                  <button type="button" class="dropdown-item" data-bs-toggle="modal"
+                    data-bs-target="#modalRelatoriosEvento">
+                    Relatórios
+                  </button>
+                </li>
+              @endrole
+
+              @hasanyrole('administrador|gerente')
+                <li>
+                  <a class="dropdown-item" href="{{ route('certificados.emitidos', ['evento_id' => $evento->id, 'contexto' => 'evento']) }}">
+                    Certificados
+                  </a>
+                </li>
+              @endhasanyrole
+
+              @can('update', $evento)
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item" href="{{ route('eventos.edit', $evento) }}">Editar</a>
+                </li>
+                @role('administrador')
+                  <li>
+                    <form action="{{ route('eventos.destroy', $evento) }}" method="POST"
+                      class="m-0" data-confirm="Tem certeza que deseja excluir esta ação pedagógica?">
+                      @csrf @method('DELETE')
+                      <button type="submit" class="dropdown-item text-danger">Excluir</button>
+                    </form>
+                  </li>
+                @endrole
+              @endcan
+            </ul>
+          </div>
+        @endif
       </div>
     </div>
   </div>
@@ -277,16 +325,6 @@
     </div>
   </div>
 
-  {{-- Descrição / Objetivo --}}
-  @if($evento->objetivos_especificos)
-  <div class="mb-4">
-    <h2 class="h5 fw-bold mb-2">Objetivos Específicos</h2>
-    <div class="ev-card p-3">
-      <p class="mb-0">{{ $evento->objetivos_especificos }}</p>
-    </div>
-  </div>
-  @endif
-
   @if($evento->objetivos_gerais)
   <div class="mb-4">
     <h2 class="h5 fw-bold mb-2">Objetivos Gerais</h2>
@@ -294,6 +332,16 @@
       <p class="mb-0">{{ $evento->objetivos_gerais }}</p>
     </div>
   </div>
+  @endif
+
+    {{-- Descrição / Objetivo --}}
+  @if($evento->objetivos_especificos)
+      <div class="mb-4">
+          <h2 class="h5 fw-bold mb-2">Objetivos Específicos</h2>
+          <div class="ev-card p-3">
+              <p class="mb-0">{{ $evento->objetivos_especificos }}</p>
+          </div>
+      </div>
   @endif
 
   {{-- Programação --}}
@@ -386,7 +434,7 @@
                 : null;
               $publicoEsperado = $at->publico_esperado;
               $cargaHoraria = $at->carga_horaria;
-              $cargaLabel = !is_null($cargaHoraria) ? number_format($cargaHoraria, 0, ',', '.') . 'h' : null;
+              $cargaLabel = !is_null($cargaHoraria) ? \App\Support\CargaHoraria::formatMinutos((int) $cargaHoraria) : null;
               $minhaPresenca = ($presencasPorAtividade ?? collect())[$at->id] ?? null;
               $primeiraAvaliacao = $at->avaliacoes->first();
               @endphp
@@ -449,12 +497,12 @@
                       @endhasanyrole
                       --}}
 
-                      @hasanyrole('administrador|gerente')
+                      @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
                         <a href="{{ $at->avaliacaoAtividade
                               ? route('avaliacao-atividade.edit',   $at)
                               : route('avaliacao-atividade.create', $at) }}"
                            class="btn btn-sm {{ $at->avaliacaoAtividade ? 'btn-warning' : 'btn-outline-warning' }}">
-                          📝 {{ $at->avaliacaoAtividade ? 'Avaliação' : 'Avaliar' }}
+                          📝 {{ $at->avaliacaoAtividade ? 'Relatório' : 'Criar relatório' }}
                         </a>
                       @endhasanyrole
 
@@ -591,11 +639,61 @@
   </div>
 </div>
 
+{{-- Modal de pessoas não encontradas após importação Moodle --}}
+@if(session('usuarios_nao_encontrados') && count(session('usuarios_nao_encontrados')) > 0)
+<div class="modal fade" id="modalUsuariosNaoEncontrados" tabindex="-1" aria-labelledby="modalUsuariosNaoEncontradosLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-warning-subtle">
+        <h5 class="modal-title text-warning-emphasis" id="modalUsuariosNaoEncontradosLabel">⚠️ Pessoas não inseridas na importação</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+        <div class="alert alert-danger mb-3">
+          <strong>{{ count(session('usuarios_nao_encontrados')) }}</strong> pessoa(s) da planilha <strong>NÃO foram inseridas para criação de certificado</strong>
+          pois não possuem cadastro no Engaja.
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 80px;">Linha</th>
+                <th>Nome</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach(session('usuarios_nao_encontrados') as $usuario)
+              <tr>
+                <td>{{ $usuario['linha'] ?? '—' }}</td>
+                <td>{{ $usuario['nome'] }}</td>
+                <td>{{ $usuario['email'] }}</td>
+              </tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+@endif
+
 @endsection
 
 @push('scripts')
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+
+      // Auto-abrir modal de usuários não encontrados após importação Moodle
+      const modalNaoEncontrados = document.getElementById('modalUsuariosNaoEncontrados');
+      if (modalNaoEncontrados) {
+          const modal = new bootstrap.Modal(modalNaoEncontrados);
+          modal.show();
+      }
 
       // Lógica 1: Criação de novo Momento
       const btnConfirmarPreAcao = document.querySelector('.js-checklist-confirm[data-modal="modalChecklistPreAcao"]');
@@ -647,8 +745,8 @@
       document.querySelectorAll('.btn-checklist-reabrir').forEach(btn => {
           btn.addEventListener('click', function () {
               atividadeIdAtual = this.dataset.atividadeId;
-              const marcadosPl = JSON.parse(this.dataset.checklistPl || '[]');
-              const marcadosEn = JSON.parse(this.dataset.checklistEn || '[]');
+            const marcadosPl = normalizeMarkedIndexes(ITENS_PLANEJAMENTO, JSON.parse(this.dataset.checklistPl || '[]'));
+            const marcadosEn = normalizeMarkedIndexes(ITENS_ENCERRAMENTO, JSON.parse(this.dataset.checklistEn || '[]'));
 
               const body = document.getElementById('reopen-checklist-body');
               body.innerHTML = renderChecklist('planejamento', ITENS_PLANEJAMENTO, marcadosPl)
@@ -657,6 +755,34 @@
               new bootstrap.Modal(document.getElementById('modalReopenChecklist')).show();
           });
       });
+
+        function normalizeMarkedIndexes(itens, marcados) {
+          if (!Array.isArray(marcados)) {
+            return [];
+          }
+
+          const normalizedTextToIndex = new Map(
+            itens.map((item, index) => [String(item).trim().toLowerCase(), index])
+          );
+
+          return [...new Set(
+            marcados
+              .map((valor) => {
+                if (Number.isInteger(valor)) {
+                  return valor;
+                }
+
+                const asNumber = Number(valor);
+                if (Number.isInteger(asNumber)) {
+                  return asNumber;
+                }
+
+                const textKey = String(valor).trim().toLowerCase();
+                return normalizedTextToIndex.has(textKey) ? normalizedTextToIndex.get(textKey) : null;
+              })
+              .filter((index) => Number.isInteger(index) && index >= 0 && index < itens.length)
+          )];
+        }
 
       function renderChecklist(tipo, itens, marcados) {
           let html = `<h6 class="fw-bold mt-2" style="color: #421944;">${tipo === 'planejamento' ? '📋 Planejamento' : '✅ Encerramento'}</h6><div class="vstack gap-2 mb-4">`;

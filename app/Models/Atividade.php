@@ -2,12 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Atividade extends Model
@@ -22,6 +21,7 @@ class Atividade extends Model
         'hora_inicio',
         'hora_fim',
         'publico_esperado',
+        /** Minutos inteiros (nome legado da coluna). */
         'carga_horaria',
         'presenca_ativa',
         'checklist_planejamento',
@@ -35,7 +35,7 @@ class Atividade extends Model
 
     public function getChecklistsIncompletosAttribute(): bool
     {
-        $totalPlanejamento = 13; 
+        $totalPlanejamento = 13;
         $totalEncerramento = 3;
 
         $pl = $this->checklist_planejamento ?? [];
@@ -85,8 +85,22 @@ class Atividade extends Model
             ->withTimestamps();
     }
 
-    public function avaliacaoAtividade(): HasOne
+    public function avaliacaoAtividades(): HasMany
     {
-        return $this->hasOne(AvaliacaoAtividade::class);
+        return $this->hasMany(AvaliacaoAtividade::class);
+    }
+
+    public function getMinhaAvaliacaoAtividadeAttribute(): ?AvaliacaoAtividade
+    {
+        $userId = auth()->id();
+        if (! $userId) {
+            return null;
+        }
+
+        if ($this->relationLoaded('avaliacaoAtividades')) {
+            return $this->avaliacaoAtividades->firstWhere('user_id', $userId);
+        }
+
+        return $this->avaliacaoAtividades()->where('user_id', $userId)->first();
     }
 }

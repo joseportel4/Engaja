@@ -1,79 +1,130 @@
 ﻿@php
-  $url = route('profile.certificados');
+    $url = route('profile.certificados');
 @endphp
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <style>
-    body {
-      font-family: 'Montserrat', Arial, sans-serif;
-      background: #f5f3fa;
-      padding: 0;
-      margin: 0;
-    }
-    .wrapper {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 32px 16px;
-      text-align: center;
-    }
-    .logo {
-      display: inline-block;
-      margin-bottom: 16px;
-    }
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 28px 28px 24px 28px;
-      box-shadow: 0 14px 35px rgba(0,0,0,0.06);
-      text-align: left;
-    }
-    h1 {
-      font-size: 22px;
-      color: #1f2937;
-      margin: 0 0 12px 0;
-      font-weight: 700;
-    }
-    p {
-      color: #374151;
-      font-size: 15px;
-      line-height: 1.6;
-      margin: 0 0 14px 0;
-    }
-    .btn {
-      display: inline-block;
-      background: #4a0e4e;
-      color: #fff;
-      padding: 12px 24px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 700;
-      margin: 6px 0 14px 0;
-    }
-    .muted {
-      font-size: 13px;
-      color: #6b7280;
-      word-break: break-all;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: 'Montserrat', Arial, sans-serif;
+            background: #f5f3fa;
+            padding: 0;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrapper {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 32px 16px;
+            text-align: center;
+        }
+        .logo {
+            display: inline-block;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: left;
+        }
+        h1 {
+            font-size: 22px;
+            color: #1f2937;
+            margin: 0 0 16px 0;
+            font-weight: 700;
+        }
+        p {
+            color: #374151;
+            font-size: 15px;
+            line-height: 1.6;
+            margin: 0 0 16px 0;
+        }
+        .btn {
+            display: inline-block;
+            background: #4a0e4e;
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            margin: 8px 0 16px 0;
+            text-align: center;
+        }
+        .info-box {
+            background-color: #f8fafc;
+            border-left: 4px solid #4a0e4e;
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 32px 0 24px 0;
+        }
+        .info-box-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .info-box p {
+            margin: 0;
+            font-size: 14px;
+            color: #4b5563;
+        }
+        .password-highlight {
+            background-color: #e5e7eb;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+            color: #111827;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid #e5e7eb;
+            margin: 32px 0 24px 0;
+        }
+        .muted {
+            font-size: 13px;
+            color: #6b7280;
+            word-break: break-all;
+            margin-bottom: 8px;
+        }
+    </style>
 </head>
 <body>
-  <div class="wrapper">
+<div class="wrapper">
     <div class="logo">
-      @if(!empty($logoData))
-        <img src="{{ $logoData }}" alt="Engaja" style="height:48px;">
-      @endif
+        @if(isset($logoPath) && file_exists($logoPath))
+            <img src="{{ $message->embed($logoPath) }}" alt="Plataforma Engaja" style="height:48px;">
+        @endif
     </div>
+
     <div class="card">
-      <h1>Olá, {{ $nome }}!</h1>
-      <p>Seu certificado referente à ação pedagógica <strong>{{ $acao }}</strong> está disponível no Engaja.</p>
-      <p>
-        <a class="btn" href="{{ $url }}">Acessar meus certificados</a>
-      </p>
-      <p class="muted">Se o botão não funcionar, copie e cole este link no navegador:<br>{{ $url }}</p>
-      <p class="muted">Esta é uma mensagem automática. Não responda este e-mail.</p>
+        <h1>Olá, {{ $nome }}!</h1>
+
+        <p>O seu certificado referente à ação pedagógica <strong>{{ $acao }}</strong> já está liberado e disponível para download na plataforma Engaja. Para acessar seu certificado, clique no botão abaixo:</p>
+
+        <div style="text-align: center;">
+            <a class="btn" href="{{ $url }}" style="color: #ffffff !important; text-decoration: none;">Acessar meus certificados</a>
+        </div>
+
+        <p style="text-align: center; font-size: 14px; color: #4b5563; margin-top: 0;">
+            Ou acesse a aba <strong>"Meus Certificados"</strong> ao estar autenticado na plataforma Engaja.
+        </p>
+
+        <div class="info-box">
+            <div class="info-box-title">📌 Instruções Importantes de Acesso</div>
+            <p>Caso seja o seu primeiro acesso ao sistema, utilize este seu exato e-mail e a senha temporária <span class="password-highlight">alfaeja2025</span> para entrar.</p>
+            <p style="margin-top: 12px;">Se a senha temporária não funcionar, não se preocupe! Na tela de login, clique na opção <strong>"Esqueceu sua senha?"</strong> e insira este seu e-mail para criar uma nova senha com segurança.</p>
+        </div>
+        <hr>
+
+        <p class="muted">Se o botão acima não funcionar, copie e cole este link no seu navegador:<br><a href="{{ $url }}" style="color: #4a0e4e;">{{ $url }}</a></p>
+        <p class="muted">Esta é uma mensagem automática do sistema. Por favor, não responda a este e-mail.</p>
     </div>
-  </div>
+</div>
 </body>
 </html>

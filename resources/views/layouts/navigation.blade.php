@@ -43,9 +43,20 @@
             <li><a class="dropdown-item" href="{{ route('templates-avaliacao.index') }}">Modelos de avaliação</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="{{ route('avaliacoes.index') }}">Avaliações dos Participantes</a></li>
-            @hasanyrole('administrador|gerente')
-            <li><a class="dropdown-item" href="{{ route('avaliacao-atividade.index') }}">Relatórios de Avaliação da Ação</a></li>
-            @endhasanyrole
+            <li><a class="dropdown-item" href="{{ route('avaliacoes-universais.index') }}">Avaliações universais</a></li>
+            <li><a class="dropdown-item" href="{{ route('avaliacoes-transcricoes.index') }}">Transcrições de avaliação</a></li>
+          </ul>
+        </li>
+        @endhasanyrole
+
+        @hasanyrole('administrador|gerente')
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle text-white nav-dropdown-fallback" href="javascript:void(0)" role="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            Relatórios
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ route('avaliacao-atividade.index') }}">Relatórios do Momento</a></li>
           </ul>
         </li>
         @endhasanyrole

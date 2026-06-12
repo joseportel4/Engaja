@@ -17,6 +17,8 @@
   "dependencies": {
     "apexcharts": "^5.3.6",
     "chart.js": "^4.5.1",
-    "fabric": "^6.9.0"
+    "fabric": "^6.9.0",
+    "puppeteer": "^25.0.4",
+    "tom-select": "^2.6.1"
   }
 }

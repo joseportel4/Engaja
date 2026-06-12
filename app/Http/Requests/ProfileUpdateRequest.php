@@ -26,6 +26,7 @@ class ProfileUpdateRequest extends FormRequest
             'telefone'     => $toNull($telDigits ?: null),
             'municipio_id' => $toNull($this->municipio_id ?? null),
             'remove_profile_photo' => $this->boolean('remove_profile_photo'),
+            'autorizacao_imagem'   => $this->boolean('autorizacao_imagem'),
         ]);
     }
 
@@ -44,6 +45,7 @@ class ProfileUpdateRequest extends FormRequest
             'escola_unidade'   => ['nullable','string','max:255'],
             'tipo_organizacao' => ['nullable','string','max:255', Rule::in(config('engaja.organizacoes', []))],
             'tag'              => ['nullable', Rule::in(Participante::TAGS)],
+            'autorizacao_imagem' => ['boolean'],
         ];
     }
 

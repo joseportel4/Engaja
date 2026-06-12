@@ -1,10 +1,17 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+  $isUniversal = $avaliacao->atividade_id === null;
+  $isTranscricao = $avaliacao->transcricao;
+    $respondente = ($isUniversal || $isTranscricao)
+      ? 'resposta anonima'
+      : ($submissao->presenca?->inscricao?->participante?->user?->name ?? 'N/A');
+@endphp
 <div class="row justify-content-center">
   <div class="col-xl-9">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="h4 fw-bold text-engaja mb-0">Respostas de {{ optional($submissao->presenca->inscricao->participante->user)->name ?? 'N/A' }}</h1>
+      <h1 class="h4 fw-bold text-engaja mb-0">Respostas de {{ $respondente }}</h1>
       <a href="{{ route('avaliacoes.respostas', $avaliacao) }}" class="btn btn-outline-secondary">Voltar</a>
     </div>
 
@@ -12,7 +19,14 @@
       <div class="card-body">
         <p class="mb-3">
           <strong>Enviado em:</strong> {{ $submissao->created_at->format('d/m/Y H:i') }}<br>
+          @if($isUniversal)
+          <strong>Avaliação universal:</strong> {{ $avaliacao->descricao_universal ?: 'Sem descrição' }}
+          @elseif($isTranscricao)
+          <strong>Transcrição:</strong> {{ $avaliacao->descricao_universal ?: 'Sem descrição' }}<br>
+          <strong>Momento:</strong> {{ $avaliacao->atividade->descricao ?? 'N/A' }} — {{ $avaliacao->atividade->evento->nome ?? 'N/A' }}
+          @else
           <strong>Atividade:</strong> {{ $avaliacao->atividade->descricao ?? 'N/A' }} — {{ $avaliacao->atividade->evento->nome ?? 'N/A' }}
+          @endif
         </p>
 
         <div class="list-group">
@@ -27,13 +41,29 @@
                 Evidência: {{ $questao->evidencia->descricao ?? '—' }} |
                 Escala: {{ $questao->escala->descricao ?? '—' }}
               </div>
-              <div>
-                @if($resp)
-                  {!! nl2br(e($resp->resposta)) !!}
-                @else
-                  <span class="text-muted">Não respondida.</span>
-                @endif
-              </div>
+                <div>
+                    @if($resp)
+                        @php
+                          $exibicao = $resp->resposta;
+                          if ($questao->tipo === 'boolean') {
+                            $normalizado = is_bool($exibicao) ? ($exibicao ? '1' : '0') : (string) $exibicao;
+                            if ($normalizado === '1' || strtolower($normalizado) === 'true') {
+                              $exibicao = 'Sim';
+                            } elseif ($normalizado === '0' || strtolower($normalizado) === 'false') {
+                              $exibicao = 'Não';
+                            }
+                          } elseif (is_string($exibicao) && in_array(substr(trim($exibicao), 0, 1), ['[', '{'])) {
+                            $decoded = json_decode($exibicao, true);
+                            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                              $exibicao = implode(', ', $decoded);
+                            }
+                          }
+                        @endphp
+                        {!! nl2br(e($exibicao)) !!}
+                    @else
+                        <span class="text-muted">Não respondida.</span>
+                    @endif
+                </div>
             </div>
           @endforeach
         </div>

@@ -70,10 +70,10 @@ class QuestionarioRespostaSeeder extends Seeder
         $municipios = Municipio::inRandomOrder()->take(3)->pluck('id');
 
         $evento = Evento::factory()->create([
-            'nome'        => 'Percurso Formativo Engaja',
+            'nome' => 'Percurso Formativo Engaja',
             'data_inicio' => now()->subDays(10)->format('Y-m-d'),
-            'data_fim'    => now()->addDays(15)->format('Y-m-d'),
-            'modalidade'  => 'Presencial',
+            'data_fim' => now()->addDays(15)->format('Y-m-d'),
+            'modalidade' => 'Presencial',
         ]);
 
         $descricoes = [
@@ -86,14 +86,14 @@ class QuestionarioRespostaSeeder extends Seeder
             return Atividade::factory()
                 ->for($evento)
                 ->create([
-                    'municipio_id'     => $municipios[$index] ?? ($municipios->isNotEmpty() ? $municipios->random() : null),
-                    'descricao'        => $dados['texto'],
-                    'dia'              => now()->addDays($dados['offset'])->format('Y-m-d'),
-                    'hora_inicio'      => '09:00',
-                    'hora_fim'         => '12:00',
+                    'municipio_id' => $municipios[$index] ?? ($municipios->isNotEmpty() ? $municipios->random() : null),
+                    'descricao' => $dados['texto'],
+                    'dia' => now()->addDays($dados['offset'])->format('Y-m-d'),
+                    'hora_inicio' => '09:00',
+                    'hora_fim' => '12:00',
                     'publico_esperado' => 60 + ($index * 10),
-                    'carga_horaria'    => 4,
-                    'presenca_ativa'   => true,
+                    'carga_horaria' => 240,
+                    'presenca_ativa' => true,
                 ]);
         });
     }
@@ -104,94 +104,94 @@ class QuestionarioRespostaSeeder extends Seeder
 
         $pessoas = [
             [
-                'nome'       => 'Ana Paula',
-                'email'      => 'ana.paula@engaja.local',
-                'cpf'        => '11122233344',
-                'telefone'   => '(11) 98888-0001',
-                'escola'     => 'Escola Horizonte',
-                'tag'        => Participante::TAG_REDE_ENSINO,
-                'organizacao'=> 'Rede municipal',
+                'nome' => 'Ana Paula',
+                'email' => 'ana.paula@engaja.local',
+                'cpf' => '11122233344',
+                'telefone' => '(11) 98888-0001',
+                'escola' => 'Escola Horizonte',
+                'tag' => Participante::TAG_REDE_ENSINO,
+                'organizacao' => 'Rede municipal',
             ],
             [
-                'nome'       => 'Bruno Silva',
-                'email'      => 'bruno.silva@engaja.local',
-                'cpf'        => '22233344455',
-                'telefone'   => '(21) 97777-0002',
-                'escola'     => 'Centro Cultural Jovem',
-                'tag'        => Participante::TAG_MOVIMENTO_SOCIAL,
-                'organizacao'=> 'Coletivo Jovem',
+                'nome' => 'Bruno Silva',
+                'email' => 'bruno.silva@engaja.local',
+                'cpf' => '22233344455',
+                'telefone' => '(21) 97777-0002',
+                'escola' => 'Centro Cultural Jovem',
+                'tag' => Participante::TAG_MOVIMENTO_SOCIAL,
+                'organizacao' => 'Coletivo Jovem',
             ],
             [
-                'nome'       => 'Carla Souza',
-                'email'      => 'carla.souza@engaja.local',
-                'cpf'        => '33344455566',
-                'telefone'   => '(31) 96666-0003',
-                'escola'     => 'Instituto Esperanca',
-                'tag'        => Participante::TAG_REDE_ENSINO,
-                'organizacao'=> 'Rede estadual',
+                'nome' => 'Carla Souza',
+                'email' => 'carla.souza@engaja.local',
+                'cpf' => '33344455566',
+                'telefone' => '(31) 96666-0003',
+                'escola' => 'Instituto Esperanca',
+                'tag' => Participante::TAG_REDE_ENSINO,
+                'organizacao' => 'Rede estadual',
             ],
             [
-                'nome'       => 'Diego Martins',
-                'email'      => 'diego.martins@engaja.local',
-                'cpf'        => '44455566677',
-                'telefone'   => '(41) 95555-0004',
-                'escola'     => 'Associacao Caminhos',
-                'tag'        => Participante::TAG_MOVIMENTO_SOCIAL,
-                'organizacao'=> 'Associacao comunitaria',
+                'nome' => 'Diego Martins',
+                'email' => 'diego.martins@engaja.local',
+                'cpf' => '44455566677',
+                'telefone' => '(41) 95555-0004',
+                'escola' => 'Associacao Caminhos',
+                'tag' => Participante::TAG_MOVIMENTO_SOCIAL,
+                'organizacao' => 'Associacao comunitaria',
             ],
             [
-                'nome'       => 'Elisa Ramos',
-                'email'      => 'elisa.ramos@engaja.local',
-                'cpf'        => '55566677788',
-                'telefone'   => '(51) 94444-0005',
-                'escola'     => 'Centro de Referencia Popular',
-                'tag'        => Participante::TAG_REDE_ENSINO,
-                'organizacao'=> 'Rede municipal',
+                'nome' => 'Elisa Ramos',
+                'email' => 'elisa.ramos@engaja.local',
+                'cpf' => '55566677788',
+                'telefone' => '(51) 94444-0005',
+                'escola' => 'Centro de Referencia Popular',
+                'tag' => Participante::TAG_REDE_ENSINO,
+                'organizacao' => 'Rede municipal',
             ],
             [
-                'nome'       => 'Felipe Costa',
-                'email'      => 'felipe.costa@engaja.local',
-                'cpf'        => '66677788899',
-                'telefone'   => '(62) 93333-0006',
-                'escola'     => 'Colegio Horizonte Azul',
-                'tag'        => Participante::TAG_MOVIMENTO_SOCIAL,
-                'organizacao'=> 'Coletivo cultural',
+                'nome' => 'Felipe Costa',
+                'email' => 'felipe.costa@engaja.local',
+                'cpf' => '66677788899',
+                'telefone' => '(62) 93333-0006',
+                'escola' => 'Colegio Horizonte Azul',
+                'tag' => Participante::TAG_MOVIMENTO_SOCIAL,
+                'organizacao' => 'Coletivo cultural',
             ],
             [
-                'nome'       => 'Gabriela Nunes',
-                'email'      => 'gabriela.nunes@engaja.local',
-                'cpf'        => '77788899900',
-                'telefone'   => '(71) 92222-0007',
-                'escola'     => 'Escola Caminhos do Saber',
-                'tag'        => Participante::TAG_REDE_ENSINO,
-                'organizacao'=> 'Rede estadual',
+                'nome' => 'Gabriela Nunes',
+                'email' => 'gabriela.nunes@engaja.local',
+                'cpf' => '77788899900',
+                'telefone' => '(71) 92222-0007',
+                'escola' => 'Escola Caminhos do Saber',
+                'tag' => Participante::TAG_REDE_ENSINO,
+                'organizacao' => 'Rede estadual',
             ],
             [
-                'nome'       => 'Henrique Prado',
-                'email'      => 'henrique.prado@engaja.local',
-                'cpf'        => '88899900011',
-                'telefone'   => '(85) 91111-0008',
-                'escola'     => 'Instituto Futuro',
-                'tag'        => Participante::TAG_REDE_ENSINO,
-                'organizacao'=> 'Rede municipal',
+                'nome' => 'Henrique Prado',
+                'email' => 'henrique.prado@engaja.local',
+                'cpf' => '88899900011',
+                'telefone' => '(85) 91111-0008',
+                'escola' => 'Instituto Futuro',
+                'tag' => Participante::TAG_REDE_ENSINO,
+                'organizacao' => 'Rede municipal',
             ],
             [
-                'nome'       => 'Isabela Lima',
-                'email'      => 'isabela.lima@engaja.local',
-                'cpf'        => '99900011122',
-                'telefone'   => '(48) 90000-0009',
-                'escola'     => 'Centro Educacional Aurora',
-                'tag'        => Participante::TAG_MOVIMENTO_SOCIAL,
-                'organizacao'=> 'Associação local',
+                'nome' => 'Isabela Lima',
+                'email' => 'isabela.lima@engaja.local',
+                'cpf' => '99900011122',
+                'telefone' => '(48) 90000-0009',
+                'escola' => 'Centro Educacional Aurora',
+                'tag' => Participante::TAG_MOVIMENTO_SOCIAL,
+                'organizacao' => 'Associação local',
             ],
             [
-                'nome'       => 'Joao Pedro',
-                'email'      => 'joao.pedro@engaja.local',
-                'cpf'        => '00011122233',
-                'telefone'   => '(19) 98888-0010',
-                'escola'     => 'Espaco Aprender',
-                'tag'        => Participante::TAG_REDE_ENSINO,
-                'organizacao'=> 'Rede estadual',
+                'nome' => 'Joao Pedro',
+                'email' => 'joao.pedro@engaja.local',
+                'cpf' => '00011122233',
+                'telefone' => '(19) 98888-0010',
+                'escola' => 'Espaco Aprender',
+                'tag' => Participante::TAG_REDE_ENSINO,
+                'organizacao' => 'Rede estadual',
             ],
         ];
 
@@ -199,8 +199,8 @@ class QuestionarioRespostaSeeder extends Seeder
             $user = User::firstOrCreate(
                 ['email' => $dados['email']],
                 [
-                    'name'              => $dados['nome'],
-                    'password'          => bcrypt('password'),
+                    'name' => $dados['nome'],
+                    'password' => bcrypt('password'),
                     'email_verified_at' => now(),
                 ]
             );
@@ -208,13 +208,13 @@ class QuestionarioRespostaSeeder extends Seeder
             return Participante::firstOrCreate(
                 ['user_id' => $user->id],
                 [
-                    'municipio_id'    => $municipios[$index] ?? ($municipios->isNotEmpty() ? $municipios->random() : null),
-                    'cpf'             => $dados['cpf'],
-                    'telefone'        => $dados['telefone'],
-                    'escola_unidade'  => $dados['escola'],
-                    'tipo_organizacao'=> $dados['organizacao'],
-                    'tag'             => $dados['tag'],
-                    'data_entrada'    => now()->subDays(30 + ($index * 7))->format('Y-m-d'),
+                    'municipio_id' => $municipios[$index] ?? ($municipios->isNotEmpty() ? $municipios->random() : null),
+                    'cpf' => $dados['cpf'],
+                    'telefone' => $dados['telefone'],
+                    'escola_unidade' => $dados['escola'],
+                    'tipo_organizacao' => $dados['organizacao'],
+                    'tag' => $dados['tag'],
+                    'data_entrada' => now()->subDays(30 + ($index * 7))->format('Y-m-d'),
                 ]
             );
         });
@@ -237,8 +237,8 @@ class QuestionarioRespostaSeeder extends Seeder
             foreach ($inscritos as $participante) {
                 $inscricao = Inscricao::firstOrCreate(
                     [
-                        'atividade_id'   => $atividade->id,
-                        'participante_id'=> $participante->id,
+                        'atividade_id' => $atividade->id,
+                        'participante_id' => $participante->id,
                     ],
                     [
                         'evento_id' => $atividade->evento_id,
@@ -269,20 +269,20 @@ class QuestionarioRespostaSeeder extends Seeder
 
         foreach ($questoesTemplate as $questao) {
             $payload = [
-                'questao_id'   => $questao->id,
+                'questao_id' => $questao->id,
                 'indicador_id' => $questao->indicador_id,
-                'escala_id'    => $questao->tipo === 'escala' ? $questao->escala_id : null,
+                'escala_id' => $questao->tipo === 'escala' ? $questao->escala_id : null,
                 'evidencia_id' => $questao->evidencia_id,
-                'texto'        => $questao->texto,
-                'tipo'         => $questao->tipo,
-                'ordem'        => $questao->ordem,
-                'fixa'         => (bool) $questao->fixa,
+                'texto' => $questao->texto,
+                'tipo' => $questao->tipo,
+                'ordem' => $questao->ordem,
+                'fixa' => (bool) $questao->fixa,
             ];
 
             $avaliacaoQuestao = AvaliacaoQuestao::updateOrCreate(
                 [
                     'avaliacao_id' => $avaliacao->id,
-                    'questao_id'   => $questao->id,
+                    'questao_id' => $questao->id,
                 ],
                 $payload
             );
@@ -309,7 +309,7 @@ class QuestionarioRespostaSeeder extends Seeder
         }
 
         foreach ($inscricoes as $index => $inscricao) {
-            $codigo = 'SUBM-' . $avaliacao->id . '-' . $inscricao->id;
+            $codigo = 'SUBM-'.$avaliacao->id.'-'.$inscricao->id;
 
             $submissao = SubmissaoAvaliacao::firstOrCreate(
                 ['codigo' => $codigo],
@@ -322,8 +322,8 @@ class QuestionarioRespostaSeeder extends Seeder
             foreach ($questoes as $questao) {
                 RespostaAvaliacao::updateOrCreate(
                     [
-                        'avaliacao_id'           => $avaliacao->id,
-                        'avaliacao_questao_id'   => $questao->id,
+                        'avaliacao_id' => $avaliacao->id,
+                        'avaliacao_questao_id' => $questao->id,
                         'submissao_avaliacao_id' => $submissao->id,
                     ],
                     [

@@ -18,6 +18,10 @@ use Illuminate\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
 use App\Exports\UsersExport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -25,23 +29,38 @@ use Maatwebsite\Excel\Facades\Excel;
 class UserManagementController extends Controller
 {
     private const PROTECTED_ROLES = ['administrador'];
-
     private const LEGACY_ROLES = ['gestor', 'formador'];
+    private const CREATOR_ROLES = ['administrador', 'gerente', 'eq_pedagogica', 'articulador'];
     private const EMAIL_SIMILARITY_THRESHOLD = 0.85;
 
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('q', ''));
+        $searchCpf = preg_replace('/\D+/', '', $search) ?: '';
         $regiaoId = $request->query('regiao');
         $estadoId = $request->query('estado');
         $municipioId = $request->query('municipio');
 
-        $users = User::with(['roles', 'participante.municipio.estado.regiao'])
-            ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', self::PROTECTED_ROLES))
-            ->when($search !== '', function ($q) use ($search) {
+        $users = User::with([
+            'roles',
+            'participante.municipio.estado.regiao',
+            'participante.inscricoes.evento',
+            'participante.inscricoes.atividade.evento',
+            'participante.inscricoes.presencas.atividade.evento',
+        ])
+            ->when(!auth()->user()->hasRole('administrador'), function ($q) {
+                //nao sendo administrador, oculta os administradores
+                $q->whereDoesntHave('roles', fn($sub) => $sub->whereIn('name', self::PROTECTED_ROLES));
+            })
+            ->when($search !== '', function ($q) use ($search, $searchCpf) {
                 $q->where(function ($sub) use ($search) {
                     $sub->where('name', 'ilike', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%");
+                })
+                ->when($searchCpf !== '', function ($sub) use ($searchCpf) {
+                    $sub->orWhereHas('participante', function ($participanteQuery) use ($searchCpf) {
+                        $participanteQuery->whereRaw("regexp_replace(coalesce(cpf, ''), '[^0-9]', '', 'g') like ?", ["%{$searchCpf}%"]);
+                    });
                 });
             })
             ->when($municipioId, function ($q) use ($municipioId) {
@@ -79,9 +98,80 @@ class UserManagementController extends Controller
         ]);
     }
 
+    public function create(): View
+    {
+        abort_unless(auth()->user()?->hasAnyRole(self::CREATOR_ROLES), 403);
+
+        $municipios = Municipio::with('estado')
+            ->orderBy('nome')
+            ->get(['id', 'nome', 'estado_id']);
+
+        $organizacoes = config('engaja.organizacoes', []);
+        $participanteTags = config('engaja.participante_tags', Participante::TAGS);
+        $roles = $this->assignableRoles();
+
+        return view('usuarios.create', [
+            'user'             => new User(),
+            'municipios'       => $municipios,
+            'organizacoes'     => $organizacoes,
+            'participanteTags' => $participanteTags,
+            'roles'            => $roles,
+            'currentRole'      => 'participante',
+        ]);
+    }
+
+    public function store(UserManagementRequest $request): RedirectResponse
+    {
+        abort_unless(auth()->user()?->hasAnyRole(self::CREATOR_ROLES), 403);
+
+        $data = $request->validated();
+
+        DB::transaction(function () use ($data) {
+            $user = User::create([
+                'name'                          => $data['name'],
+                'email'                         => $data['email'],
+                'password'                      => Hash::make($data['password']),
+                'identidade_genero'            => $data['identidade_genero'] ?? null,
+                'identidade_genero_outro'      => $data['identidade_genero_outro'] ?? null,
+                'raca_cor'                     => $data['raca_cor'] ?? null,
+                'comunidade_tradicional'       => $data['comunidade_tradicional'] ?? null,
+                'comunidade_tradicional_outro' => $data['comunidade_tradicional_outro'] ?? null,
+                'faixa_etaria'                 => $data['faixa_etaria'] ?? null,
+                'pcd'                          => $data['pcd'] ?? null,
+                'orientacao_sexual'            => $data['orientacao_sexual'] ?? null,
+                'orientacao_sexual_outra'      => $data['orientacao_sexual_outra'] ?? null,
+            ]);
+
+            $user->participante()->updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'cpf'              => $data['cpf'] ?? null,
+                    'telefone'         => $data['telefone'] ?? null,
+                    'municipio_id'     => $data['municipio_id'] ?? null,
+                    'escola_unidade'   => $data['escola_unidade'] ?? null,
+                    'tipo_organizacao' => $data['tipo_organizacao'] ?? null,
+                    'tag'              => $data['tag'] ?? null,
+                    'autorizacao_imagem' => $data['autorizacao_imagem'] ?? false,
+                ]
+            );
+
+            $roleToApply = auth()->user()->hasRole('administrador')
+                ? ($data['role'] ?? 'participante')
+                : 'participante';
+
+            $user->syncRoles([$roleToApply]);
+        });
+
+        return redirect()
+            ->route('usuarios.index')
+            ->with('success', 'Usuario cadastrado com sucesso.');
+    }
+
     public function edit(User $managedUser): View|RedirectResponse
     {
-        if ($this->isProtected($managedUser)) {
+        abort_unless(auth()->user()?->can('user.editar'), 403);
+
+        if ($this->isProtected($managedUser) && !auth()->user()->hasRole('administrador')) {
             return redirect()
                 ->route('usuarios.index')
                 ->with('error', 'Este usuario nao pode ser editado.');
@@ -109,7 +199,9 @@ class UserManagementController extends Controller
 
     public function update(UserManagementRequest $request, User $managedUser): RedirectResponse
     {
-        if ($this->isProtected($managedUser)) {
+        abort_unless(auth()->user()?->can('user.editar'), 403);
+
+        if ($this->isProtected($managedUser) && !auth()->user()->hasRole('administrador')) {
             return redirect()
                 ->route('usuarios.index')
                 ->with('error', 'Este usuario nao pode ser editado.');
@@ -149,6 +241,7 @@ class UserManagementController extends Controller
                 'escola_unidade'   => $data['escola_unidade']   ?? null,
                 'tipo_organizacao' => $data['tipo_organizacao'] ?? null,
                 'tag'              => $data['tag']              ?? null,
+                'autorizacao_imagem' => $data['autorizacao_imagem'] ?? false,
             ]
         );
 
@@ -168,9 +261,49 @@ class UserManagementController extends Controller
             ->with('success', 'Usuario atualizado com sucesso.');
     }
 
+    public function resetPassword(Request $request, User $managedUser): RedirectResponse
+    {
+        abort_unless(auth()->user()?->hasRole('administrador'), 403);
+
+        if ($this->isProtected($managedUser)) {
+            return redirect()
+                ->route('usuarios.index')
+                ->with('error', 'Este usuario nao pode ter a senha redefinida por esta tela.');
+        }
+
+        $validator = Validator::make($request->all(), [
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ], [
+            'password.required' => 'Informe a nova senha.',
+            'password.confirmed' => 'A confirmação da senha não confere.',
+        ], [
+            'password' => 'senha',
+            'password_confirmation' => 'confirmação da senha',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()
+                ->route('usuarios.index')
+                ->withErrors($validator, 'resetPassword')
+                ->with('reset_password_action', route('usuarios.password.reset', $managedUser))
+                ->with('reset_password_user_name', $managedUser->name);
+        }
+
+        $data = $validator->validated();
+
+        $managedUser->update([
+            'password' => Hash::make($data['password']),
+            'force_password_change' => true,
+        ]);
+
+        return redirect()
+            ->route('usuarios.index')
+            ->with('success', "Senha de {$managedUser->name} redefinida com sucesso. O usuario devera troca-la no proximo acesso.");
+    }
+
     private function assignableRoles()
     {
-        $rolesToExclude = array_merge(self::PROTECTED_ROLES, self::LEGACY_ROLES);
+        $rolesToExclude = self::LEGACY_ROLES;
 
         return Role::whereNotIn('name', $rolesToExclude)
             ->orderBy('name')
@@ -182,9 +315,16 @@ class UserManagementController extends Controller
         return $user->hasAnyRole(self::PROTECTED_ROLES);
     }
 
-    public function export()
+    public function export(Request $request)
     {
-        return Excel::download(new UsersExport, 'usuarios.xlsx');
+        $regiaoId = $request->query('regiao');
+        $estadoId = $request->query('estado');
+        $municipioId = $request->query('municipio');
+
+        return Excel::download(
+            new UsersExport($regiaoId, $estadoId, $municipioId),
+            'usuarios.xlsx'
+        );
     }
 
     public function verificarIndex(Request $request): View|RedirectResponse

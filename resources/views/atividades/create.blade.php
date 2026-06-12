@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('content')
 <div class="container">
@@ -15,10 +15,14 @@
     <div class="card-body">
       <form method="POST" action="{{ route('eventos.atividades.store', $evento) }}" id="form-novo-momento">
         {{-- campos hidden para enviar checklist junto com o form --}}
+        <div id="hidden-checklist-planejamento">
+          @foreach(collect(old('checklist_planejamento', $marcadosPlanejamento ?? []))->map(fn($v) => (int) $v)->unique()->values() as $indice)
+            <input type="hidden" name="checklist_planejamento[]" value="{{ $indice }}">
+          @endforeach
+        </div>
         <div id="hidden-checklist-encerramento"></div>
         @include('atividades._form', [
           'evento' => $evento,
-          'municipios' => $municipios,
           'atividadesCopiaveis' => $atividadesCopiaveis,
           'submitLabel' => 'Salvar momento'
         ])

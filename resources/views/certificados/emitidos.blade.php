@@ -12,22 +12,31 @@
   <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
     <div></div>
     <form method="GET" action="{{ route('certificados.emitidos') }}" class="d-flex gap-2 w-100 w-md-auto">
+      @if(!empty($contextoEvento) && !empty($filtroEventoId))
+        <input type="hidden" name="evento_id" value="{{ $filtroEventoId }}">
+        <input type="hidden" name="contexto" value="evento">
+      @endif
+
       <input type="text" 
              name="participante" 
              value="{{ $filtroParticipante ?? '' }}" 
              class="form-control" 
-             placeholder="Filtrar por Participante" 
-             aria-label="Filtrar por Participante">
+             placeholder="Filtrar por participante ou CPF" 
+             aria-label="Filtrar por participante ou CPF">
 
-      <input type="text" 
-             name="acao" 
-             value="{{ $filtroAcao ?? '' }}" 
-             class="form-control" 
-             placeholder="Filtrar por Ação pedagógica" 
-             aria-label="Filtrar por Ação pedagógica">
+      @if(empty($contextoEvento))
+        <select name="evento_id" class="form-select" aria-label="Filtrar por Ação pedagógica">
+          <option value="">Todas as ações pedagógicas</option>
+          @foreach($acoesCertificado as $acao)
+            <option value="{{ $acao->id }}" @selected((string) ($filtroEventoId ?? '') === (string) $acao->id)>
+              {{ $acao->nome }}
+            </option>
+          @endforeach
+        </select>
+      @endif
 
       <button class="btn btn-engaja" type="submit">Filtrar</button>      
-      <a href="{{ route('certificados.emitidos') }}" class="btn btn-outline-secondary">Limpar</a>
+      <a href="{{ !empty($contextoEvento) && !empty($filtroEventoId) ? route('certificados.emitidos', ['evento_id' => $filtroEventoId, 'contexto' => 'evento']) : route('certificados.emitidos') }}" class="btn btn-outline-secondary">Limpar</a>
     </form>
   </div>
   <div class="table-responsive shadow-sm rounded-3 bg-white">
@@ -45,9 +54,9 @@
         @forelse($certificados as $cert)
           <tr>
             <td>{{ $cert->participante?->user?->name ?? '-' }}</td>
-            <td class="text-startr">{{ $cert->evento_nome ?? '-' }}</td>
+            <td class="text-start text-truncate" style="max-width: 300px;" title="{{ $cert->evento_nome ?? '-' }}">{{ $cert->evento_nome ?? '-' }}</td>
             <td class="text-center">{{ $cert->modelo?->nome ?? '-' }}</td>
-            <td class="text-center">{{ $cert->carga_horaria ?? '-' }}h</td>
+            <td class="text-center">{{ \App\Support\CargaHoraria::formatMinutos(isset($cert->carga_horaria) ? (int) $cert->carga_horaria : null) }}</td>
             <td class="text-center">
               <div class="d-flex gap-2 justify-content-center">
                 <a href="{{ route('certificados.download', $cert) }}" class="btn btn-engaja btn-sm px-3">
@@ -62,7 +71,7 @@
         @empty
           <tr>
             <td colspan="5" class="text-center text-muted py-4">
-                @if(!empty($filtroParticipante) || !empty($filtroAcao))
+                @if(!empty($filtroParticipante) || !empty($filtroAcao) || (!empty($filtroEventoId) && empty($contextoEvento)))
                     Nenhum certificado encontrado com esses filtros.
                 @else
                     Nenhum certificado emitido até o momento.

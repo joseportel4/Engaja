@@ -28,6 +28,7 @@ class Participante extends Model
         'tipo_organizacao',
         'tag',
         'data_entrada',
+        'autorizacao_imagem',
     ];
 
     protected $appends = ['cpf_valido'];

@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Participante;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
 
 class UserManagementRequest extends FormRequest
@@ -32,6 +33,7 @@ class UserManagementRequest extends FormRequest
             'escola_unidade'   => $toNull(isset($this->escola_unidade) ? trim((string)$this->escola_unidade) : null),
             'tipo_organizacao' => $toNull(isset($this->tipo_organizacao) ? trim((string)$this->tipo_organizacao) : null),
             'tag'              => $toNull(isset($this->tag) ? trim((string)$this->tag) : null),
+            'autorizacao_imagem' => $this->boolean('autorizacao_imagem'),
         ]);
     }
 
@@ -39,6 +41,7 @@ class UserManagementRequest extends FormRequest
     {
         $managedUser = $this->route('managedUser');
         $managedUserId = $managedUser?->id;
+        $isCreate = $managedUserId === null;
 
         return [
             'name'  => ['required','string','max:255'],
@@ -46,6 +49,7 @@ class UserManagementRequest extends FormRequest
                 'required','email','max:255',
                 Rule::unique('users','email')->ignore($managedUserId),
             ],
+            'password' => [$isCreate ? 'required' : 'nullable', 'confirmed', Password::defaults()],
             'role'  => ['nullable','string', Rule::in($this->assignableRoleNames())],
 
             'cpf'              => ['nullable','digits:11'],
@@ -54,6 +58,7 @@ class UserManagementRequest extends FormRequest
             'escola_unidade'   => ['nullable','string','max:255'],
             'tipo_organizacao' => ['nullable','string','max:255', Rule::in(config('engaja.organizacoes', []))],
             'tag'              => ['nullable', Rule::in(Participante::TAGS)],
+            'autorizacao_imagem' => ['boolean'],
 
             //campos demograficos
             'identidade_genero'            => ['nullable', 'string', Rule::in(['Mulher Cisgênero', 'Mulher Transsexual', 'Homem Cisgênero', 'Homem Transsexual', 'Travesti', 'Não binárie', 'Prefiro não responder', 'Outro'])],
@@ -142,6 +147,8 @@ class UserManagementRequest extends FormRequest
             'email.required'      => 'Informe o e-mail.',
             'email.email'         => 'Informe um e-mail valido.',
             'email.unique'        => 'Este e-mail ja esta em uso.',
+            'password.required'   => 'Informe a senha do usuario.',
+            'password.confirmed'  => 'A confirmacao da senha nao confere.',
             'role.in'             => 'O papel selecionado nao e permitido.',
             'cpf.required'        => 'CPF e obrigatorio.',
             'cpf.digits'          => 'CPF deve conter 11 digitos.',
@@ -155,7 +162,7 @@ class UserManagementRequest extends FormRequest
     private function assignableRoleNames(): array
     {
 
-        $rolesToExclude = array_merge(['administrador'], self::LEGACY_ROLES);
+        $rolesToExclude = self::LEGACY_ROLES;
 
         return Role::whereNotIn('name', $rolesToExclude)
             ->pluck('name')

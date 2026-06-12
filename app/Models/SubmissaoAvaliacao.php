@@ -15,6 +15,11 @@ class SubmissaoAvaliacao extends Model
         'atividade_id',
         'avaliacao_id',
         'presenca_id',
+        'universal',
+    ];
+
+    protected $casts = [
+        'universal' => 'boolean',
     ];
 
     public function atividade(): BelongsTo

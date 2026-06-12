@@ -38,6 +38,8 @@
       $layoutVerso  = $modelo->layout_verso ?? [];
       $textoFrente = trim($certificado->texto_frente ?? '');
       $textoVerso  = trim($certificado->texto_verso ?? '');
+      $dataEmissao = ($certificado->created_at ?? now())->locale('pt_BR')->translatedFormat('j \d\e F \d\e Y');
+      $textoDataEmissao = "São Paulo, {$dataEmissao}.";
       $qrBase64 = null;
       $qrLink = $certificado->codigo_validacao ? route('certificados.validacao', $certificado->codigo_validacao) : null;
       $qrColorHex = $layoutVerso['qr_color'] ?? '#811283';
@@ -75,6 +77,14 @@
            data-text="{!! nl2br(e($textoFrente)) !!}">
         {!! nl2br(e($textoFrente)) !!}
       </div>
+      @if(is_numeric($layoutFrente['date_x'] ?? null) && is_numeric($layoutFrente['date_y'] ?? null))
+        <div class="cert-text"
+             data-cert-layer="frente-data"
+             data-layout-prefix="date_"
+             data-layout='@json($layoutFrente)'>
+          {{ $textoDataEmissao }}
+        </div>
+      @endif
     </div>
 
     @if($versoUrl || $textoVerso)
@@ -111,21 +121,22 @@
     const page = layer.closest('.cert-page');
     const img = page ? page.querySelector('.cert-bg') : null;
     const layout = layer.dataset.layout ? JSON.parse(layer.dataset.layout) : {};
+    const prefix = layer.dataset.layoutPrefix || '';
     const apply = () => {
       const cw = Number(layout.canvas_w || img?.naturalWidth || img?.clientWidth || 1);
       const ch = Number(layout.canvas_h || img?.naturalHeight || img?.clientHeight || 1);
       const scaleW = (img?.clientWidth || cw) / cw;
       const scaleH = (img?.clientHeight || ch) / ch;
       const scale = Math.min(scaleW || 1, scaleH || 1);
-      const x = (layout.x || 0) * scale;
-      const y = (layout.y || 0) * scale;
-      const w = (layout.w || 0) * scale;
-      const h = (layout.h || 0) * scale;
-      const fs = (layout.font_size || 20) * scale;
-      const ff = layout.font_family || 'Arial';
-      const fw = layout.font_weight || 'normal';
-      const fst = layout.font_style || 'normal';
-      const align = layout.align || 'left';
+      const x = (layout[`${prefix}x`] || 0) * scale;
+      const y = (layout[`${prefix}y`] || 0) * scale;
+      const w = (layout[`${prefix}w`] || 0) * scale;
+      const h = (layout[`${prefix}h`] || 0) * scale;
+      const fs = (prefix === 'date_' ? (layout.font_size || 20) : (layout[`${prefix}font_size`] || 20)) * scale;
+      const ff = prefix === 'date_' ? (layout.font_family || 'Arial') : (layout[`${prefix}font_family`] || 'Arial');
+      const fw = prefix === 'date_' ? (layout.font_weight || 'normal') : (layout[`${prefix}font_weight`] || 'normal');
+      const fst = prefix === 'date_' ? (layout.font_style || 'normal') : (layout[`${prefix}font_style`] || 'normal');
+      const align = layout[`${prefix}align`] || 'left';
 
       layer.style.left = `${x}px`;
       layer.style.top = `${y}px`;

@@ -76,6 +76,10 @@
           <td class="text-end">
             <a href="{{ route('evidencias.show', $evidencia) }}" class="btn btn-sm btn-outline-primary">Ver</a>
             <a href="{{ route('evidencias.edit', $evidencia) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
+            <form action="{{ route('evidencias.duplicar', $evidencia) }}" method="POST" class="d-inline" data-confirm="Tem certeza que deseja duplicar esta evidência?">
+                 @csrf
+                 <button class="btn btn-sm btn-outline-primary" type="submit">Duplicar</button>
+            </form>
             @hasanyrole('administrador|gerente|eq_pedagogica')
             <form action="{{ route('evidencias.destroy', $evidencia) }}" method="POST" class="d-inline">
               @csrf

@@ -2,30 +2,36 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\LimeSurvey\LimeSurveyClient;
-use App\Services\LimeSurvey\LimeSurveyDashboardService;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
 use App\Models\Atividade;
+use App\Models\Avaliacao;
 use App\Models\Evento;
 use App\Models\Inscricao;
 use App\Models\Municipio;
 use App\Models\RespostaAvaliacao;
 use App\Models\SubmissaoAvaliacao;
 use App\Models\TemplateAvaliacao;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use App\Services\AvaliacaoRespostasDashboardService;
+use App\Services\LimeSurvey\LimeSurveyClient;
+use App\Services\LimeSurvey\LimeSurveyDashboardService;
+use Carbon\Carbon;
+use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class DashboardController extends Controller
 {
+    use AuthorizesRequests;
+
     public function home()
     {
         $resumo = [
             'avaliacoesRespondidas' => SubmissaoAvaliacao::count(),
-            'respostas'             => RespostaAvaliacao::count(),
-            'atividades'            => Atividade::count(),
-            'inscricoes'            => Inscricao::count(),
-            'ultimaAtualizacao'     => optional(RespostaAvaliacao::latest('updated_at')->first())->updated_at,
+            'respostas' => RespostaAvaliacao::count(),
+            'atividades' => Atividade::count(),
+            'inscricoes' => Inscricao::count(),
+            'ultimaAtualizacao' => optional(RespostaAvaliacao::latest('updated_at')->first())->updated_at,
         ];
 
         $templatesDisponiveis = TemplateAvaliacao::orderBy('nome')->limit(4)->get();
@@ -80,29 +86,28 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
-        $eventoId   = $request->integer('evento_id');
-        $de         = $request->date('de');
-        $ate        = $request->date('ate');
-        $q          = trim((string)$request->get('q', ''));
+        $eventoId = $request->integer('evento_id');
+        $de = $request->date('de');
+        $ate = $request->date('ate');
+        $q = trim((string) $request->get('q', ''));
 
         $sort = $request->get('sort', 'dia');
-        $dir  = $request->get('dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        $dir = $request->get('dir', 'desc') === 'asc' ? 'asc' : 'desc';
 
         $perPage = (int) $request->query('per_page', 25);
-        if (!in_array($perPage, [25, 50, 100], true)) {
+        if (! in_array($perPage, [25, 50, 100], true)) {
             $perPage = 25;
         }
 
         $sortable = [
-            'dia'       => 'atividades.dia',
-            'hora'      => 'atividades.hora_inicio',
-            'momento'   => 'atividades.descricao',
-            'acao'      => 'eventos.nome',
+            'dia' => 'atividades.dia',
+            'hora' => 'atividades.hora_inicio',
+            'momento' => 'atividades.descricao',
+            'acao' => 'eventos.nome',
             'municipio' => 'municipios.nome',
             'inscritos' => 'inscritos_count',
             'presentes' => 'presentes_count',
-            'ausentes'  => 'ausentes_count',
-            'total'     => 'presencas_total',
+            'ausentes' => 'ausentes_count',
         ];
         $orderByCol = $sortable[$sort] ?? 'atividades.dia';
 
@@ -122,19 +127,8 @@ class DashboardController extends Controller
                 'evento:id,nome',
                 'municipio.estado:id,nome,sigla',
             ])
-            ->with([
-                'presencas' => fn ($q) => $q
-                    ->where('status', 'presente')
-                    ->with('inscricao.participante.user'),
-            ])
-            ->with([
-                'inscricoes' => fn($q) => $q
-                    ->whereNull('deleted_at')
-                    ->with('participante.user'),
-            ])
             ->withCount([
-                'presencas as presencas_total',
-                'presencas as presentes_count' => fn($q) => $q->where('status', 'presente'),
+                'presencas as presentes_count' => fn ($q) => $q->where('status', 'presente'),
             ])
             ->selectRaw('(
                 SELECT COUNT(*)
@@ -156,35 +150,25 @@ class DashboardController extends Controller
             ) as ausentes_count');
 
         $query->whereNull('atividades.deleted_at')
-              ->whereHas('evento');
+            ->whereNotNull('atividades.evento_id')
+            ->whereNull('eventos.deleted_at');
 
-        $query->when($eventoId, fn($q) => $q->where('atividades.evento_id', $eventoId));
-        $query->when($de && $ate, fn($q) => $q->whereBetween('atividades.dia', [$de, $ate]));
-        $query->when($de && !$ate, fn($q) => $q->where('atividades.dia', '>=', $de));
-        $query->when(!$de && $ate, fn($q) => $q->where('atividades.dia', '<=', $ate));
+        $query->when($eventoId, fn ($q) => $q->where('atividades.evento_id', $eventoId));
+        $query->when($de && $ate, fn ($q) => $q->whereBetween('atividades.dia', [$de, $ate]));
+        $query->when($de && ! $ate, fn ($q) => $q->where('atividades.dia', '>=', $de));
+        $query->when(! $de && $ate, fn ($q) => $q->where('atividades.dia', '<=', $ate));
 
         $query->when($q !== '', function ($q2) use ($q) {
             $like = '%'.$q.'%';
             $q2->where(function ($w) use ($like) {
                 $w->where('atividades.descricao', 'like', $like)
-                  ->orWhere('eventos.nome', 'like', $like);
+                    ->orWhere('eventos.nome', 'like', $like);
             });
         });
 
         $query->orderBy($orderByCol, $dir)->orderBy('atividades.id', 'desc');
 
         $atividades = $query->paginate($perPage)->appends($request->query());
-        $atividades->getCollection()->transform(function ($atividade) {
-            $inscricoes = collect($atividade->inscricoes ?? []);
-            $presentes = collect($atividade->presencas ?? []);
-            $presentesIds = $presentes->pluck('inscricao_id')->filter()->unique();
-
-            $atividade->inscritos_count = $inscricoes->count();
-            $atividade->presentes_count = $presentesIds->count();
-            $atividade->ausentes_count = max($atividade->inscritos_count - $atividade->presentes_count, 0);
-
-            return $atividade;
-        });
 
         $eventos = Evento::query()->orderBy('nome')->pluck('nome', 'id');
         $municipioIds = Atividade::query()
@@ -207,6 +191,34 @@ class DashboardController extends Controller
         return view('dashboard', compact('atividades', 'eventos', 'municipios', 'momentos'));
     }
 
+    public function presencasDetalhes(Atividade $atividade): View
+    {
+        if ($atividade->evento) {
+            $this->authorize('update', $atividade->evento);
+        }
+
+        $presentes = $atividade->presencas()
+            ->where('status', 'presente')
+            ->with('inscricao.participante.user')
+            ->get();
+
+        $inscricoes = $atividade->inscricoes()
+            ->whereNull('deleted_at')
+            ->with('participante.user')
+            ->get();
+
+        $presentesIds = $presentes->pluck('inscricao_id')->filter()->unique();
+        $ausentes = $inscricoes->filter(fn ($i) => ! $presentesIds->contains($i->id))->values();
+        $inscritosCount = $inscricoes->count();
+        $presentesCount = $presentesIds->count();
+        $ausentesCount = $ausentes->count();
+
+        return view('dashboards._presencas_detalhes', compact(
+            'presentes', 'ausentes', 'atividade',
+            'inscritosCount', 'presentesCount', 'ausentesCount'
+        ));
+    }
+
     public function avaliacoes(Request $request)
     {
         $templates = TemplateAvaliacao::orderBy('nome')->get(['id', 'nome']);
@@ -214,8 +226,13 @@ class DashboardController extends Controller
         $atividades = Atividade::with('evento')
             ->orderByDesc('dia')
             ->orderByDesc('hora_inicio')
-            ->limit(80)
             ->get(['id', 'evento_id', 'descricao', 'dia', 'hora_inicio']);
+        $avaliacoesUniversais = Avaliacao::query()
+            ->with('templateAvaliacao:id,nome')
+            ->whereNull('atividade_id')
+            ->orderBy('descricao_universal')
+            ->orderByDesc('created_at')
+            ->get(['id', 'template_avaliacao_id', 'descricao_universal', 'created_at']);
 
         $cachedAt = null;
         if ($request->query('fonte') === 'limesurvey') {
@@ -226,50 +243,47 @@ class DashboardController extends Controller
             }
         }
 
-        return view('dashboards.avaliacoes', compact('templates', 'eventos', 'atividades', 'cachedAt'));
+        return view('dashboards.avaliacoes', compact('templates', 'eventos', 'atividades', 'avaliacoesUniversais', 'cachedAt'));
     }
 
-    public function avaliacoesData(Request $request)
+    public function avaliacoesData(Request $request, AvaliacaoRespostasDashboardService $avaliacaoRespostas)
     {
+        $this->authorizeAvaliacoesDashboardRequest($request);
+
         if ($request->query('fonte') === 'limesurvey') {
             return $this->avaliacoesDataLimeSurvey($request);
         }
 
-        $respostas = $this->filtrarRespostas($request);
-        $perguntas = $this->montarPerguntas($respostas);
-
-        $submissoesBase = $this->filtrarSubmissoes($request);
-        $submissoesTable = (new SubmissaoAvaliacao())->getTable();
-        $totais = [
-            'submissoes' => (clone $submissoesBase)->count(),
-            'atividades' => (clone $submissoesBase)->distinct('atividade_id')->count('atividade_id'),
-            'eventos'    => (clone $submissoesBase)
-                ->leftJoin('atividades', 'atividades.id', '=', "{$submissoesTable}.atividade_id")
-                ->distinct('atividades.evento_id')
-                ->count('atividades.evento_id'),
-            'respostas'  => $respostas->count(),
-            'questoes'   => $perguntas->count(),
-            'ultima'     => optional($respostas->sortByDesc('created_at')->first())->created_at?->format('d/m/Y H:i'),
-        ];
-
-        $recentes = $respostas
-            ->sortByDesc('created_at')
-            ->take(8)
-            ->map(function ($resposta) {
-                $questao = $resposta->avaliacaoQuestao;
-                return [
-                    'questao' => $questao?->texto ?? 'Questao',
-                    'valor'   => $this->respostaParaTexto($resposta->resposta),
-                    'quando'  => optional($resposta->created_at)->format('d/m H:i'),
-                ];
-            })
-            ->values();
-
-        return response()->json([
-            'totais'    => $totais,
-            'perguntas' => $perguntas->values(),
-            'recentes'  => $recentes,
+        $request->validate([
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
+
+        return response()->json($avaliacaoRespostas->buildDashboardPayload($request));
+    }
+
+    /**
+     * Garante que filtros por momento ou ação pedagógica só devolvem dados se o utilizador puder editar esse evento.
+     */
+    private function authorizeAvaliacoesDashboardRequest(Request $request): void
+    {
+        $atividadeId = $request->integer('atividade_id');
+        if ($atividadeId) {
+            $atividade = Atividade::query()->with('evento')->find($atividadeId);
+            if ($atividade?->evento) {
+                $this->authorize('update', $atividade->evento);
+            }
+
+            return;
+        }
+
+        $eventoId = $request->integer('evento_id');
+        if ($eventoId) {
+            $evento = Evento::query()->find($eventoId);
+            if ($evento) {
+                $this->authorize('update', $evento);
+            }
+        }
     }
 
     private function avaliacoesDataLimeSurvey(Request $request)
@@ -362,32 +376,40 @@ class DashboardController extends Controller
 
     public function export(Request $request)
     {
-        $pdfEventoId   = $request->integer('pdf_evento_id');
-        $eventoId      = $pdfEventoId ?? $request->integer('evento_id');
-        $municipioId   = $request->integer('pdf_municipio_id');
-        $momento       = trim((string)$request->get('pdf_momento', ''));
-        $de            = $request->date('pdf_de') ?? $request->date('de');
-        $ate           = $request->date('pdf_ate') ?? $request->date('ate');
-        $q             = trim((string)$request->get('q', ''));
+        /*
+         * Relatórios extensos hidratam muitos models com eager loading profundo
+         * (presencas.inscricao.participante.user e inscricoes.participante.user).
+         * Eleva o limite de memória da requisição e impõe um teto de atividades
+         * para evitar estouro de memória e timeout do Browsershot/Chromium.
+         */
+        ini_set('memory_limit', config('dashboard.pdf.memory_limit'));
+        $maxAtividades = (int) config('dashboard.pdf.max_atividades');
+
+        $pdfEventoId = $request->integer('pdf_evento_id');
+        $eventoId = $pdfEventoId ?? $request->integer('evento_id');
+        $municipioId = $request->integer('pdf_municipio_id');
+        $momento = trim((string) $request->get('pdf_momento', ''));
+        $de = $request->date('pdf_de') ?? $request->date('de');
+        $ate = $request->date('pdf_ate') ?? $request->date('ate');
+        $q = trim((string) $request->get('q', ''));
 
         $sort = $request->get('sort', 'dia');
-        $dir  = $request->get('dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        $dir = $request->get('dir', 'desc') === 'asc' ? 'asc' : 'desc';
 
         $sortable = [
-            'dia'       => 'atividades.dia',
-            'hora'      => 'atividades.hora_inicio',
-            'momento'   => 'atividades.descricao',
-            'acao'      => 'eventos.nome',
+            'dia' => 'atividades.dia',
+            'hora' => 'atividades.hora_inicio',
+            'momento' => 'atividades.descricao',
+            'acao' => 'eventos.nome',
             'municipio' => 'municipios.nome',
             'inscritos' => 'inscritos_count',
             'presentes' => 'presentes_count',
-            'ausentes'  => 'ausentes_count',
-            'total'     => 'presencas_total',
+            'ausentes' => 'ausentes_count',
         ];
         $orderByCol = $sortable[$sort] ?? 'atividades.dia';
 
         // mesma query do index, mas sem paginate() e com eager até user
-        $atividades = Atividade::query()
+        $atividadesQuery = Atividade::query()
             ->select([
                 'atividades.id',
                 'atividades.evento_id',
@@ -404,18 +426,17 @@ class DashboardController extends Controller
                 'municipio.estado:id,nome,sigla',
             ])
             ->with([
-                'presencas' => fn($q) => $q
+                'presencas' => fn ($q) => $q
                     ->where('status', 'presente')
                     ->with('inscricao.participante.user'),
             ])
             ->with([
-                'inscricoes' => fn($q) => $q
+                'inscricoes' => fn ($q) => $q
                     ->whereNull('deleted_at')
                     ->with('participante.user'),
             ])
             ->withCount([
-                'presencas as presencas_total',
-                'presencas as presentes_count' => fn($q) => $q->where('status', 'presente'),
+                'presencas as presentes_count' => fn ($q) => $q->where('status', 'presente'),
             ])
             ->selectRaw('(
                 SELECT COUNT(*)
@@ -436,35 +457,32 @@ class DashboardController extends Controller
                   AND presencas.deleted_at IS NULL
             ) as ausentes_count')
             ->whereNull('atividades.deleted_at')
-            ->whereHas('evento')
-            ->when($eventoId, fn($q) => $q->where('atividades.evento_id', $eventoId))
-            ->when($municipioId, fn($q) => $q->where('atividades.municipio_id', $municipioId))
-            ->when($momento !== '', fn($q) => $q->where('atividades.descricao', $momento))
-            ->when($de && $ate, fn($q) => $q->whereBetween('atividades.dia', [$de, $ate]))
-            ->when($de && !$ate, fn($q) => $q->where('atividades.dia', '>=', $de))
-            ->when(!$de && $ate, fn($q) => $q->where('atividades.dia', '<=', $ate))
+            ->whereNotNull('atividades.evento_id')
+            ->whereNull('eventos.deleted_at')
+            ->when($eventoId, fn ($q) => $q->where('atividades.evento_id', $eventoId))
+            ->when($municipioId, fn ($q) => $q->where('atividades.municipio_id', $municipioId))
+            ->when($momento !== '', fn ($q) => $q->where('atividades.descricao', $momento))
+            ->when($de && $ate, fn ($q) => $q->whereBetween('atividades.dia', [$de, $ate]))
+            ->when($de && ! $ate, fn ($q) => $q->where('atividades.dia', '>=', $de))
+            ->when(! $de && $ate, fn ($q) => $q->where('atividades.dia', '<=', $ate))
             ->when($q !== '', function ($q2) use ($q) {
                 $like = '%'.$q.'%';
                 $q2->where(function ($w) use ($like) {
                     $w->where('atividades.descricao', 'like', $like)
-                      ->orWhere('eventos.nome', 'like', $like);
+                        ->orWhere('eventos.nome', 'like', $like);
                 });
-            })
+            });
+
+        // Conta o universo filtrado antes de aplicar o teto, para sinalizar truncamento na view.
+        $totalAtividades = (clone $atividadesQuery)->count('atividades.id');
+
+        $atividades = $atividadesQuery
             ->orderBy($orderByCol, $dir)
             ->orderBy('atividades.id', 'desc')
+            ->limit($maxAtividades)
             ->get();
 
-        $atividades->transform(function ($atividade) {
-            $inscricoes = collect($atividade->inscricoes ?? []);
-            $presentes = collect($atividade->presencas ?? []);
-            $presentesIds = $presentes->pluck('inscricao_id')->filter()->unique();
-
-            $atividade->inscritos_count = $inscricoes->count();
-            $atividade->presentes_count = $presentesIds->count();
-            $atividade->ausentes_count = max($atividade->inscritos_count - $atividade->presentes_count, 0);
-
-            return $atividade;
-        });
+        $truncado = $totalAtividades > $maxAtividades;
 
         $eventoSelecionado = $eventoId ? Evento::find($eventoId) : null;
         $municipioSelecionado = $municipioId
@@ -472,207 +490,30 @@ class DashboardController extends Controller
             : null;
         $periodo = null;
         if ($de && $ate) {
-            $periodo = $de->format('d/m/Y') . ' - ' . $ate->format('d/m/Y');
+            $periodo = $de->format('d/m/Y').' - '.$ate->format('d/m/Y');
         } elseif ($de) {
-            $periodo = 'A partir de ' . $de->format('d/m/Y');
+            $periodo = 'A partir de '.$de->format('d/m/Y');
         } elseif ($ate) {
-            $periodo = 'Até ' . $ate->format('d/m/Y');
+            $periodo = 'Até '.$ate->format('d/m/Y');
         }
 
         $filtroResumo = array_filter([
             'Ação pedagógica' => $eventoSelecionado?->nome,
-            'Município'       => $municipioSelecionado?->nome_com_estado,
-            'Momento'         => $momento ?: null,
-            'Período'         => $periodo,
+            'Município' => $municipioSelecionado?->nome_com_estado,
+            'Momento' => $momento ?: null,
+            'Período' => $periodo,
         ]);
 
-        $pdf = PDF::loadView('dashboard_pdf', [
+        return Pdf::view('dashboard_pdf', [
             'atividades' => $atividades,
             'filtroResumo' => $filtroResumo,
-            'filtros'    => $request->query(),
-        ])->setPaper('a4', 'portrait');
-
-        return $pdf->download('dashboard-presencas-'.now()->format('Ymd_His').'.pdf');
-    }
-
-    private function filtrarRespostas(Request $request)
-    {
-        $respostasTable = (new RespostaAvaliacao())->getTable();
-        $templateId = $request->integer('template_id');
-        $eventoId = $request->integer('evento_id');
-        $atividadeId = $request->integer('atividade_id');
-        $de = $request->date('de');
-        $ate = $request->date('ate');
-
-        return RespostaAvaliacao::query()
-            ->with(['avaliacaoQuestao.escala', 'avaliacao.atividade.evento'])
-            ->when($templateId, fn($q) => $q->whereHas('avaliacao', fn($aq) => $aq->where('template_avaliacao_id', $templateId)))
-            ->when($atividadeId, fn($q) => $q->whereHas('avaliacao', fn($aq) => $aq->where('atividade_id', $atividadeId)))
-            ->when($eventoId, fn($q) => $q->whereHas('avaliacao.atividade', fn($aq) => $aq->where('evento_id', $eventoId)))
-            ->when($de, fn($q) => $q->whereDate("{$respostasTable}.created_at", '>=', $de))
-            ->when($ate, fn($q) => $q->whereDate("{$respostasTable}.created_at", '<=', $ate))
-            ->get();
-    }
-
-    private function filtrarSubmissoes(Request $request)
-    {
-        $submissoesTable = (new SubmissaoAvaliacao())->getTable();
-        $templateId = $request->integer('template_id');
-        $eventoId = $request->integer('evento_id');
-        $atividadeId = $request->integer('atividade_id');
-        $de = $request->date('de');
-        $ate = $request->date('ate');
-
-        return SubmissaoAvaliacao::query()
-            ->when($templateId, fn($q) => $q->whereHas('avaliacao', fn($aq) => $aq->where('template_avaliacao_id', $templateId)))
-            ->when($atividadeId, fn($q) => $q->where('atividade_id', $atividadeId))
-            ->when($eventoId, fn($q) => $q->whereHas('atividade', fn($aq) => $aq->where('evento_id', $eventoId)))
-            ->when($de, fn($q) => $q->whereDate("{$submissoesTable}.created_at", '>=', $de))
-            ->when($ate, fn($q) => $q->whereDate("{$submissoesTable}.created_at", '<=', $ate));
-    }
-
-    private function montarPerguntas($respostas)
-    {
-        return $respostas
-            ->groupBy('avaliacao_questao_id')
-            ->map(function ($items) {
-                $questao = $items->first()->avaliacaoQuestao;
-                $tipo = $questao?->tipo ?? 'texto';
-
-                $bloco = [
-                    'id'      => $questao?->id ?? $items->first()->avaliacao_questao_id,
-                    'texto'   => $questao?->texto ?? 'Questao',
-                    'tipo'    => $tipo,
-                    'total'   => $items->count(),
-                    'labels'  => [],
-                    'values'  => [],
-                    'media'   => null,
-                    'resumo'  => null,
-                    'exemplos'=> [],
-                    'respostas' => [],
-                ];
-
-                if ($tipo === 'boolean') {
-                    $sim = $items->filter(fn($r) => $this->respostaParaBool($r->resposta) === true)->count();
-                    $nao = $items->filter(fn($r) => $this->respostaParaBool($r->resposta) === false)->count();
-                    $total = max($sim + $nao, 1);
-
-                    $bloco['labels'] = ['Sim', 'Nao'];
-                    $bloco['values'] = [$sim, $nao];
-                    $bloco['resumo'] = $total > 0 ? round(($sim / $total) * 100) . '% de sim' : 'Sem respostas';
-                    return $bloco;
-                }
-
-                if ($tipo === 'escala') {
-                    $opcoes = $questao?->escala?->valores ?? [];
-                    if (empty($opcoes)) {
-                        $opcoes = $items->map(fn($r) => $this->respostaParaTexto($r->resposta))
-                            ->filter()
-                            ->unique()
-                            ->values()
-                            ->all();
-                    }
-
-                    $contagem = [];
-                    foreach ($opcoes as $opcao) {
-                        $contagem[$opcao] = 0;
-                    }
-
-                    foreach ($items as $resposta) {
-                        $valor = $this->respostaParaTexto($resposta->resposta);
-                        if ($valor === '') {
-                            continue;
-                        }
-                        $contagem[$valor] = ($contagem[$valor] ?? 0) + 1;
-                    }
-
-                    $bloco['labels'] = array_keys($contagem);
-                    $bloco['values'] = array_values($contagem);
-
-                    $media = $this->calcularMediaNumerica($items);
-                    $bloco['media'] = $media;
-                    $bloco['resumo'] = $media !== null ? 'Media ' . number_format($media, 1, ',', '.') : null;
-                    return $bloco;
-                }
-
-                if ($tipo === 'numero') {
-                    $numeros = $items->map(fn($r) => is_numeric($r->resposta) ? (float) $r->resposta : null)
-                        ->filter();
-                    $bloco['labels'] = $numeros->groupBy(fn($v) => (string) $v)->keys()->values();
-                    $bloco['values'] = $numeros->groupBy(fn($v) => (string) $v)->map->count()->values();
-                    $media = $numeros->avg();
-                    $bloco['media'] = $media ? round($media, 2) : null;
-                    $bloco['resumo'] = $media ? 'Media ' . number_format($media, 2, ',', '.') : null;
-                    return $bloco;
-                }
-
-                $respostasTexto = $items
-                    ->sortByDesc('created_at')
-                    ->map(fn($r) => $this->respostaParaTexto($r->resposta))
-                    ->filter()
-                    ->values();
-
-                $bloco['respostas'] = $respostasTexto->all();
-                $bloco['exemplos'] = $respostasTexto->take(5)->values()->all();
-
-                return $bloco;
-            });
-    }
-
-    private function respostaParaTexto($valor): string
-    {
-        if ($valor === null) {
-            return '';
-        }
-
-        if (is_array($valor)) {
-            return implode(', ', $valor);
-        }
-
-        $texto = (string) $valor;
-
-        if ($texto === '') {
-            return '';
-        }
-
-        if (in_array(substr($texto, 0, 1), ['[', '{'], true)) {
-            $decoded = json_decode($texto, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                return implode(', ', $decoded);
-            }
-        }
-
-        return $texto;
-    }
-
-    private function respostaParaBool($valor): ?bool
-    {
-        $texto = strtolower(trim($this->respostaParaTexto($valor)));
-
-        if ($texto === '') {
-            return null;
-        }
-
-        if (in_array($texto, ['1', 'true', 'sim', 's', 'yes'], true)) {
-            return true;
-        }
-
-        if (in_array($texto, ['0', 'false', 'nao', 'n', 'no'], true)) {
-            return false;
-        }
-
-        return null;
-    }
-
-    private function calcularMediaNumerica($items): ?float
-    {
-        $numeros = $items->map(function ($resposta) {
-            $valor = $this->respostaParaTexto($resposta->resposta);
-            return is_numeric($valor) ? (float) $valor : null;
-        })->filter();
-
-        $media = $numeros->avg();
-
-        return $media ? round($media, 1) : null;
+            'filtros' => $request->query(),
+            'truncado' => $truncado,
+            'totalAtividades' => $totalAtividades,
+            'maxAtividades' => $maxAtividades,
+        ])
+            ->format('a4')
+            ->withAlfaEjaBrand()
+            ->download('dashboard-presencas-'.now()->format('Ymd_His').'.pdf');
     }
 }

@@ -26,13 +26,9 @@ class CertificadoEmitidoMail extends Mailable implements ShouldQueue
     public function build(): self
     {
         $logoPath = public_path('images/engaja-bg-white.png');
-        if (file_exists($logoPath)) {
-            $data = base64_encode(file_get_contents($logoPath));
-            $this->logoData = 'data:image/png;base64,'.$data;
-        }
 
         return $this->subject('Certificado disponivel - '.$this->acao)
             ->view('emails.certificados.emitido')
-            ->with(['logoData' => $this->logoData]);
+            ->with(['logoPath' => $logoPath]);
     }
 }
