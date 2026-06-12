@@ -4,8 +4,11 @@ return [
     'organizacoes' => [
         'Escola da Rede Municipal',
         'Escola da Rede Estadual',
+        'Escola da Rede Federal',
         'Secretaria Municipal de Educação',
+        'Setor Privado',
         'Universidade',
+        'Movimentos Sociais e Populares',
         'Movimento dos Trabalhadores Rurais Sem Terra (MST)',
         'Sindicato dos Trabalhadores Rurais',
         'Sindicato de pescadores artesanais',
@@ -23,6 +26,7 @@ return [
         'Associações de artesãos e artesãs',
         'Feiras de economia solidária',
         'Conselhos comunitários (saúde, educação, meio ambiente)',
+        'Outros',
     ],
 
     'participante_tags' => [
