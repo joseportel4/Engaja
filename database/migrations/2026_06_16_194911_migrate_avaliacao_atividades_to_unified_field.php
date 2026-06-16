@@ -19,41 +19,34 @@ return new class extends Migration
             });
         }
 
-        $registros = DB::table('avaliacao_atividades')->get();
+        DB::transaction(function () {
+            $mapeamento = [
+                'avaliacao_logistica'          => 'Avaliação da Logística',
+                'avaliacao_acolhimento_sme'    => 'Avaliação do acolhimento e apoio da SME',
+                'avaliacao_atuacao_equipe'     => 'Atuação da Equipe do IPF',
+                'avaliacao_planejamento'       => 'Desenvolvimento da Ação (Planejamento)',
+                'avaliacao_recursos_materiais' => 'Recursos Materiais',
+                'avaliacao_links_presenca'     => 'Links e QR codes',
+                'avaliacao_destaques'          => 'Destaques',
+            ];
 
-        foreach ($registros as $reg) {
-            $partes = [];
+            DB::table('avaliacao_atividades')->orderBy('id')->chunk(100, function ($registros) use ($mapeamento) {
+                foreach ($registros as $reg) {
+                    $partes = [];
+                    foreach ($mapeamento as $campo => $label) {
+                        if (filled($reg->$campo)) {
+                            $partes[] = $label . ': ' . $reg->$campo;
+                        }
+                    }
 
-            if (filled($reg->avaliacao_logistica)) {
-                $partes[] = 'Avaliação da Logística: '.$reg->avaliacao_logistica;
-            }
-            if (filled($reg->avaliacao_acolhimento_sme)) {
-                $partes[] = 'Avaliação do acolhimento e apoio da SME: '.$reg->avaliacao_acolhimento_sme;
-            }
-            if (filled($reg->avaliacao_atuacao_equipe)) {
-                $partes[] = 'Atuação da Equipe do IPF: '.$reg->avaliacao_atuacao_equipe;
-            }
-            if (filled($reg->avaliacao_planejamento)) {
-                $partes[] = 'Desenvolvimento da Ação (Planejamento): '.$reg->avaliacao_planejamento;
-            }
-            if (filled($reg->avaliacao_recursos_materiais)) {
-                $partes[] = 'Recursos Materiais: '.$reg->avaliacao_recursos_materiais;
-            }
-            if (filled($reg->avaliacao_links_presenca)) {
-                $partes[] = 'Links e QR codes: '.$reg->avaliacao_links_presenca;
-            }
-            if (filled($reg->avaliacao_destaques)) {
-                $partes[] = 'Destaques: '.$reg->avaliacao_destaques;
-            }
-
-            if (! empty($partes)) {
-                $unificado = implode(' ; ', $partes);
-
-                DB::table('avaliacao_atividades')
-                    ->where('id', $reg->id)
-                    ->update(['questao_unificada' => $unificado]);
-            }
-        }
+                    if (! empty($partes)) {
+                        DB::table('avaliacao_atividades')
+                            ->where('id', $reg->id)
+                            ->update(['questao_unificada' => implode(' ; ', $partes)]);
+                    }
+                }
+            });
+        });
     }
 
     /**
@@ -61,7 +54,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Se desejar limpar o campo ao reverter, mas geralmente mantemos o dado se a coluna for removida por outra migração
         DB::table('avaliacao_atividades')->update(['questao_unificada' => null]);
     }
 };
