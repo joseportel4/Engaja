@@ -203,7 +203,69 @@ class DashboardController extends Controller
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
+        // Se não houver filtros específicos, pegamos a data da última resposta como padrão
+        if (! $request->filled('evento_id') && ! $request->filled('atividade_id') && ! $request->filled('avaliacao_id') && ! $request->filled('de') && ! $request->filled('ate')) {
+            $ultimaResposta = RespostaAvaliacao::latest('created_at')->first();
+            if ($ultimaResposta) {
+                $dataFiltro = $ultimaResposta->created_at->format('Y-m-d');
+                $request->merge([
+                    'de' => $dataFiltro,
+                    'ate' => $dataFiltro,
+                ]);
+            }
+        }
+
         return response()->json($avaliacaoRespostas->buildDashboardPayload($request));
+    }
+
+    public function avaliacoesPdf(Request $request, AvaliacaoRespostasDashboardService $avaliacaoRespostas)
+    {
+        $this->authorizeAvaliacoesDashboardRequest($request);
+
+        // Se não houver filtros específicos, pegamos a data da última resposta como padrão
+        if (! $request->filled('evento_id') && ! $request->filled('atividade_id') && ! $request->filled('avaliacao_id') && ! $request->filled('de') && ! $request->filled('ate')) {
+            $ultimaResposta = RespostaAvaliacao::latest('created_at')->first();
+            if ($ultimaResposta) {
+                $dataFiltro = $ultimaResposta->created_at->format('Y-m-d');
+                $request->merge([
+                    'de' => $dataFiltro,
+                    'ate' => $dataFiltro,
+                ]);
+            }
+        }
+
+        // Para o PDF, queremos todas as questões, sem paginação
+        $request->merge(['per_page' => 1000]);
+
+        $payload = $avaliacaoRespostas->buildDashboardPayload($request);
+
+        $tipo = $request->query('tipo', 'momento');
+        $eventoId = $request->integer('evento_id');
+        $atividadeId = $request->integer('atividade_id');
+        $avaliacaoId = $request->integer('avaliacao_id');
+
+        $atividade = $atividadeId ? Atividade::with(['evento', 'municipios.estado'])->find($atividadeId) : null;
+        $evento = $eventoId ? Evento::find($eventoId) : null;
+        $avaliacaoUniversal = ($tipo === 'universal' && $avaliacaoId) ? Avaliacao::with('templateAvaliacao')->find($avaliacaoId) : null;
+
+        $fileName = 'avaliacoes-'.now()->format('Ymd_His').'.pdf';
+
+        return Pdf::view('dashboards.avaliacoes_pdf', [
+            'totais' => $payload['totais'],
+            'perguntas' => $payload['perguntas'],
+            'atividade' => $atividade,
+            'evento' => $evento,
+            'avaliacaoUniversal' => $avaliacaoUniversal,
+            'tipo' => $tipo,
+            'filtros' => [
+                'de' => $request->get('de'),
+                'ate' => $request->get('ate'),
+            ],
+            'geradoEm' => now(),
+        ])
+            ->format('a4')
+            ->withAlfaEjaBrand()
+            ->download($fileName);
     }
 
     /**

@@ -19,18 +19,23 @@
 
   <div class="card shadow-sm border-0 mb-3">
     <div class="card-body">
-      <div class="mb-3">
-        <label class="form-label text-muted small mb-1">Tipo de formulário</label>
-        <div class="btn-group" role="group" aria-label="Tipo de formulário">
-          <input type="radio" class="btn-check js-filter" name="tipo-dashboard" id="tipo-momento" value="momento" checked>
-          <label class="btn btn-outline-secondary" for="tipo-momento">Por momento</label>
+      <div class="mb-3 d-flex justify-content-between align-items-end">
+        <div>
+          <label class="form-label text-muted small mb-1">Tipo de formulário</label>
+          <div class="btn-group" role="group" aria-label="Tipo de formulário">
+            <input type="radio" class="btn-check js-filter" name="tipo-dashboard" id="tipo-momento" value="momento" checked>
+            <label class="btn btn-outline-secondary" for="tipo-momento">Por momento</label>
 
-          <input type="radio" class="btn-check js-filter" name="tipo-dashboard" id="tipo-transcricao" value="transcricao">
-          <label class="btn btn-outline-secondary" for="tipo-transcricao">Transcrições</label>
+            <input type="radio" class="btn-check js-filter" name="tipo-dashboard" id="tipo-transcricao" value="transcricao">
+            <label class="btn btn-outline-secondary" for="tipo-transcricao">Transcrições</label>
 
-          <input type="radio" class="btn-check js-filter" name="tipo-dashboard" id="tipo-universal" value="universal">
-          <label class="btn btn-outline-secondary" for="tipo-universal">Universais</label>
+            <input type="radio" class="btn-check js-filter" name="tipo-dashboard" id="tipo-universal" value="universal">
+            <label class="btn btn-outline-secondary" for="tipo-universal">Universais</label>
+          </div>
         </div>
+        <button type="button" id="btn-exportar-pdf" class="btn btn-danger">
+          Gerar PDF
+        </button>
       </div>
       <div class="row g-3 align-items-end">
         <div class="col-lg-3 col-md-6 filter-momento">
@@ -215,6 +220,9 @@
   if (!container) return;
 
   const endpoint = container.dataset.endpoint;
+  const pdfEndpoint = "{{ route('dashboards.avaliacoes.pdf') }}";
+  const btnExportarPdf = document.getElementById('btn-exportar-pdf');
+
   const filters = {
     tipoMomento: document.getElementById('tipo-momento'),
     tipoTranscricao: document.getElementById('tipo-transcricao'),
@@ -693,6 +701,15 @@
       renderCharts(payload.perguntas || []);
       renderPagination(payload.meta || null);
 
+      if (payload.filtros) {
+        if (!filters.de.value && payload.filtros.de) {
+          filters.de.value = payload.filtros.de.split(' ')[0];
+        }
+        if (!filters.ate.value && payload.filtros.ate) {
+          filters.ate.value = payload.filtros.ate.split(' ')[0];
+        }
+      }
+
       if (page > 1) {
         cardsQuestoes.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
@@ -717,9 +734,31 @@
     updateAtividadeFilter();
     loadData(1);
   });
+  
   //define a interface e chama o estado vazio
   updateModeUi();
   showEmptyState();
+
+  if (btnExportarPdf) {
+    btnExportarPdf.addEventListener('click', () => {
+      const submissoesRaw = totalsEls.submissoes.textContent.replace(/[^\d]/g, '');
+      const submissoes = parseInt(submissoesRaw) || 0;
+
+      if (submissoes > 500) {
+        const confirmMsg = `O relatório contém ${submissoes} submissões. ` +
+                           `Gerar um PDF com muitos dados pode levar algum tempo e o arquivo pode ficar pesado. ` +
+                           `Deseja continuar?`;
+        if (!confirm(confirmMsg)) {
+          return;
+        }
+      }
+
+      const params = buildParams();
+      window.open(`${pdfEndpoint}?${params}`, '_blank');
+    });
+  }
+
+  loadData(1);
 })();
 </script>
 @endsection

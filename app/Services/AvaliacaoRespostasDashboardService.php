@@ -65,6 +65,10 @@ class AvaliacaoRespostasDashboardService
             'totais' => $totais,
             'perguntas' => $perguntasPaginadas->all(),
             'recentes' => $recentes,
+            'filtros' => [
+                'de' => $request->get('de'),
+                'ate' => $request->get('ate'),
+            ],
             'meta' => [
                 'total' => $totalPerguntas,
                 'page' => $page,
