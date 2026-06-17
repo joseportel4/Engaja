@@ -123,7 +123,7 @@
           </div>
         </div>
 
-        @php($relatoriosOpen = request()->routeIs('avaliacao-atividade.*') || request()->routeIs('relatorio-quantitativo.*'))
+        @php($relatoriosOpen = request()->routeIs('avaliacao-atividade.*') || request()->routeIs('relatorio-quantitativo.*') || request()->routeIs('painel-gerencial.*'))
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingRelatorios">
             <button class="accordion-button admin-accordion-button {{ $relatoriosOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarRelatorios" aria-expanded="{{ $relatoriosOpen ? 'true' : 'false' }}" aria-controls="sidebarRelatorios">
@@ -142,6 +142,9 @@
               </a>
               <a class="admin-nav-link {{ request()->routeIs('relatorio-quantitativo.*') ? 'active' : '' }}" href="{{ route('relatorio-quantitativo.index') }}">
                 Relatório Quantitativo
+              </a>
+              <a class="admin-nav-link {{ request()->routeIs('painel-gerencial.*') ? 'active' : '' }}" href="{{ route('painel-gerencial.index') }}">
+                Painel Gerencial
               </a>
             </div>
           </div>

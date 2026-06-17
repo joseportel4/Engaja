@@ -19,6 +19,7 @@ use App\Http\Controllers\IndicadorController;
 use App\Http\Controllers\InscricaoController;
 use App\Http\Controllers\ModeloCertificadoController;
 use App\Http\Controllers\MunicipioController;
+use App\Http\Controllers\PainelGerencialController;
 use App\Http\Controllers\ParticipantesExclusivosController;
 use App\Http\Controllers\PresencaController;
 use App\Http\Controllers\PresencaImportController;
@@ -275,6 +276,15 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
         ->name('relatorio-quantitativo.exportar-momento');
     Route::get('/relatorio-quantitativo/exportar-total-geral', [RelatorioQuantitativoController::class, 'exportarTotalGeral'])
         ->name('relatorio-quantitativo.exportar-total-geral');
+
+    Route::get('/painel-gerencial', [PainelGerencialController::class, 'index'])
+        ->name('painel-gerencial.index');
+    Route::get('/painel-gerencial/dados', [PainelGerencialController::class, 'dados'])
+        ->name('painel-gerencial.dados');
+    Route::get('/painel-gerencial/momentos', [PainelGerencialController::class, 'momentos'])
+        ->name('painel-gerencial.momentos');
+    Route::get('/painel-gerencial/exportar', [PainelGerencialController::class, 'exportar'])
+        ->name('painel-gerencial.exportar');
 });
 
 Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {
