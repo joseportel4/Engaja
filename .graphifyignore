@@ -1,0 +1,39 @@
+# === Herdado do .gitignore (necessário porque .graphifyignore substitui o fallback) ===
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+
+# Artefatos do graphify
+/graphify-out/
+
+# === Arquivos irrelevantes para o grafo de código ===
+
+# Imagens estáticas
+public/images/
+
+# JS compilado/vendor do Livewire
+public/vendor/
+
+# Uploads de usuário (certificados gerados em runtime)
+storage/app/public/
+
+# PDFs de template (arquivos binários)
+storage/app/templates/
+
+# Cache gerado pelo Laravel
+bootstrap/cache/
+
+# Resultados de execução de testes
+test-results/
+
+# Skills do Claude Code — não são código da aplicação
+.claude/skills/

@@ -8,7 +8,7 @@ class ModeloCertificadoRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return (bool) $this->user()?->hasAnyRole(['administrador', 'gestor']);
+        return (bool) $this->user()?->hasAnyRole(['administrador', 'gerente']);
     }
 
     protected function prepareForValidation(): void
@@ -28,6 +28,7 @@ class ModeloCertificadoRequest extends FormRequest
             'imagem_frente' => ['nullable', 'image', 'max:5120'],
             'imagem_verso'  => ['nullable', 'image', 'max:5120'],
             'texto_frente'  => ['nullable', 'string'],
+            'layout_frente.date_text' => ['nullable', 'string'],
             'texto_verso'   => ['nullable', 'string'],
             'layout_frente' => ['nullable', 'array'],
             'layout_frente.x' => ['nullable', 'numeric'],
@@ -46,6 +47,15 @@ class ModeloCertificadoRequest extends FormRequest
             'layout_frente.qr_y'        => ['nullable','numeric'],
             'layout_frente.qr_size'     => ['nullable','numeric'],
             'layout_frente.qr_color'    => ['nullable','string','max:20'],
+            'layout_frente.date_x'        => ['nullable','numeric'],
+            'layout_frente.date_y'        => ['nullable','numeric'],
+            'layout_frente.date_w'        => ['nullable','numeric'],
+            'layout_frente.date_h'        => ['nullable','numeric'],
+            'layout_frente.date_font_family' => ['nullable','string','max:100'],
+            'layout_frente.date_font_size'   => ['nullable','numeric'],
+            'layout_frente.date_font_weight' => ['nullable','string','max:20'],
+            'layout_frente.date_font_style'  => ['nullable','string','max:20'],
+            'layout_frente.date_align'       => ['nullable','string','in:left,center,right,justify'],
             'layout_verso'  => ['nullable', 'array'],
             'layout_verso.x' => ['nullable', 'numeric'],
             'layout_verso.y' => ['nullable', 'numeric'],
@@ -63,6 +73,8 @@ class ModeloCertificadoRequest extends FormRequest
             'layout_verso.qr_y'        => ['nullable','numeric'],
             'layout_verso.qr_size'     => ['nullable','numeric'],
             'layout_verso.qr_color'    => ['nullable','string','max:20'],
+            'layout_frente.text_color' => ['nullable', 'string', 'max:7'],
+            'layout_verso.text_color'  => ['nullable', 'string', 'max:7'],
         ];
     }
 

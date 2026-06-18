@@ -56,7 +56,9 @@ class EvidenciaController extends Controller
 
         $evidencias = $query->paginate(15)->appends($request->query());
 
-        $dimensoes = Dimensao::orderBy('descricao')->pluck('descricao', 'id');
+        $dimensoes = Dimensao::orderBy('descricao')
+            ->pluck('descricao', 'id')
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE);
         $indicadores = Indicador::with('dimensao')
             ->orderBy('descricao')
             ->get()
@@ -64,7 +66,8 @@ class EvidenciaController extends Controller
                 $prefixo = $indicador->dimensao?->descricao;
                 $label = $prefixo ? $prefixo . ' - ' . $indicador->descricao : $indicador->descricao;
                 return [$indicador->id => $label];
-            });
+            })
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE);
 
         return view('evidencias.index', compact('evidencias', 'dimensoes', 'indicadores'));
     }
@@ -104,16 +107,13 @@ class EvidenciaController extends Controller
 
     public function edit(Evidencia $evidencia)
     {
-        $indicadores = Indicador::with('dimensao')
-            ->orderBy('descricao')
-            ->get()
-            ->mapWithKeys(fn ($indicador) => [
-                $indicador->id => $indicador->dimensao
-                    ? $indicador->dimensao->descricao . ' - ' . $indicador->descricao
-                    : $indicador->descricao,
-            ]);
+        $dimensoes = Dimensao::orderBy('descricao')->pluck('descricao', 'id');
 
-        return view('evidencias.edit', compact('evidencia', 'indicadores'));
+        $indicadores = Indicador::orderBy('descricao')->get(['id', 'descricao', 'dimensao_id']);
+
+        $dimensaoAtualId = $evidencia->indicador ? $evidencia->indicador->dimensao_id : null;
+
+        return view('evidencias.edit', compact('evidencia', 'dimensoes', 'indicadores', 'dimensaoAtualId'));
     }
 
     public function update(Request $request, Evidencia $evidencia)
@@ -133,5 +133,15 @@ class EvidenciaController extends Controller
         $evidencia->delete();
 
         return redirect()->route('evidencias.index')->with('success', 'Evidência removida com sucesso!');
+    }
+
+    public function duplicar(Evidencia $evidencia)
+    {
+        $novaEvidencia = $evidencia->replicate();
+        $novaEvidencia->descricao = $evidencia->descricao . ' (Cópia)';
+        $novaEvidencia->save();
+
+        return redirect()->route('evidencias.edit', $novaEvidencia)
+            ->with('success', 'Evidência duplicada com sucesso! Altere a dimensão ou indicador abaixo se necessário.');
     }
 }

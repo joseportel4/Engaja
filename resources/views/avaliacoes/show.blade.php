@@ -1,6 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+  $isUniversal = $avaliacao->atividade_id === null;
+  $isTranscricao = $avaliacao->transcricao;
+  $editUrl = $isUniversal
+    ? route('avaliacoes-universais.edit', $avaliacao)
+    : ($isTranscricao ? route('avaliacoes-transcricoes.edit', $avaliacao) : route('avaliacoes.edit', $avaliacao));
+  $backUrl = $isUniversal
+    ? route('avaliacoes-universais.index')
+    : ($isTranscricao ? route('avaliacoes-transcricoes.index') : route('avaliacoes.index'));
+@endphp
 <div class="row justify-content-center">
   <div class="col-xl-8">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -9,10 +19,10 @@
         <p class="text-muted mb-0">Registrada em {{ $avaliacao->created_at?->format('d/m/Y H:i') ?? '-' }}</p>
       </div>
       <div class="d-flex gap-2">
-        @if(!$avaliacao->anonima)
+        @if(!$avaliacao->anonima || $isTranscricao)
           <a href="{{ route('avaliacoes.respostas', $avaliacao) }}" class="btn btn-primary">Ver respostas</a>
         @endif
-        <a href="{{ route('avaliacoes.edit', $avaliacao) }}" class="btn btn-outline-secondary">Editar</a>
+        <a href="{{ $editUrl }}" class="btn btn-outline-secondary">Editar</a>
       </div>
     </div>
 
@@ -33,17 +43,28 @@
           <dd class="col-md-8">{{ $eventoNome ?? '-' }}</dd>
 
           <dt class="col-md-4 text-muted">Atividade</dt>
-          <dd class="col-md-8">{{ $avaliacao->atividade->descricao ?? '-' }}</dd>
+          <dd class="col-md-8">
+            @if($isUniversal)
+              Avaliação universal
+            @elseif($isTranscricao)
+              {{ $avaliacao->atividade->descricao ?? '-' }}
+            @else
+              {{ $avaliacao->atividade->descricao ?? '-' }}
+            @endif
+          </dd>
 
-          <dt class="col-md-4 text-muted">Modelo de avaliacao</dt>
+          <dt class="col-md-4 text-muted">Modelo de avaliação</dt>
           <dd class="col-md-8">{{ $avaliacao->templateAvaliacao->nome ?? '-' }}</dd>
+
+          <dt class="col-md-4 text-muted">Descrição</dt>
+          <dd class="col-md-8">{{ $avaliacao->descricao_universal ?: '-' }}</dd>
         </dl>
       </div>
     </div>
 
     <div class="card shadow-sm">
       <div class="card-body">
-        <h2 class="h6 fw-semibold text-uppercase text-muted mb-3">Questoes e respostas</h2>
+        <h2 class="h6 fw-semibold text-uppercase text-muted mb-3">Questões e respostas</h2>
 
         @php
           $respostas = $avaliacao->respostas->pluck('resposta', 'avaliacao_questao_id');
@@ -56,13 +77,13 @@
               <p class="text-muted small mb-1">
                 Indicador: {{ $questao->indicador->descricao ?? '-' }}
                 @if ($questao->indicador && $questao->indicador->dimensao)
-                  &bull; Dimensao: {{ $questao->indicador->dimensao->descricao ?? '-' }}
+                  &bull; Dimensão: {{ $questao->indicador->dimensao->descricao ?? '-' }}
                 @endif
               </p>
               <p class="text-muted small mb-2">
                 Tipo: {{ $tiposQuestao[$questao->tipo] ?? ucfirst($questao->tipo) }}
                 @if ($questao->evidencia)
-                  &bull; Evidencia: {{ $questao->evidencia->descricao }}
+                  &bull; Evidência: {{ $questao->evidencia->descricao }}
                 @endif
                 @if ($questao->tipo === 'escala' && $questao->escala)
                   &bull; Escala: {{ $questao->escala->descricao }}
@@ -74,13 +95,13 @@
               </p>
             </li>
           @empty
-            <li class="list-group-item px-0 text-muted">Nenhuma questao cadastrada.</li>
+            <li class="list-group-item px-0 text-muted">Nenhuma questão cadastrada.</li>
           @endforelse
         </ol>
       </div>
     </div>
 
-    <a href="{{ route('avaliacoes.index') }}" class="btn btn-link px-0 mt-3">Voltar para lista</a>
+    <a href="{{ $backUrl }}" class="btn btn-link px-0 mt-3">Voltar para lista</a>
   </div>
 </div>
 @endsection

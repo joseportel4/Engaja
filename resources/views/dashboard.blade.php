@@ -1,15 +1,33 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    .transition-icon {
+        transition: transform 0.2s ease-in-out;
+        display: inline-block;
+    }
+    [aria-expanded="true"] .transition-icon {
+        transform: rotate(90deg);
+    }
+    .btn-engaja-outline {
+        color: #421944;
+        border-color: #421944;
+    }
+    .btn-engaja-outline:hover {
+        background-color: #421944;
+        color: #fff;
+    }
+</style>
 <div class="container py-4">
     <div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
         <div>
             <p class="text-uppercase small text-muted mb-1">Dashboards</p>
-            <h1 class="h4 mb-0">Presencas e inscricoes</h1>
-            <p class="text-muted small mb-0">Visual completo das acoes pedagogicas com expansao de presencas e exportacao.</p>
+            <h1 class="h4 mb-0">Presenças e inscrições</h1>
+            <p class="text-muted small mb-0">Visual completo das ações pedagógicas com expansão de presenças e exportação.</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary btn-sm">Hub de dashboards</a>
+            <a href="{{ route('dashboards.bi') }}" class="btn btn-outline-secondary btn-sm">Dashboard BI</a>
             <a href="{{ route('dashboards.avaliacoes') }}" class="btn btn-outline-primary btn-sm">Dashboard de respostas</a>
         </div>
     </div>
@@ -95,6 +113,7 @@
                         }
                         @endphp
                         <tr>
+                            <th style="width: 40px;"></th>
                             <th style="min-width:110px;">{!! sort_link('Data','dia') !!}</th>
                             <th style="min-width:80px;">{!! sort_link('Hora','hora') !!}</th>
                             <th>{!! sort_link('Momento','momento') !!}</th>
@@ -103,6 +122,7 @@
                             <th class="text-end" style="min-width:90px;">{!! sort_link('Inscritos','inscritos') !!}</th>
                             <th class="text-end" style="min-width:90px;">{!! sort_link('Presentes','presentes') !!}</th>
                             <th class="text-end" style="min-width:90px;">{!! sort_link('Ausentes','ausentes') !!}</th>
+                            <th class="text-center" style="width: 130px;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -111,16 +131,22 @@
                         $data = \Carbon\Carbon::parse($a->dia)->format('d/m/Y');
                         $hora = \Illuminate\Support\Str::of($a->hora_inicio)->substr(0,5);
                         $collapseId = 'pres-' . $a->id;
-                        $presentes = collect($a->presencas ?? []);
-                        $inscricoes = collect($a->inscricoes ?? []);
-                        $presentesIds = $presentes->pluck('inscricao_id')->filter()->unique();
-                        $ausentes = $inscricoes->filter(fn($insc) => !$presentesIds->contains($insc->id))->values();
-                        $inscritosCount = $inscricoes->count();
-                        $presentesCount = $presentesIds->count();
-                        $ausentesCount = $ausentes->count();
+                        $inscritosCount = $a->inscritos_count ?? 0;
+                        $presentesCount = $a->presentes_count ?? 0;
+                        $ausentesCount = max($inscritosCount - $presentesCount, 0);
                         @endphp
 
                         <tr>
+                            <td class="text-center">
+                                <a class="text-muted d-block"
+                                   data-bs-toggle="collapse"
+                                   href="#{{ $collapseId }}"
+                                   role="button"
+                                   aria-expanded="false"
+                                   aria-controls="{{ $collapseId }}">
+                                    <i class="fas fa-chevron-right transition-icon"></i>
+                                </a>
+                            </td>
                             <td>{{ $data }}</td>
                             <td>{{ $hora }}</td>
                             <td>{{ $a->descricao ?? 'Momento' }}</td>
@@ -154,91 +180,31 @@
                                     <span class="text-muted">0</span>
                                 @endif
                             </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-engaja-outline"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#{{ $collapseId }}"
+                                        aria-expanded="false"
+                                        aria-controls="{{ $collapseId }}">
+                                    <i class="fas fa-users me-1"></i> Ver lista
+                                </button>
+                            </td>
                         </tr>
-                        {{-- Linha de detalhes: agora o .collapse fica dentro do TD --}}
+                        {{-- Linha de detalhes: carregada sob demanda (lazy) ao expandir --}}
                         <tr>
-                            <td colspan="8" class="bg-light p-0">
-                                <div id="{{ $collapseId }}" class="collapse presentes-collapse">
-                                    <div class="px-3 py-2 border-bottom small text-muted">
-                                        Inscritos: <strong>{{ $inscritosCount }}</strong> |
-                                        Presentes: <strong>{{ $presentesCount }}</strong> |
-                                        Ausentes: <strong>{{ $ausentesCount }}</strong>
-                                    </div>
-
-                                    <div id="{{ $collapseId }}-presentes" class="p-2">
-                                        <div class="section-title fw-bold">Presentes</div>
-                                        @if($presentes->isEmpty())
-                                            <div class="text-muted small p-3">Nenhuma presença registrada.</div>
-                                        @else
-                                            <div class="table-responsive">
-                                                <table class="table table-sm table-bordered mb-0">
-                                                    <thead class="table-primary">
-                                                        <tr>
-                                                            <th style="width: 35%;">Nome</th>
-                                                            <th style="width: 30%;">E-mail</th>
-                                                            <th style="width: 18%;">CPF</th>
-                                                            <th style="width: 17%;">Tag</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @foreach($presentes as $p)
-                                                            @php
-                                                                $insc = optional($p->inscricao);
-                                                                $part = optional($insc->participante);
-                                                                $user = optional($part->user);
-                                                            @endphp
-                                                            <tr>
-                                                                <td>{{ $user->name ?? 'Participante #'.$part->id }}</td>
-                                                                <td>{{ $user->email ?? '-' }}</td>
-                                                                <td>{{ $part->cpf ?: '-' }}</td>
-                                                                <td>{{ $part->tag ?: '-' }}</td>
-                                                            </tr>
-                                                        @endforeach
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        @endif
-                                    </div>
-
-                                    <div id="{{ $collapseId }}-ausentes" class="p-2">
-                                        <div class="section-title fw-bold">Ausentes</div>
-                                        @if($ausentes->isEmpty())
-                                            <div class="text-muted small p-3">Nenhum ausente registrado.</div>
-                                        @else
-                                            <div class="table-responsive">
-                                                <table class="table table-sm table-bordered mb-0">
-                                                    <thead class="table-secondary">
-                                                        <tr>
-                                                            <th style="width: 35%;">Nome</th>
-                                                            <th style="width: 30%;">E-mail</th>
-                                                            <th style="width: 18%;">CPF</th>
-                                                            <th style="width: 17%;">Tag</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @foreach($ausentes as $insc)
-                                                            @php
-                                                                $part = optional($insc->participante);
-                                                                $user = optional($part->user);
-                                                            @endphp
-                                                            <tr>
-                                                                <td>{{ $user->name ?? 'Participante #'.$part->id }}</td>
-                                                                <td>{{ $user->email ?? '-' }}</td>
-                                                                <td>{{ $part->cpf ?: '-' }}</td>
-                                                                <td>{{ $part->tag ?: '-' }}</td>
-                                                            </tr>
-                                                        @endforeach
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        @endif
+                            <td colspan="10" class="bg-light p-0">
+                                <div id="{{ $collapseId }}" class="collapse presentes-collapse"
+                                     data-detail-url="{{ route('dashboards.presencas.detalhes', $a->id) }}">
+                                    <div class="js-detail-placeholder d-flex align-items-center justify-content-center gap-2 p-3 text-muted small">
+                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                        Carregando detalhes...
                                     </div>
                                 </div>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted p-4">Nenhuma atividade encontrada.</td>
+                            <td colspan="10" class="text-center text-muted p-4">Nenhuma atividade encontrada.</td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -318,23 +284,19 @@
     </div>
 </div>
 
-{{-- Script para expandir/recolher todos --}}
+{{-- Script para expandir/recolher todos e lazy loading de detalhes --}}
 <script>
-
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('.js-toggle-all');
         if (!btn) return;
 
         const action = btn.dataset.action; // 'show' | 'hide'
         const items = document.querySelectorAll('.presentes-collapse');
-
         const hasBootstrap = window.bootstrap && bootstrap.Collapse;
 
         items.forEach(function(el) {
             if (hasBootstrap) {
-                const instance = bootstrap.Collapse.getOrCreateInstance(el, {
-                    toggle: false
-                });
+                const instance = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
                 if (action === 'show') instance.show();
                 else instance.hide();
             } else {
@@ -344,47 +306,54 @@
         });
     });
 
-
     document.addEventListener('click', function(e) {
         const focusLink = e.target.closest('[data-focus-target]');
         if (!focusLink) return;
 
         const collapseSelector = focusLink.getAttribute('href');
-        if (!collapseSelector || !collapseSelector.startsWith('#')) {
-            return;
-        }
+        if (!collapseSelector || !collapseSelector.startsWith('#')) return;
 
         const collapseEl = document.querySelector(collapseSelector);
-        if (!collapseEl) {
-            return;
-        }
+        if (!collapseEl) return;
 
         collapseEl.dataset.focusTarget = focusLink.dataset.focusTarget || '';
-
-        if (!window.bootstrap || !bootstrap.Collapse) {
-            setTimeout(function () {
-                if (!collapseEl.classList.contains('show')) {
-                    return;
-                }
-                const focusSel = collapseEl.dataset.focusTarget;
-                if (!focusSel) return;
-                const focusEl = collapseEl.querySelector(focusSel);
-                if (focusEl) {
-                    focusEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            }, 200);
-        }
     });
 
+    // Lazy loading: carrega detalhes ao expandir pela primeira vez
+    document.addEventListener('show.bs.collapse', function (event) {
+        const collapseEl = event.target;
+        if (!collapseEl.classList.contains('presentes-collapse')) return;
+
+        const placeholder = collapseEl.querySelector('.js-detail-placeholder');
+        if (!placeholder) return; // já carregado
+
+        const url = collapseEl.dataset.detailUrl;
+        if (!url) return;
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.ok ? r.text() : Promise.reject(r.status); })
+            .then(function(html) {
+                collapseEl.innerHTML = html;
+                const focusSel = collapseEl.dataset.focusTarget;
+                if (focusSel) {
+                    const focusEl = collapseEl.querySelector(focusSel);
+                    if (focusEl) focusEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    delete collapseEl.dataset.focusTarget;
+                }
+            })
+            .catch(function() {
+                collapseEl.innerHTML = '<div class="p-3 text-danger small">Erro ao carregar detalhes. Tente expandir novamente.</div>';
+            });
+    });
+
+    // Scroll para seção focada após animação (quando já carregado)
     if (window.bootstrap && bootstrap.Collapse) {
         document.addEventListener('shown.bs.collapse', function (event) {
             const collapseEl = event.target;
             const focusSel = collapseEl.dataset.focusTarget;
             if (!focusSel) return;
             const focusEl = collapseEl.querySelector(focusSel);
-            if (focusEl) {
-                focusEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            if (focusEl) focusEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
             delete collapseEl.dataset.focusTarget;
         });
     }

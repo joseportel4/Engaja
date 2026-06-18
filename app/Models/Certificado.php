@@ -12,11 +12,13 @@ class Certificado extends Model
     protected $fillable = [
         'modelo_certificado_id',
         'participante_id',
+        'evento_id',
         'evento_nome',
         'codigo_validacao',
         'ano',
         'texto_frente',
         'texto_verso',
+        /** Total em minutos (nome legado da coluna). */
         'carga_horaria',
     ];
 
@@ -28,5 +30,10 @@ class Certificado extends Model
     public function participante()
     {
         return $this->belongsTo(Participante::class);
+    }
+
+    public function evento()
+    {
+        return $this->belongsTo(Evento::class);
     }
 }

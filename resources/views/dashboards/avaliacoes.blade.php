@@ -6,48 +6,68 @@
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
       <div>
         <p class="text-uppercase small text-muted mb-1">Dashboards</p>
-        <h1 class="h3 fw-bold mb-1">Respostas dos formularios</h1>
-        <p class="text-muted mb-0">Visual limpo, na paleta do projeto, com filtros instantaneos.</p>
+        <h1 class="h3 fw-bold mb-1">Respostas dos formulários</h1>
+        {{-- <p class="text-muted mb-0">Visual limpo, na paleta do projeto, com filtros instantâneos.</p> --}}
       </div>
       <div class="d-flex gap-2">
         <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary">Hub de dashboards</a>
-        <a href="{{ route('dashboards.presencas') }}" class="btn btn-outline-primary">Ir para presencas</a>
+        <a href="{{ route('dashboards.bi') }}" class="btn btn-outline-secondary">Ir para BI</a>
+        <a href="{{ route('dashboards.presencas') }}" class="btn btn-outline-primary">Ir para presenças</a>
       </div>
     </div>
   </div>
 
   <div class="card shadow-sm border-0 mb-3">
     <div class="card-body">
-      <div class="row g-3 align-items-end">
-        <div class="col-lg-3 col-md-6">
-          <label class="form-label text-muted small mb-1">Modelo</label>
-          <select class="form-select js-filter" id="f-template">
-            <option value="">Todos</option>
-            @foreach($templates as $template)
-            <option value="{{ $template->id }}" @selected(request('template_id') == $template->id)>{{ $template->nome }}</option>
-            @endforeach
-          </select>
+      <div class="mb-3 d-flex justify-content-between align-items-end">
+        <div>
+          <label class="form-label text-muted small mb-1">Tipo de formulário</label>
+          <div class="btn-group" role="group" aria-label="Tipo de formulário">
+            <input type="radio" class="btn-check js-filter" name="tipo-dashboard" id="tipo-momento" value="momento" checked>
+            <label class="btn btn-outline-secondary" for="tipo-momento">Por momento</label>
+
+            <input type="radio" class="btn-check js-filter" name="tipo-dashboard" id="tipo-transcricao" value="transcricao">
+            <label class="btn btn-outline-secondary" for="tipo-transcricao">Transcrições</label>
+
+            <input type="radio" class="btn-check js-filter" name="tipo-dashboard" id="tipo-universal" value="universal">
+            <label class="btn btn-outline-secondary" for="tipo-universal">Universais</label>
+          </div>
         </div>
-        <div class="col-lg-3 col-md-6">
-          <label class="form-label text-muted small mb-1">Evento</label>
+        <button type="button" id="btn-exportar-pdf" class="btn btn-danger">
+          Gerar PDF
+        </button>
+      </div>
+      <div class="row g-3 align-items-end">
+        <div class="col-lg-3 col-md-6 filter-momento">
+         <label class="form-label text-muted small mb-1">Ação Pedagógica (Obrigatório)</label>
           <select class="form-select js-filter" id="f-evento">
-            <option value="">Todos</option>
+            <option value="">-- Selecione uma ação --</option>
             @foreach($eventos as $evento)
             <option value="{{ $evento->id }}">{{ $evento->nome }}</option>
             @endforeach
           </select>
         </div>
-        <div class="col-lg-3 col-md-6">
-          <label class="form-label text-muted small mb-1">Atividade / momento</label>
+        <div class="col-lg-3 col-md-6 filter-universal d-none">
+          <label class="form-label text-muted small mb-1">Avaliação universal</label>
+          <select class="form-select js-filter" id="f-avaliacao-universal">
+            <option value="">-- Selecione uma avaliação --</option>
+            @foreach($avaliacoesUniversais as $avaliacaoUniversal)
+            <option value="{{ $avaliacaoUniversal->id }}">
+              {{ $avaliacaoUniversal->descricao_universal ?: ($avaliacaoUniversal->templateAvaliacao->nome ?? 'Avaliação universal') }}
+            </option>
+            @endforeach
+          </select>
+        </div>
+        <div class="col-lg-3 col-md-6 filter-momento">
+          <label class="form-label text-muted small mb-1">Momento</label>
           <select class="form-select js-filter" id="f-atividade">
-            <option value="">Todas</option>
+            <option value="">Primeiro selecione a ação pedagógica</option>
             @foreach($atividades as $atividade)
             @php
               $diaFormatado = $atividade->dia ? \Illuminate\Support\Carbon::parse($atividade->dia)->format('d/m') : '';
             @endphp
-            <option value="{{ $atividade->id }}">
+            <option value="{{ $atividade->id }}" data-evento-id="{{ $atividade->evento_id }}">
               {{ $atividade->descricao ?? 'Momento' }} - {{ $diaFormatado }} {{ $atividade->hora_inicio }}
-              @if($atividade->evento) ({{ $atividade->evento->nome }}) @endif
             </option>
             @endforeach
           </select>
@@ -59,16 +79,11 @@
               <input type="date" class="form-control js-filter" id="f-de">
             </div>
             <div class="col-6">
-              <label class="form-label text-muted small mb-1">Ate</label>
+              <label class="form-label text-muted small mb-1">Até</label>
               <input type="date" class="form-control js-filter" id="f-ate">
             </div>
           </div>
         </div>
-      </div>
-      <div class="d-flex justify-content-between align-items-center mt-3">
-        <button class="btn btn-primary" id="btn-recarregar">
-          Atualizar agora
-        </button>
       </div>
     </div>
   </div>
@@ -77,8 +92,8 @@
     <div class="col-lg-3 col-sm-6">
       <div class="card shadow-sm border-0 h-100">
         <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1">Submissoes</p>
-          <div class="h3 fw-bold mb-0" data-total="submissoes">0</div>
+          <p class="text-uppercase small text-muted mb-1">Submissões</p>
+          <div class="h3 fw-bold mb-0" data-total="submissoes">-</div>
           <small class="text-muted">Respostas completas registradas</small>
         </div>
       </div>
@@ -86,8 +101,8 @@
     <div class="col-lg-3 col-sm-6">
       <div class="card shadow-sm border-0 h-100">
         <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1">Questoes</p>
-          <div class="h3 fw-bold mb-0" data-total="questoes">0</div>
+          <p class="text-uppercase small text-muted mb-1">Questões</p>
+          <div class="h3 fw-bold mb-0" data-total="questoes">-</div>
           <small class="text-muted">Com alguma resposta</small>
         </div>
       </div>
@@ -95,18 +110,18 @@
     <div class="col-lg-3 col-sm-6">
       <div class="card shadow-sm border-0 h-100">
         <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1">Eventos</p>
-          <div class="h3 fw-bold mb-0" data-total="eventos">0</div>
-          <small class="text-muted">Com respostas vinculadas</small>
+          <p class="text-uppercase small text-muted mb-1" data-total-label="eventos">Ações Pedagógicas</p>
+          <div class="h3 fw-bold mb-0" data-total="eventos">-</div>
+          <small class="text-muted" data-total-help="eventos">Com respostas vinculadas</small>
         </div>
       </div>
     </div>
     <div class="col-lg-3 col-sm-6">
       <div class="card shadow-sm border-0 h-100">
         <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1">Ultima resposta</p>
+          <p class="text-uppercase small text-muted mb-1">Última resposta</p>
           <div class="h3 fw-bold mb-0" data-total="ultima">-</div>
-          <small class="text-muted">Horario da ultima entrada</small>
+          <small class="text-muted">Horário da última entrada</small>
         </div>
       </div>
     </div>
@@ -115,18 +130,25 @@
   <div class="row g-3">
     <div class="col-12">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 class="h5 fw-bold mb-0">Distribuicao por questao</h2>
-        <span class="badge bg-primary-subtle text-primary">Interativo</span>
+        <h2 class="h5 fw-bold mb-0">Distribuição por questão</h2>
+        <span class="badge bg-primary-subtle text-primary" id="badge-pagina" style="display:none!important"></span>
       </div>
       <div class="row g-3" id="cards-questoes">
         <div class="col-12" id="placeholder-card">
           <div class="card border-0 shadow-sm">
             <div class="card-body text-center text-muted">
-              Carregando graficos...
+              Carregando gráficos...
             </div>
           </div>
         </div>
       </div>
+
+      <nav id="paginacao-questoes" aria-label="Paginação de questões" class="mt-4" style="display:none">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="text-muted small" id="paginacao-info"></div>
+          <ul class="pagination mb-0" id="paginacao-lista"></ul>
+        </div>
+      </nav>
     </div>
   </div>
 </div>
@@ -146,34 +168,68 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+@push('styles')
 <style>
+  @media (min-width: 768px) {
+    #cards-questoes > .col-md-6:only-child,
+    #cards-questoes > .col-md-6:nth-child(odd):nth-last-child(1) {
+      flex: 0 0 100%;
+      max-width: 100%;
+    }
+  }
+  #paginacao-questoes .page-link {
+    color: #421944;
+    border-color: #e2d5e8;
+  }
+  #paginacao-questoes .page-item.active .page-link {
+    background-color: #421944;
+    border-color: #421944;
+    color: #fff;
+  }
+  #paginacao-questoes .page-item.disabled .page-link {
+    color: #adb5bd;
+  }
   @media (max-width: 576px) {
-    #cards-questoes .question-header {
+    #cards-questoes .question-header,
+    #cards-questoes-momento .question-header {
       flex-direction: column;
       align-items: flex-start;
       gap: 0.5rem;
     }
-    #cards-questoes .question-controls {
+    #cards-questoes .question-controls,
+    #cards-questoes-momento .question-controls {
       width: 100%;
       justify-content: flex-start;
     }
-    #cards-questoes .question-controls select {
+    #cards-questoes .question-controls select,
+    #cards-questoes-momento .question-controls select {
       width: 100%;
       max-width: none;
     }
   }
 </style>
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+@endpush
+
 <script>
 (() => {
   const container = document.getElementById('avaliacoes-dashboard');
   if (!container) return;
 
   const endpoint = container.dataset.endpoint;
+  const pdfEndpoint = "{{ route('dashboards.avaliacoes.pdf') }}";
+  const btnExportarPdf = document.getElementById('btn-exportar-pdf');
+
   const filters = {
-    template: document.getElementById('f-template'),
+    tipoMomento: document.getElementById('tipo-momento'),
+    tipoTranscricao: document.getElementById('tipo-transcricao'),
+    tipoUniversal: document.getElementById('tipo-universal'),
     evento: document.getElementById('f-evento'),
     atividade: document.getElementById('f-atividade'),
+    avaliacaoUniversal: document.getElementById('f-avaliacao-universal'),
     de: document.getElementById('f-de'),
     ate: document.getElementById('f-ate'),
   };
@@ -183,11 +239,20 @@
     eventos: document.querySelector('[data-total=\"eventos\"]'),
     ultima: document.querySelector('[data-total=\"ultima\"]'),
   };
+  const totalLabels = {
+    eventos: document.querySelector('[data-total-label=\"eventos\"]'),
+  };
+  const totalHelps = {
+    eventos: document.querySelector('[data-total-help=\"eventos\"]'),
+  };
   const cardsQuestoes = document.getElementById('cards-questoes');
-  const refreshBtn = document.getElementById('btn-recarregar');
   const chartInstances = new Map();
   const chartPreferences = new Map();
   let cachedPerguntas = [];
+  const atividadePlaceholder = filters.atividade?.querySelector('option[value=""]');
+  const atividadeOptions = filters.atividade
+    ? Array.from(filters.atividade.options).filter((option) => option.value !== '')
+    : [];
   const textModalEl = document.getElementById('textAnswersModal');
   const textModalTitle = textModalEl?.querySelector('.js-text-modal-title');
   const textModalList = textModalEl?.querySelector('.js-text-modal-list');
@@ -195,14 +260,105 @@
   let textModalInstance = null;
   const palette = ['#421944', '#008BBC', '#FDB913', '#E62270', '#2EB57D', '#601F69', '#6C345E', '#9602C7', '#A95DB1', '#D9A8E2', '#ECDEEC'];
 
+  function currentTipo() {
+    if (filters.tipoUniversal?.checked) return 'universal';
+    if (filters.tipoTranscricao?.checked) return 'transcricao';
+    return 'momento';
+  }
+
   function buildParams() {
     const params = new URLSearchParams();
-    if (filters.template.value) params.set('template_id', filters.template.value);
-    if (filters.evento.value) params.set('evento_id', filters.evento.value);
-    if (filters.atividade.value) params.set('atividade_id', filters.atividade.value);
+    const tipo = currentTipo();
+    params.set('tipo', tipo);
+    if (tipo === 'universal') {
+      if (filters.avaliacaoUniversal?.value) params.set('avaliacao_id', filters.avaliacaoUniversal.value);
+    } else {
+      if (filters.evento.value) params.set('evento_id', filters.evento.value);
+      if (filters.atividade.value) params.set('atividade_id', filters.atividade.value);
+    }
     if (filters.de.value) params.set('de', filters.de.value);
     if (filters.ate.value) params.set('ate', filters.ate.value);
     return params.toString();
+  }
+
+    //valida se os filtros obrigatórios foram preenchidos
+    function hasRequiredFilters() {
+        const tipo = currentTipo();
+        if (tipo === 'universal') {
+            return !!filters.avaliacaoUniversal?.value;
+        } else {
+            return !!filters.evento?.value;
+        }
+    }
+
+    //mostra o estado vazio e zera os placares
+    function showEmptyState() {
+        renderTotals({ submissoes: '-', questoes: '-', eventos: '-', ultima: '-' });
+        cardsQuestoes.innerHTML = `
+      <div class="col-12">
+        <div class="card border-0 shadow-sm text-center py-5">
+          <div class="card-body">
+            <h5 class="fw-bold text-muted mb-2">Aguardando filtros</h5>
+            <p class="text-muted mb-0">Selecione uma <strong>Ação Pedagógica</strong> ou <strong>Avaliação Universal</strong> acima para carregar as respostas e gráficos.</p>
+          </div>
+        </div>
+      </div>`;
+        paginacaoNav.style.display = 'none';
+        badgePagina.style.setProperty('display', 'none', 'important');
+    }
+
+  function updateModeUi() {
+    const tipo = currentTipo();
+    const universal = tipo === 'universal';
+
+    document.querySelectorAll('.filter-momento').forEach((el) => el.classList.toggle('d-none', universal));
+    document.querySelectorAll('.filter-universal').forEach((el) => el.classList.toggle('d-none', !universal));
+
+    if (filters.evento) filters.evento.disabled = universal;
+    if (filters.atividade) filters.atividade.disabled = universal || !filters.evento.value;
+    if (filters.avaliacaoUniversal) filters.avaliacaoUniversal.disabled = !universal;
+
+    if (totalLabels.eventos) {
+      totalLabels.eventos.textContent = universal ? 'Formulários universais' : 'Ações Pedagógicas';
+    }
+    if (totalHelps.eventos) {
+      totalHelps.eventos.textContent = universal ? 'Com respostas registradas' : 'Com respostas vinculadas';
+    }
+
+    updateAtividadeFilter();
+  }
+
+  function updateAtividadeFilter() {
+    if (!filters.evento || !filters.atividade) return;
+    if (currentTipo() === 'universal') {
+      filters.atividade.value = '';
+      filters.atividade.disabled = true;
+      return;
+    }
+
+    const eventoId = filters.evento.value;
+    const hasEvento = eventoId !== '';
+
+    filters.atividade.disabled = !hasEvento;
+
+    if (atividadePlaceholder) {
+      atividadePlaceholder.textContent = hasEvento ? 'Todas as atividades' : 'Primeiro selecione a ação pedagógica';
+    }
+
+    let selectedOptionVisible = !filters.atividade.value;
+    atividadeOptions.forEach((option) => {
+      const belongsToEvento = option.dataset.eventoId === eventoId;
+      option.hidden = !hasEvento || !belongsToEvento;
+      option.disabled = !hasEvento || !belongsToEvento;
+
+      if (option.selected && belongsToEvento) {
+        selectedOptionVisible = true;
+      }
+    });
+
+    if (!hasEvento || !selectedOptionVisible) {
+      filters.atividade.value = '';
+    }
   }
 
   function setLoading(state) {
@@ -263,9 +419,9 @@
   }
 
   function renderTotals(totais) {
-    totalsEls.submissoes.textContent = new Intl.NumberFormat('pt-BR').format(totais.submissoes || 0);
-    totalsEls.questoes.textContent = new Intl.NumberFormat('pt-BR').format(totais.questoes || 0);
-    totalsEls.eventos.textContent = new Intl.NumberFormat('pt-BR').format(totais.eventos || 0);
+    totalsEls.submissoes.textContent = totais.submissoes === '-' ? '-' : new Intl.NumberFormat('pt-BR').format(totais.submissoes || 0);
+    totalsEls.questoes.textContent = totais.questoes === '-' ? '-' : new Intl.NumberFormat('pt-BR').format(totais.questoes || 0);
+    totalsEls.eventos.textContent = totais.eventos === '-' ? '-' : new Intl.NumberFormat('pt-BR').format(totais.eventos || 0);
     totalsEls.ultima.textContent = totais.ultima || '-';
   }
 
@@ -276,6 +432,7 @@
     if (pergunta.tipo === 'boolean') return 'doughnut';
     if (pergunta.tipo === 'numero') return 'line';
     if (pergunta.tipo === 'escala') return 'bar';
+    if (pergunta.tipo === 'unica') return 'bar';
     return labels.length > 3 ? 'polarArea' : 'bar';
   }
 
@@ -286,7 +443,7 @@
       cardsQuestoes.innerHTML = `
         <div class="col-12">
           <div class="card border-0 shadow-sm">
-            <div class="card-body text-muted text-center">Sem respostas para os filtros aplicados.</div>
+            <div class="card-body text-muted text-center">Nenhum dado encontrado para os filtros selecionados.</div>
           </div>
         </div>`;
       return;
@@ -445,26 +602,163 @@
     });
   }
 
-  async function loadData() {
+  const paginacaoNav = document.getElementById('paginacao-questoes');
+  const paginacaoInfo = document.getElementById('paginacao-info');
+  const paginacaoLista = document.getElementById('paginacao-lista');
+  const badgePagina = document.getElementById('badge-pagina');
+
+  let currentPage = 1;
+  let lastMeta = null;
+
+  function renderPagination(meta) {
+    lastMeta = meta;
+    if (!meta || meta.last_page <= 1) {
+      paginacaoNav.style.display = 'none';
+      badgePagina.style.setProperty('display', 'none', 'important');
+      return;
+    }
+
+    paginacaoNav.style.display = '';
+    badgePagina.style.setProperty('display', '', 'important');
+    badgePagina.textContent = `Página ${meta.page} / ${meta.last_page}`;
+
+    const start = (meta.page - 1) * meta.per_page + 1;
+    const end = Math.min(meta.page * meta.per_page, meta.total);
+    paginacaoInfo.textContent = `Mostrando questões ${start}–${end} de ${meta.total}`;
+
+    paginacaoLista.innerHTML = '';
+
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item${meta.page <= 1 ? ' disabled' : ''}`;
+    prevLi.innerHTML = `<button class="page-link" ${meta.page <= 1 ? 'disabled' : ''}>&lsaquo; Anterior</button>`;
+    prevLi.querySelector('button').addEventListener('click', () => {
+      if (meta.page > 1) loadData(meta.page - 1);
+    });
+    paginacaoLista.appendChild(prevLi);
+
+    const maxButtons = 7;
+    const half = Math.floor(maxButtons / 2);
+    let pageStart = Math.max(1, meta.page - half);
+    let pageEnd = Math.min(meta.last_page, pageStart + maxButtons - 1);
+    if (pageEnd - pageStart < maxButtons - 1) {
+      pageStart = Math.max(1, pageEnd - maxButtons + 1);
+    }
+
+    if (pageStart > 1) {
+      appendPageBtn(1);
+      if (pageStart > 2) appendEllipsis();
+    }
+    for (let p = pageStart; p <= pageEnd; p++) {
+      appendPageBtn(p);
+    }
+    if (pageEnd < meta.last_page) {
+      if (pageEnd < meta.last_page - 1) appendEllipsis();
+      appendPageBtn(meta.last_page);
+    }
+
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item${meta.page >= meta.last_page ? ' disabled' : ''}`;
+    nextLi.innerHTML = `<button class="page-link" ${meta.page >= meta.last_page ? 'disabled' : ''}>Próximo &rsaquo;</button>`;
+    nextLi.querySelector('button').addEventListener('click', () => {
+      if (meta.page < meta.last_page) loadData(meta.page + 1);
+    });
+    paginacaoLista.appendChild(nextLi);
+  }
+
+  function appendPageBtn(p) {
+    const li = document.createElement('li');
+    li.className = `page-item${p === lastMeta?.page ? ' active' : ''}`;
+    const btn = document.createElement('button');
+    btn.className = 'page-link';
+    btn.textContent = p;
+    if (p === lastMeta?.page) btn.setAttribute('aria-current', 'page');
+    btn.addEventListener('click', () => loadData(p));
+    li.appendChild(btn);
+    paginacaoLista.appendChild(li);
+  }
+
+  function appendEllipsis() {
+    const li = document.createElement('li');
+    li.className = 'page-item disabled';
+    li.innerHTML = '<span class="page-link">&hellip;</span>';
+    paginacaoLista.appendChild(li);
+  }
+
+  async function loadData(page = 1) {
+    if (!hasRequiredFilters()) {
+       showEmptyState();
+       return;
+    }
+
+    currentPage = page;
     setLoading(true);
     try {
-      const url = `${endpoint}?${buildParams()}`;
+      const url = `${endpoint}?${buildParams()}&page=${page}&per_page=50`;
       const response = await fetch(url, { headers: { Accept: 'application/json' } });
       const payload = await response.json();
 
       renderTotals(payload.totais || {});
       renderCharts(payload.perguntas || []);
+      renderPagination(payload.meta || null);
+
+      if (payload.filtros) {
+        if (!filters.de.value && payload.filtros.de) {
+          filters.de.value = payload.filtros.de.split(' ')[0];
+        }
+        if (!filters.ate.value && payload.filtros.ate) {
+          filters.ate.value = payload.filtros.ate.split(' ')[0];
+        }
+      }
+
+      if (page > 1) {
+        cardsQuestoes.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     } catch (error) {
-      cardsQuestoes.innerHTML = '<div class=\"card border-0 shadow-sm\"><div class=\"card-body text-danger\">Erro ao carregar dados.</div></div>';
+      cardsQuestoes.innerHTML = '<div class=\"card border-0 shadow-sm\"><div class=\"card-body text-danger\">Erro ao carregar dados. Verifique sua conexão.</div></div>';
+      paginacaoNav.style.display = 'none';
     }
   }
 
-  document.querySelectorAll('.js-filter').forEach((input) => {
-    input.addEventListener('change', loadData);
-  });
-  refreshBtn.addEventListener('click', loadData);
+  updateModeUi();
 
-  loadData();
+  document.querySelectorAll('.js-filter').forEach((input) => {
+    if (input === filters.evento) return;
+    input.addEventListener('change', () => {
+      if (input === filters.tipoMomento || input === filters.tipoUniversal) {
+        updateModeUi();
+      }
+      loadData(1);
+    });
+  });
+  filters.evento?.addEventListener('change', () => {
+    updateAtividadeFilter();
+    loadData(1);
+  });
+  
+  //define a interface e chama o estado vazio
+  updateModeUi();
+  showEmptyState();
+
+  if (btnExportarPdf) {
+    btnExportarPdf.addEventListener('click', () => {
+      const submissoesRaw = totalsEls.submissoes.textContent.replace(/[^\d]/g, '');
+      const submissoes = parseInt(submissoesRaw) || 0;
+
+      if (submissoes > 500) {
+        const confirmMsg = `O relatório contém ${submissoes} submissões. ` +
+                           `Gerar um PDF com muitos dados pode levar algum tempo e o arquivo pode ficar pesado. ` +
+                           `Deseja continuar?`;
+        if (!confirm(confirmMsg)) {
+          return;
+        }
+      }
+
+      const params = buildParams();
+      window.open(`${pdfEndpoint}?${params}`, '_blank');
+    });
+  }
+
+  loadData(1);
 })();
 </script>
 @endsection

@@ -45,3 +45,11 @@ $theme-colors: map-merge(
 .btn-engaja {
   @include button-variant($engaja-blue, $engaja-blue);
 }
+
+:root {
+  --engaja-blue: #{$engaja-blue};
+  --engaja-dark-blue:   #{$engaja-dark-blue};
+  --engaja-yellow: #{$engaja-yellow};
+  --engaja-pink:   #{$engaja-pink};
+  --engaja-green:  #{$engaja-green};
+}

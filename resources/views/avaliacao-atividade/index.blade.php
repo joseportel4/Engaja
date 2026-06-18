@@ -1,0 +1,210 @@
+@extends('layouts.app')
+
+@section('content')
+<div class="container py-4">
+
+    <style>
+        .momento-toggle {
+            min-width: 0;
+        }
+        .momento-toggle:focus-visible {
+            outline: 2px solid #421944;
+            outline-offset: 2px;
+            border-radius: .5rem;
+        }
+        .badge-relatorios {
+            background: #0ea5e9;
+            color: #fff;
+            font-weight: 600;
+        }
+        .badge-respostas {
+            background: #f3e8f8;
+            color: #421944;
+            border: 1px solid #d9b7e2;
+            font-weight: 600;
+        }
+        .btn-pdf-geral {
+            border: 1px solid #86efac;
+            color: #166534;
+            background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+            font-weight: 600;
+            border-radius: 999px;
+            padding: .38rem .85rem;
+            line-height: 1.1;
+            box-shadow: 0 1px 2px rgba(22, 101, 52, 0.10);
+            transition: all .15s ease-in-out;
+        }
+        .btn-pdf-geral:hover {
+            background: linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%);
+            color: #14532d;
+            border-color: #4ade80;
+            box-shadow: 0 2px 6px rgba(22, 101, 52, 0.18);
+            transform: translateY(-1px);
+        }
+        .btn-pdf-geral:focus-visible {
+            outline: 2px solid #16a34a;
+            outline-offset: 1px;
+        }
+    </style>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-engaja mb-0">Relatórios dos Momentos</h1>
+            <small class="text-muted">
+                {{ auth()->user()?->hasAnyRole(['administrador', 'gerente'])
+                    ? 'Relatórios pós-ação preenchidos por utilizadores do sistema'
+                    : 'Os seus relatórios individuais pós-ação' }}
+            </small>
+        </div>
+    </div>
+
+    {{-- Filtro --}}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="GET" action="{{ route('avaliacao-atividade.index') }}" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label mb-1 small">Ação Pedagógica</label>
+                    <select name="acao_ids[]" id="filter-acao-relatorio" class="form-select" multiple data-multiselect data-placeholder="Selecione uma ou mais ações">
+                        @foreach($acoesDisponiveis as $acao)
+                            <option value="{{ $acao->id }}" @selected(in_array($acao->id, $acaoIds, true))>
+                                {{ $acao->nome }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label mb-1 small">Momentos</label>
+                    <select name="momento_ids[]" id="filter-momento-relatorio" class="form-select" multiple data-dependent-moment data-placeholder="Selecione primeiro uma ação" @disabled(empty($acaoIds))>
+                        @foreach($atividadesDisponiveis->whereIn('evento_id', $acaoIds) as $atividadeOpcao)
+                            <option value="{{ $atividadeOpcao->id }}" @selected(in_array($atividadeOpcao->id, $momentoIds, true))>
+                                {{ $atividadeOpcao->descricao ?? 'Momento sem descrição' }}
+                                @if($atividadeOpcao->dia)
+                                    ({{ \Carbon\Carbon::parse($atividadeOpcao->dia)->format('d/m/Y') }})
+                                @endif
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label mb-1 small">Municípios</label>
+                    <select name="municipio_ids[]" id="filter-municipio-relatorio" class="form-select" multiple data-multiselect data-placeholder="Todos os municípios">
+                        @foreach($municipiosDisponiveis as $municipio)
+                            <option value="{{ $municipio->id }}" @selected(in_array((string) $municipio->id, array_map('strval', request()->input('municipio_ids', [])), true))>
+                                {{ $municipio->nome_com_estado }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-engaja" style="background-color:#421944; color:white;">Aplicar</button>
+                    <a href="{{ route('avaliacao-atividade.index') }}" class="btn btn-outline-secondary ms-1">Limpar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if($acoesAgrupadas->isEmpty())
+        <div class="alert alert-info">Nenhum relatório encontrado.</div>
+    @else
+    <div class="vstack gap-3">
+        @foreach($acoesAgrupadas as $nomeAcao => $momentos)
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h2 class="h5 mb-0 text-engaja">{{ $nomeAcao }}</h2>
+            </div>
+            <div class="card-body">
+                @foreach($momentos as $momentoIndex => $momento)
+                @php
+                    $atividade = $momento['atividade'];
+                    $relatoriosMomento = $momento['relatorios'];
+                    $collapseId = 'relatorio-momento-' . ($atividade?->id ?? 'x') . '-' . $momentoIndex;
+                @endphp
+                <div class="border rounded-3 p-3 mb-3">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                        <button class="btn momento-toggle flex-grow-1 text-start d-flex flex-wrap justify-content-between align-items-start gap-2 p-0 border-0 bg-transparent"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#{{ $collapseId }}"
+                            aria-expanded="false"
+                            aria-controls="{{ $collapseId }}">
+                        <span>
+                            <span class="fw-semibold d-block">{{ $atividade?->descricao ?? 'Momento não informado' }}</span>
+                            <span class="small text-muted d-block">
+                                {{ $atividade?->dia ? \Carbon\Carbon::parse($atividade->dia)->format('d/m/Y') : '—' }}
+                                @if($atividade?->hora_inicio || $atividade?->hora_fim)
+                                    • {{ $atividade?->hora_inicio ? \Carbon\Carbon::parse($atividade->hora_inicio)->format('H:i') : '?' }} - {{ $atividade?->hora_fim ? \Carbon\Carbon::parse($atividade->hora_fim)->format('H:i') : '?' }}
+                                @endif
+                                • {{ $atividade?->municipios?->map(fn($m) => $m->nome_com_estado ?? $m->nome)->join(', ') ?: 'Município não informado' }}
+                            </span>
+                        </span>
+                        <span class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                            <span class="badge rounded-pill badge-relatorios">{{ $relatoriosMomento->count() }} relatório(s)</span>
+                            <span class="badge rounded-pill badge-respostas" style="font-size:.85rem; padding:.45rem .7rem;">
+                                Ver respostas
+                            </span>
+                        </span>
+                    </button>
+                    @if($atividade && auth()->user()?->hasAnyRole(['administrador', 'gerente']))
+                    <a href="{{ route('avaliacao-atividade.download-all', $atividade) }}"
+                       class="btn btn-sm btn-pdf-geral text-nowrap"
+                       title="Baixar PDF consolidado com todos os relatórios deste momento">
+                        📄 PDF Geral
+                    </a>
+                    @endif
+                    </div>
+
+                    <div id="{{ $collapseId }}" class="collapse mt-3">
+
+                    @foreach($camposPerguntas as $campo => $pergunta)
+                        @php
+                            $respostas = $relatoriosMomento->filter(function ($relatorio) use ($campo) {
+                                return filled(trim((string)($relatorio->$campo ?? '')));
+                            });
+                        @endphp
+                        <div class="mb-3">
+                            <div class="fw-semibold mb-2">{{ $pergunta }}</div>
+
+                            @if($respostas->isEmpty())
+                                <div class="text-muted small border rounded p-2">Sem respostas para esta pergunta.</div>
+                            @else
+                                @foreach($respostas as $relatorio)
+                                    <div class="border rounded p-2 mb-2 bg-light">
+                                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+                                            <div class="small text-muted">
+                                                <strong>{{ $relatorio->user->name ?? $relatorio->nome_educador ?? 'Usuário não informado' }}</strong>
+                                                • {{ $relatorio->updated_at ? $relatorio->updated_at->format('d/m/Y H:i') : '—' }}
+                                            </div>
+                                            <div class="d-flex gap-1">
+                                                <a href="{{ route('avaliacao-atividade.show', $relatorio) }}" class="btn btn-sm btn-outline-primary">Ver</a>
+                                                <a href="{{ route('avaliacao-atividade.download', $relatorio) }}" class="btn btn-sm btn-outline-secondary">PDF</a>
+                                            </div>
+                                        </div>
+                                        <div style="white-space: pre-wrap;">{{ $relatorio->$campo }}</div>
+                                    </div>
+                                @endforeach
+                            @endif
+                        </div>
+                    @endforeach
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endforeach
+    </div>
+    @endif
+
+</div>
+
+@php
+    $momentosOptions = $atividadesDisponiveis->map(function ($atividade) {
+        return [
+            'value' => (string) $atividade->id,
+            'acao_id' => (string) $atividade->evento_id,
+            'text' => ($atividade->descricao ?? 'Momento sem descrição')
+                . ($atividade->dia ? ' (' . \Carbon\Carbon::parse($atividade->dia)->format('d/m/Y') . ')' : ''),
+        ];
+    })->values();
+@endphp
+<script type="application/json" id="relatorio-momentos-options">@json($momentosOptions)</script>
+@endsection

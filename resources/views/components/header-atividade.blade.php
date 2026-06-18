@@ -56,12 +56,7 @@
         </p>
     @endif
 
-    @php
-        $carga = $atividade->carga_horaria;
-        $cargaFormatada = !is_null($carga) ? number_format($carga, 0, ',', '.') : null;
-    @endphp
-
-    @if(!$presencaPage && $cargaFormatada)
-        <p class="text-muted mb-1">Carga horária: {{ $cargaFormatada }}h</p>
+    @if(!$presencaPage && !is_null($atividade->carga_horaria))
+        <p class="text-muted mb-1">Carga horária: {{ \App\Support\CargaHoraria::formatMinutos((int) $atividade->carga_horaria) }}</p>
     @endif
 </div>

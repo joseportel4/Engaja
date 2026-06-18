@@ -3,6 +3,9 @@
 @section('content')
 @php
   use Carbon\Carbon;
+  $totalMomentosEvento = $totalMomentosEvento ?? 0;
+  $momentosInscritosPorParticipante = $momentosInscritosPorParticipante ?? [];
+  $modoTodosMomentos = ! $atividadeId && $totalMomentosEvento > 0;
 @endphp
 <div class="container py-4">
   <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
@@ -13,7 +16,8 @@
       </div>
     </div>
     <div class="d-flex gap-2">
-      <a href="{{ route('inscricoes.import', $evento) }}" class="btn btn-sm btn-outline-primary">Importar planilha</a>
+      <a href="{{ route('inscricoes.import', $evento) }}" class="btn btn-sm btn-outline-primary">Importar participantes</a>
+      <a href="{{ route('inscricoes.moodle.import', $evento) }}" class="btn btn-sm btn-warning fw-semibold">Importação Moodle</a>
       <a href="{{ route('eventos.show', $evento) }}" class="btn btn-sm btn-outline-secondary">Voltar</a>
     </div>
   </div>
@@ -28,42 +32,49 @@
         <div class="mt-3 small text-muted">
           Momento selecionado: <strong>{{ $atividadeSelecionada->descricao ?: 'Momento' }}</strong> - {{ $diaSel }}{{ $horaSel ? ' às '.$horaSel : '' }}
         </div>
+      @elseif($modoTodosMomentos)
+        <div class="mt-3 small text-muted">
+          Escopo: <strong>todos os {{ $totalMomentosEvento }} momento(s)</strong> desta ação. Os participantes selecionados serão inscritos em cada momento.
+        </div>
+      @elseif($totalMomentosEvento === 0)
+        <div class="mt-3 alert alert-warning mb-0">
+          Não há momentos cadastrados neste evento. Cadastre momentos antes de inscrever participantes.
+        </div>
+        <br>
       @else
         <div class="mt-3 alert alert-info mb-0">
-          Escolha um momento para habilitar o cadastro dos participantes selecionados.
+          Escolha um momento específico ou <strong>todos os momentos</strong> para habilitar a inscrição dos participantes selecionados.
         </div>
         <br>
       @endif
-      <form method="GET" action="{{ route('inscricoes.selecionar', $evento) }}">
+      @error('atividade_id')
+        <div class="text-danger small mt-2">{{ $message }}</div>
+      @enderror
+      <form method="GET" action="{{ route('inscricoes.selecionar', $evento) }}" id="selecionarFiltrosForm">
         <div class="row g-3 mb-2">
           <div class="col-12">
-            <label class="form-label mb-1">Selecione o momento <span class="text-danger">*</span></label>
-            <select name="atividade_id" class="form-select form-select-sm">
-              <option value="">Selecione...</option>
+            <label class="form-label mb-1">Momento</label>
+            <select name="atividade_id" id="atividadeIdSelect" class="form-select form-select-sm" data-total-momentos="{{ $totalMomentosEvento }}">
+              <option value="" @selected($atividadeId === null || $atividadeId === '')>Todos os momentos desta ação</option>
               @foreach($atividades as $at)
                 @php
                   $dia = Carbon::parse($at->dia)->format('d/m/Y');
                   $hora = $at->hora_inicio ? Carbon::parse($at->hora_inicio)->format('H:i') : null;
                   $label = trim(($at->descricao ?: 'Momento') . ' - ' . $dia . ($hora ? ' ' . $hora : ''));
                 @endphp
-                <option value="{{ $at->id }}" @selected((string)$atividadeId === (string)$at->id)>{{ $label }}</option>
+                <option value="{{ $at->id }}" @selected((string) $atividadeId === (string) $at->id)>{{ $label }}</option>
               @endforeach
             </select>
           </div>
         </div>
 
         <div class="row g-3 align-items-end">
-          <div class="col-xl-3 col-md-4">
-            <label class="form-label mb-1">Buscar</label>
-            <input type="text" name="q" value="{{ $search }}" class="form-control form-control-sm" placeholder="Nome, email, CPF...">
-          </div>
-
           <div class="col-xl-2 col-md-4">
             <label class="form-label mb-1">Município</label>
             <select name="municipio_id" class="form-select form-select-sm">
               <option value="">Todos</option>
               @foreach($municipios as $m)
-                <option value="{{ $m->id }}" @selected((string)$municipioId === (string)$m->id)>
+                <option value="{{ $m->id }}" @selected((string) $municipioId === (string) $m->id)>
                   {{ $m->nome_com_estado ?? ($m->nome . ($m->estado?->sigla ? ' - '.$m->estado?->sigla : '')) }}
                 </option>
               @endforeach
@@ -83,7 +94,7 @@
           <div class="col-xl-1 col-md-4">
             <label class="form-label mb-1">Por página</label>
             <select name="per_page" class="form-select form-select-sm">
-              @foreach([25,50,100,200] as $pp)
+              @foreach([25, 50, 100, 200] as $pp)
                 <option value="{{ $pp }}" @selected($perPage == $pp)>{{ $pp }}</option>
               @endforeach
             </select>
@@ -94,9 +105,13 @@
             <div class="form-check form-switch">
               <input type="hidden" name="apenas_disponiveis" value="0">
               <input class="form-check-input" type="checkbox" role="switch" id="apenasDisponiveisSwitch"
-                name="apenas_disponiveis" value="1" @checked($apenasDisponiveis) @disabled(!$atividadeId)>
+                name="apenas_disponiveis" value="1" @checked($apenasDisponiveis) @disabled($totalMomentosEvento === 0)>
               <label class="form-check-label small" for="apenasDisponiveisSwitch">
-                Mostrar apenas quem não está no momento
+                @if($atividadeId)
+                  Mostrar apenas quem não está neste momento
+                @else
+                  Mostrar apenas quem não está em todos os momentos
+                @endif
               </label>
             </div>
           </div>
@@ -112,7 +127,7 @@
 
   <form method="POST" action="{{ route('inscricoes.selecionar.store', $evento) }}" class="card shadow-sm">
     @csrf
-    <input type="hidden" name="atividade_id" value="{{ $atividadeId }}">
+    <input type="hidden" name="atividade_id" value="{{ $atividadeId }}" id="atividadeIdHidden">
     <input type="hidden" name="q" value="{{ $search }}">
     <input type="hidden" name="municipio_id" value="{{ $municipioId }}">
     <input type="hidden" name="tag" value="{{ $tagSelecionada }}">
@@ -120,18 +135,30 @@
     <input type="hidden" name="apenas_disponiveis" value="{{ $apenasDisponiveis ? 1 : 0 }}">
 
     <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div>
-        <strong>{{ $participantes->total() }}</strong> participantes encontrados
-        <span class="text-muted small ms-1">
-          Página {{ $participantes->currentPage() }} de {{ $participantes->lastPage() }}
-        </span>
+      <div class="d-flex align-items-center flex-wrap gap-3">
+        <div>
+          <strong>{{ $participantes->total() }}</strong> participantes encontrados
+          <span class="text-muted small ms-1">
+            Página {{ $participantes->currentPage() }} de {{ $participantes->lastPage() }}
+          </span>
+        </div>
+        <div style="min-width: 320px; width: 100%; max-width: 420px;">
+          <input
+            type="text"
+            name="q"
+            form="selecionarFiltrosForm"
+            value="{{ $search }}"
+            class="form-control form-control-sm"
+            id="liveParticipantSearch"
+            placeholder="Buscar participante por nome">
+        </div>
       </div>
       <div class="d-flex gap-2 align-items-center">
         <div class="form-check mb-0">
           <input class="form-check-input" type="checkbox" id="selectAll">
           <label class="form-check-label small" for="selectAll">Selecionar página</label>
         </div>
-        <button type="submit" class="btn btn-engaja btn-sm" @disabled(!$atividadeId || $participantes->isEmpty())>
+        <button type="submit" class="btn btn-engaja btn-sm" id="inscreverSelecionadosBtn" @disabled($participantes->isEmpty() || (! $atividadeId && $totalMomentosEvento === 0))>
           Inscrever selecionados
         </button>
       </div>
@@ -155,7 +182,12 @@
             @php
               $user = $participante->user;
               $municipio = $participante->municipio;
-              $jaNoMomento = in_array($participante->id, $inscritosNaAtividade, true);
+              $nMomentosInscrito = (int) ($momentosInscritosPorParticipante[$participante->id] ?? 0);
+              if ($atividadeId) {
+                $jaNoMomento = in_array($participante->id, $inscritosNaAtividade, true);
+              } else {
+                $jaNoMomento = $totalMomentosEvento > 0 && $nMomentosInscrito >= $totalMomentosEvento;
+              }
               $jaNoEvento = in_array($participante->id, $inscritosNoEvento, true);
             @endphp
             <tr>
@@ -172,12 +204,24 @@
               <td>{{ $municipio?->nome_com_estado ?? '-' }}</td>
               <td>{{ $participante->tag ?? '-' }}</td>
               <td>
-                @if($jaNoMomento)
-                  <span class="badge bg-success-subtle text-success">Já inscrito neste momento</span>
-                @elseif($jaNoEvento)
-                  <span class="badge bg-primary-subtle text-primary">Já inscrito no evento</span>
+                @if($atividadeId)
+                  @if($jaNoMomento)
+                    <span class="badge bg-success-subtle text-success">Já inscrito neste momento</span>
+                  @elseif($jaNoEvento)
+                    <span class="badge bg-primary-subtle text-primary">Já inscrito no evento</span>
+                  @else
+                    <span class="badge bg-secondary-subtle text-secondary">Disponível</span>
+                  @endif
                 @else
-                  <span class="badge bg-secondary-subtle text-secondary">Disponível</span>
+                  @if($jaNoMomento)
+                    <span class="badge bg-success-subtle text-success">Já inscrito em todos os momentos</span>
+                  @elseif($nMomentosInscrito > 0)
+                    <span class="badge bg-info-subtle text-info">Inscrito em {{ $nMomentosInscrito }} de {{ $totalMomentosEvento }} momento(s)</span>
+                  @elseif($jaNoEvento)
+                    <span class="badge bg-primary-subtle text-primary">Já inscrito no evento</span>
+                  @else
+                    <span class="badge bg-secondary-subtle text-secondary">Disponível</span>
+                  @endif
                 @endif
               </td>
             </tr>
@@ -206,13 +250,93 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    const filtrosForm = document.getElementById('selecionarFiltrosForm');
+    const liveParticipantSearch = document.getElementById('liveParticipantSearch');
+    const atividadeSelect = document.getElementById('atividadeIdSelect');
+    const atividadeHidden = document.getElementById('atividadeIdHidden');
+    const disponibilidadeSwitch = document.getElementById('apenasDisponiveisSwitch');
     const selectAll = document.getElementById('selectAll');
-    if (!selectAll) return;
-    selectAll.addEventListener('change', () => {
-      document.querySelectorAll('.participant-checkbox:not(:disabled)').forEach((checkbox) => {
-        checkbox.checked = selectAll.checked;
+    const submitButton = document.getElementById('inscreverSelecionadosBtn');
+    const participantCheckboxes = () => Array.from(document.querySelectorAll('.participant-checkbox:not(:disabled)'));
+
+    const totalMomentosEvento = Number(atividadeSelect?.dataset?.totalMomentos || 0);
+
+    const temEscopoInscricao = () => {
+      const v = atividadeSelect?.value ?? '';
+      return v !== '' || totalMomentosEvento > 0;
+    };
+
+    const updateSubmitButton = () => {
+      if (!submitButton) return;
+
+      const hasEscopo = temEscopoInscricao();
+      const hasSelectedParticipants = participantCheckboxes().some((checkbox) => checkbox.checked);
+
+      submitButton.disabled = !hasEscopo || !hasSelectedParticipants;
+    };
+
+    if (selectAll) {
+      selectAll.addEventListener('change', () => {
+        participantCheckboxes().forEach((checkbox) => {
+          checkbox.checked = selectAll.checked;
+        });
+        updateSubmitButton();
+      });
+    }
+
+    participantCheckboxes().forEach((checkbox) => {
+      checkbox.addEventListener('change', () => {
+        if (selectAll) {
+          const checkboxes = participantCheckboxes();
+          selectAll.checked = checkboxes.length > 0 && checkboxes.every((item) => item.checked);
+        }
+        updateSubmitButton();
       });
     });
+
+    if (atividadeSelect) {
+      atividadeSelect.addEventListener('change', () => {
+        const escopoOk = temEscopoInscricao();
+
+        if (atividadeHidden) {
+          atividadeHidden.value = atividadeSelect.value;
+        }
+
+        if (disponibilidadeSwitch) {
+          disponibilidadeSwitch.disabled = !escopoOk;
+          if (!escopoOk) {
+            disponibilidadeSwitch.checked = false;
+          }
+        }
+
+        updateSubmitButton();
+
+        if (filtrosForm) {
+          filtrosForm.requestSubmit();
+        }
+      });
+    }
+
+    if (disponibilidadeSwitch) {
+      disponibilidadeSwitch.addEventListener('change', () => {
+        if (filtrosForm) {
+          filtrosForm.requestSubmit();
+        }
+      });
+    }
+
+    if (liveParticipantSearch && filtrosForm) {
+      let searchTimeout;
+
+      liveParticipantSearch.addEventListener('input', () => {
+        window.clearTimeout(searchTimeout);
+        searchTimeout = window.setTimeout(() => {
+          filtrosForm.requestSubmit();
+        }, 300);
+      });
+    }
+
+    updateSubmitButton();
   });
 </script>
 @endsection
