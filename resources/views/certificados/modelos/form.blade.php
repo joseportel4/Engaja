@@ -1,3 +1,7 @@
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,400;0,600;0,700;1,400&family=Open+Sans:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Roboto:ital,wght@0,400;0,700;1,400&display=swap');
+</style>
+
 <div class="card shadow-sm mb-4">
   <div class="card-body">
     <div class="row g-3">
@@ -52,9 +56,28 @@
       </div>
 
       <div class="col-12">
+          <div class="alert alert-light border mb-0">
+              <div class="fw-semibold mb-1">Tags disponíveis para utilização</div>
+              <div class="d-flex flex-wrap gap-2">
+                  @foreach(['%participante%', '%cpf%', '%acao%', '%carga_horaria%'] as $tag)
+                      <code class="px-2 py-1 bg-white border rounded">{{ $tag }}</code>
+                  @endforeach
+              </div>
+          </div>
+          <div class="form-text">Adicione estas tags no texto, que o sistema automaticamente substituirá pelo dado respectivo durante a emissão do certificado.</div>
+      </div>
+
+      <div class="col-12">
         <label class="form-label" for="texto_frente">Texto da frente</label>
         <textarea id="texto_frente" name="texto_frente" rows="4" class="form-control @error('texto_frente') is-invalid @enderror">{{ old('texto_frente', $modelo->texto_frente ?? '') }}</textarea>
         @error('texto_frente') <div class="invalid-feedback">{{ $message }}</div> @enderror
+      </div>
+
+      <div class="col-12">
+          <label class="form-label" for="date_text">Texto da Data / Local</label>
+          <input type="text" id="date_text" name="layout_frente[date_text]" class="form-control"
+                 value="{{ old('layout_frente.date_text', $modelo->layout_frente['date_text'] ?? 'São Paulo, ' . now()->locale('pt_BR')->translatedFormat('j \d\e F \d\e Y') . '.') }}">
+          <div class="form-text">Você pode personalizar a cidade e a data exata. Ela aparecerá no final do certificado da mesma forma que você escreveu no campo acima.</div>
       </div>
 
       <div class="col-12">
@@ -78,6 +101,15 @@
       <input type="hidden" name="layout_frente[qr_x]" id="layout_frente_qr_x" value="{{ old('layout_frente.qr_x', $modelo->layout_frente['qr_x'] ?? '') }}">
       <input type="hidden" name="layout_frente[qr_y]" id="layout_frente_qr_y" value="{{ old('layout_frente.qr_y', $modelo->layout_frente['qr_y'] ?? '') }}">
       <input type="hidden" name="layout_frente[qr_size]" id="layout_frente_qr_size" value="{{ old('layout_frente.qr_size', $modelo->layout_frente['qr_size'] ?? 140) }}">
+      <input type="hidden" name="layout_frente[date_x]" id="layout_frente_date_x" value="{{ old('layout_frente.date_x', $modelo->layout_frente['date_x'] ?? '') }}">
+      <input type="hidden" name="layout_frente[date_y]" id="layout_frente_date_y" value="{{ old('layout_frente.date_y', $modelo->layout_frente['date_y'] ?? '') }}">
+      <input type="hidden" name="layout_frente[date_w]" id="layout_frente_date_w" value="{{ old('layout_frente.date_w', $modelo->layout_frente['date_w'] ?? 320) }}">
+      <input type="hidden" name="layout_frente[date_h]" id="layout_frente_date_h" value="{{ old('layout_frente.date_h', $modelo->layout_frente['date_h'] ?? '') }}">
+      <input type="hidden" name="layout_frente[date_font_family]" id="layout_frente_date_font_family" value="{{ old('layout_frente.date_font_family', $modelo->layout_frente['date_font_family'] ?? 'Arial') }}">
+      <input type="hidden" name="layout_frente[date_font_size]" id="layout_frente_date_font_size" value="{{ old('layout_frente.date_font_size', $modelo->layout_frente['date_font_size'] ?? 18) }}">
+      <input type="hidden" name="layout_frente[date_font_weight]" id="layout_frente_date_font_weight" value="{{ old('layout_frente.date_font_weight', $modelo->layout_frente['date_font_weight'] ?? 'normal') }}">
+      <input type="hidden" name="layout_frente[date_font_style]" id="layout_frente_date_font_style" value="{{ old('layout_frente.date_font_style', $modelo->layout_frente['date_font_style'] ?? 'normal') }}">
+      <input type="hidden" name="layout_frente[date_align]" id="layout_frente_date_align" value="{{ old('layout_frente.date_align', $modelo->layout_frente['date_align'] ?? 'left') }}">
 
       <input type="hidden" name="layout_verso[x]" id="layout_verso_x" value="{{ old('layout_verso.x', $modelo->layout_verso['x'] ?? '') }}">
       <input type="hidden" name="layout_verso[y]" id="layout_verso_y" value="{{ old('layout_verso.y', $modelo->layout_verso['y'] ?? '') }}">
@@ -109,10 +141,11 @@
         <div class="border rounded p-2 position-relative d-flex justify-content-center" style="min-height: 420px; background:#fff;">
           <div class="position-absolute top-0 start-0 end-0 d-flex align-items-center gap-2 p-2" style="z-index:2; pointer-events: auto;">
             <select id="front_toolbar_font" class="form-select form-select-sm w-auto">
-              @foreach(['Arial','Georgia','Times New Roman','Courier New','Verdana','Tahoma'] as $fam)
+                @foreach(['Arial','Georgia','Times New Roman','Courier New','Verdana','Tahoma', 'Montserrat', 'Roboto', 'Open Sans', 'Lato', 'Playfair Display'] as $fam)
                 <option value="{{ $fam }}">{{ $fam }}</option>
               @endforeach
             </select>
+            <input type="color" name="layout_frente[text_color]" id="layout_frente_text_color" class="form-control form-control-color" style="height: 31px; padding: 0.25rem;" value="{{ old('layout_frente.text_color', !empty($modelo->layout_frente['text_color']) ? $modelo->layout_frente['text_color'] : '#111111') }}" title="Cor do texto da Frente">
             <input type="number" min="8" max="96" id="front_toolbar_size" class="form-control form-control-sm w-auto" value="22">
             <div class="btn-group btn-group-sm" role="group">
               <button type="button" class="btn btn-outline-secondary" data-front-style="bold" title="Negrito (seleção ou bloco)">B</button>
@@ -134,10 +167,11 @@
         <div class="border rounded p-2 position-relative d-flex justify-content-center" style="min-height: 420px; background:#fff;">
           <div class="position-absolute top-0 start-0 end-0 d-flex align-items-center gap-2 p-2" style="z-index:2; pointer-events: auto;">
             <select id="back_toolbar_font" class="form-select form-select-sm w-auto">
-              @foreach(['Arial','Georgia','Times New Roman','Courier New','Verdana','Tahoma'] as $fam)
+                @foreach(['Arial','Georgia','Times New Roman','Courier New','Verdana','Tahoma', 'Montserrat', 'Roboto', 'Open Sans', 'Lato', 'Playfair Display'] as $fam)
                 <option value="{{ $fam }}">{{ $fam }}</option>
               @endforeach
             </select>
+            <input type="color" name="layout_verso[text_color]" id="layout_verso_text_color" class="form-control form-control-color" style="height: 31px; padding: 0.25rem;" value="{{ old('layout_verso.text_color', !empty($modelo->layout_verso['text_color']) ? $modelo->layout_verso['text_color'] : '#111111') }}" title="Cor do texto do Verso">
             <input type="number" min="8" max="96" id="back_toolbar_size" class="form-control form-control-sm w-auto" value="22">
             <div class="btn-group btn-group-sm" role="group">
               <button type="button" class="btn btn-outline-secondary" data-back-style="bold" title="Negrito (seleção ou bloco)">B</button>
@@ -197,8 +231,12 @@
       canvasWInputId, canvasHInputId,
       fontFamilyInputId, fontSizeInputId, fontWeightInputId, fontStyleInputId, alignInputId, stylesInputId,
       qrXInputId, qrYInputId, qrSizeInputId,
+      dateXInputId, dateYInputId, dateWInputId, dateHInputId,
+      dateFontFamilyInputId, dateFontSizeInputId, dateFontWeightInputId, dateFontStyleInputId, dateAlignInputId, dateTextInputId,
+      textColorInputId,
       existingUrl, toolbar,
       qrEnabled = true,
+      dateEnabled = false,
     } = opts;
 
     const canvasEl = document.getElementById(canvasId);
@@ -220,11 +258,23 @@
     const qrXInput = qrEnabled ? document.getElementById(qrXInputId) : null;
     const qrYInput = qrEnabled ? document.getElementById(qrYInputId) : null;
     const qrSizeInput = qrEnabled ? document.getElementById(qrSizeInputId) : null;
+    const dateXInput = dateEnabled ? document.getElementById(dateXInputId) : null;
+    const dateYInput = dateEnabled ? document.getElementById(dateYInputId) : null;
+    const dateWInput = dateEnabled ? document.getElementById(dateWInputId) : null;
+    const dateHInput = dateEnabled ? document.getElementById(dateHInputId) : null;
+    const dateFontFamilyInput = dateEnabled ? document.getElementById(dateFontFamilyInputId) : null;
+    const dateFontSizeInput = dateEnabled ? document.getElementById(dateFontSizeInputId) : null;
+    const dateFontWeightInput = dateEnabled ? document.getElementById(dateFontWeightInputId) : null;
+    const dateFontStyleInput = dateEnabled ? document.getElementById(dateFontStyleInputId) : null;
+    const dateAlignInput = dateEnabled ? document.getElementById(dateAlignInputId) : null;
+    const dateTextInput = dateEnabled ? document.getElementById(dateTextInputId) : null;
+    const textColorInput = document.getElementById(textColorInputId);
     if (!canvasEl || !fileInput || !textArea || !xInput || !yInput || !wInput || !hInput || !fontFamilyInput || !fontSizeInput || !fontWeightInput || !fontStyleInput || !alignInput || !stylesInput) return;
 
     const canvas = new fabric.Canvas(canvasId, { selection: false, backgroundColor: '#ffffff' });
     let textObj = null;
     let qrObj = null;
+    let dateObj = null;
     let guides = [];
     let snapGuides = [];
 
@@ -273,6 +323,17 @@
         qrYInput && (qrYInput.value = Math.round(qrObj.top ?? 0));
         qrSizeInput && (qrSizeInput.value = Math.round(qrObj.width ?? 0));
       }
+      if (dateObj) {
+        dateXInput && (dateXInput.value = Math.round(dateObj.left ?? 0));
+        dateYInput && (dateYInput.value = Math.round(dateObj.top ?? 0));
+        dateWInput && (dateWInput.value = Math.round(dateObj.width ?? 0));
+        dateHInput && (dateHInput.value = Math.round(dateObj.height ?? 0));
+        dateFontFamilyInput && (dateFontFamilyInput.value = dateObj.fontFamily || 'Arial');
+        dateFontSizeInput && (dateFontSizeInput.value = Math.round(dateObj.fontSize || 18));
+        dateFontWeightInput && (dateFontWeightInput.value = dateObj.fontWeight || 'normal');
+        dateFontStyleInput && (dateFontStyleInput.value = dateObj.fontStyle || 'normal');
+        dateAlignInput && (dateAlignInput.value = dateObj.textAlign || 'left');
+      }
     };
 
     const ensureText = () => {
@@ -289,7 +350,7 @@
         top: parseFloat(yInput.value) || 40,
         width: parseFloat(wInput.value) || 300,
         height: parseFloat(hInput.value) || undefined,
-        fill: '#111',
+        fill: textColorInput ? textColorInput.value : '#111111',
         fontSize: parseFloat(fontSizeInput.value) || 22,
         fontFamily: fontFamilyInput.value || 'Arial',
         fontWeight: fontWeightInput.value || 'normal',
@@ -374,11 +435,54 @@
       canvas.renderAll();
     };
 
+    const ensureDate = () => {
+      if (!dateEnabled || dateObj || !dateXInput || !dateYInput || !dateWInput || !dateHInput) return;
+      const dx = parseFloat(dateXInput.value || '0') || canvas.getWidth() * 0.56;
+      const dy = parseFloat(dateYInput.value || '0') || canvas.getHeight() * 0.74;
+
+      const defaultDateText = dateTextInput ? dateTextInput.value : 'São Paulo, 21 de fevereiro de 2026.';
+      dateObj = new fabric.Textbox(defaultDateText, {
+        left: dx,
+        top: dy,
+        width: parseFloat(dateWInput.value) || 320,
+        height: parseFloat(dateHInput.value) || undefined,
+        fill: textColorInput ? textColorInput.value : '#111111',
+        fontSize: parseFloat(fontSizeInput.value) || 22,
+        fontFamily: fontFamilyInput.value || 'Arial',
+        fontWeight: fontWeightInput.value || 'normal',
+        fontStyle: fontStyleInput.value || 'normal',
+        textAlign: dateAlignInput?.value || 'left',
+        editable: true,
+        lockScalingFlip: true,
+      });
+
+      dateObj.on('changed', () => {
+          if (dateTextInput) dateTextInput.value = dateObj.text;
+          updateHidden();
+      });
+
+      const lockDateScale = () => {
+        const newW = (dateObj.width || 0) * (dateObj.scaleX || 1);
+        const newH = (dateObj.height || 0) * (dateObj.scaleY || 1);
+        dateObj.set({ width: newW, height: newH, scaleX: 1, scaleY: 1 });
+      };
+      dateObj.on('modified', () => { lockDateScale(); updateHidden(); });
+      dateObj.on('moving', updateHidden);
+      dateObj.on('scaled', () => { lockDateScale(); updateHidden(); });
+      dateObj.on('scaling', () => { lockDateScale(); updateHidden(); });
+      canvas.add(dateObj);
+      textObj && textObj.bringToFront();
+      dateObj.bringToFront();
+      updateHidden();
+      canvas.renderAll();
+    };
+
     const loadImage = (url) => {
       // Sempre desenha guias e texto, mesmo que não haja imagem
       drawGuides();
       ensureText();
       ensureQr();
+      ensureDate();
 
       const fallbackSize = () => {
         const targetW = (container?.clientWidth ?? 960) - 24;
@@ -393,6 +497,7 @@
       if (!url) {
         fallbackSize();
         ensureQr();
+        ensureDate();
         canvas.renderAll();
         return;
       }
@@ -436,6 +541,7 @@
           textObj.text = textArea.value || 'Texto';
         }
         ensureQr();
+        ensureDate();
         canvas.renderAll();
       };
       imgEl.onerror = () => {
@@ -443,6 +549,7 @@
         drawGuides();
         ensureText();
         ensureQr();
+        ensureDate();
         canvas.renderAll();
       };
       imgEl.src = absoluteUrl;
@@ -454,6 +561,15 @@
         canvas.renderAll();
       }
     });
+
+    if (dateTextInput) {
+        dateTextInput.addEventListener('input', () => {
+            if (dateObj) {
+                dateObj.text = dateTextInput.value || '';
+                canvas.renderAll();
+            }
+        });
+    }
 
     fileInput.addEventListener('change', e => {
       const file = e.target.files && e.target.files[0];
@@ -528,12 +644,22 @@
         fontFamilySelect.addEventListener('change', () => {
           fontFamilyInput.value = fontFamilySelect.value;
           applyStyle(true);
+          if (dateObj) {
+            dateObj.set('fontFamily', fontFamilyInput.value || 'Arial');
+            updateHidden();
+            canvas.renderAll();
+          }
         });
       }
       if (fontSizeField) {
         fontSizeField.addEventListener('input', () => {
           fontSizeInput.value = fontSizeField.value;
           applyStyle(true);
+          if (dateObj) {
+            dateObj.set('fontSize', parseFloat(fontSizeInput.value) || 22);
+            updateHidden();
+            canvas.renderAll();
+          }
         });
       }
       if (boldBtn) {
@@ -542,6 +668,11 @@
           fontWeightInput.value = next;
           boldBtn.classList.toggle('active', next === 'bold');
           applyStyle(true, { fontWeight: next });
+          if (dateObj) {
+            dateObj.set('fontWeight', next);
+            updateHidden();
+            canvas.renderAll();
+          }
         });
       }
       if (italicBtn) {
@@ -550,6 +681,11 @@
           fontStyleInput.value = next;
           italicBtn.classList.toggle('active', next === 'italic');
           applyStyle(true, { fontStyle: next });
+          if (dateObj) {
+            dateObj.set('fontStyle', next);
+            updateHidden();
+            canvas.renderAll();
+          }
         });
       }
       if (alignButtons && alignButtons.length) {
@@ -567,6 +703,14 @@
           });
         });
       }
+
+      if (textColorInput) {
+         textColorInput.addEventListener('input', () => {
+             if (textObj) textObj.set('fill', textColorInput.value);
+             if (dateObj) dateObj.set('fill', textColorInput.value);
+             canvas.renderAll();
+         });
+        }
     }
 
     const initialUrl = existingUrl || (fileInput.files && fileInput.files[0] ? URL.createObjectURL(fileInput.files[0]) : '');
@@ -577,6 +721,7 @@
     ensureFabric(() => {
       initFabricPreview({
         canvasId: 'canvas-frente',
+        textColorInputId:  'layout_frente_text_color',
         fileInputId: 'imagem_frente',
         textareaId: 'texto_frente',
         xInputId: 'layout_frente_x',
@@ -591,6 +736,16 @@
         fontStyleInputId: 'layout_frente_font_style',
         alignInputId: 'layout_frente_align',
         stylesInputId: 'layout_frente_styles',
+        dateXInputId: 'layout_frente_date_x',
+        dateYInputId: 'layout_frente_date_y',
+        dateWInputId: 'layout_frente_date_w',
+        dateHInputId: 'layout_frente_date_h',
+        dateFontFamilyInputId: 'layout_frente_date_font_family',
+        dateFontSizeInputId: 'layout_frente_date_font_size',
+        dateFontWeightInputId: 'layout_frente_date_font_weight',
+        dateFontStyleInputId: 'layout_frente_date_font_style',
+        dateAlignInputId: 'layout_frente_date_align',
+        dateTextInputId: 'date_text',
         toolbar: {
           fontFamilySelect: document.getElementById('front_toolbar_font'),
           fontSizeField: document.getElementById('front_toolbar_size'),
@@ -599,11 +754,13 @@
           alignButtons: Array.from(document.querySelectorAll('[data-front-align]')),
         },
         qrEnabled: false,
+        dateEnabled: true,
         existingUrl: "{{ !empty($modelo?->imagem_frente) ? asset('storage/'.$modelo->imagem_frente) : '' }}",
       });
 
       initFabricPreview({
         canvasId: 'canvas-verso',
+        textColorInputId: 'layout_verso_text_color',
         fileInputId: 'imagem_verso',
         textareaId: 'texto_verso',
         xInputId: 'layout_verso_x',

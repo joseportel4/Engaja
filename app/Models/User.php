@@ -25,6 +25,17 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'force_password_change',
+        'profile_photo_path',
+        'identidade_genero',
+        'identidade_genero_outro',
+        'raca_cor',
+        'comunidade_tradicional',
+        'comunidade_tradicional_outro',
+        'faixa_etaria',
+        'pcd',
+        'orientacao_sexual',
+        'orientacao_sexual_outra',
     ];
 
     /**
@@ -47,6 +58,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'force_password_change' => 'boolean',
         ];
     }
 
@@ -58,6 +70,31 @@ class User extends Authenticatable
     public function eventos()
     {
         return $this->hasMany(Evento::class);
+    }
+
+    public function agendamentos()
+    {
+        return $this->hasMany(Agendamento::class);
+    }
+
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        if (! $this->profile_photo_path) {
+            return null;
+        }
+
+        return '/storage/' . ltrim($this->profile_photo_path, '/');
+    }
+
+    public function getProfileInitialAttribute(): string
+    {
+        $name = trim((string) ($this->name ?? ''));
+
+        if ($name === '') {
+            return 'U';
+        }
+
+        return mb_strtoupper(mb_substr($name, 0, 1));
     }
 
     protected static function booted(): void
@@ -74,4 +111,3 @@ class User extends Authenticatable
         });
     }
 }
-

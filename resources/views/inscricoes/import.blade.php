@@ -52,9 +52,8 @@
           @else
           <select
             name="atividade_id"
-            class="form-select @error('atividade_id') is-invalid @enderror"
-            required>
-            <option value="">Selecione um momento...</option>
+            class="form-select @error('atividade_id') is-invalid @enderror">
+            <option value="" @selected(old('atividade_id', '') === '')>Todos os momentos desta ação</option>
             @foreach($atividades as $at)
             @php
               $dia = \Carbon\Carbon::parse($at->dia)->format('d/m/Y');
@@ -65,6 +64,9 @@
             @endforeach
           </select>
           @error('atividade_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+          <div class="form-text">
+            Em <strong>todos os momentos</strong>, cada participante da planilha será inscrito em cada momento da ação (o mesmo comportamento de “Inscrever selecionados” com o filtro em todos os momentos).
+          </div>
           @endif
         </div>
 

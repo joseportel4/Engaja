@@ -21,7 +21,7 @@ class EventoPolicy
      */
     public function view(User $user, Evento $evento): bool
     {
-        return false;
+        return $user->can('evento.ver');
     }
 
     /**
@@ -37,11 +37,7 @@ class EventoPolicy
      */
     public function update(User $user, Evento $evento): bool
     {
-        if ($user->hasRole('administrador')) {
-            return true;
-        }
-
-        return $evento->user_id === $user->id;
+        return $user->can('evento.editar');
     }
 
     /**
@@ -49,11 +45,7 @@ class EventoPolicy
      */
     public function delete(User $user, Evento $evento): bool
     {
-        if ($user->hasRole('administrador')) {
-            return true;
-        }
-
-        return $evento->user_id === $user->id;
+        return $user->hasRole('administrador');
     }
 
     /**

@@ -155,15 +155,18 @@ class TemplateAvaliacaoController extends Controller
                             : $evidencia->descricao
                     ),
                 ];
-            });
+            })
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE);
 
         $escalas = Escala::orderBy('descricao')->pluck('descricao', 'id');
 
         $tiposQuestao = [
             'texto'  => 'Texto aberto',
             'escala' => 'Escala',
-            'numero' => 'Numerica',
-            'boolean'=> 'Sim/Nao',
+            'numero' => 'Numérica',
+            'boolean'=> 'Sim/Não',
+            'unica'  => 'Resposta única',
+            'multipla' => 'Múltipla escolha',
         ];
 
         return compact('evidencias', 'escalas', 'tiposQuestao');
@@ -181,7 +184,7 @@ class TemplateAvaliacaoController extends Controller
 
         if ($questoesAtivas->isEmpty()) {
             throw ValidationException::withMessages([
-                'questoes' => 'Informe pelo menos uma questao para o template.',
+                'questoes' => 'Informe pelo menos uma questão para o template.',
             ]);
         }
 
@@ -196,7 +199,9 @@ class TemplateAvaliacaoController extends Controller
                     'evidencia_id' => ['nullable', 'integer', Rule::exists('evidencias', 'id')],
                     'escala_id'    => ['nullable', 'integer', Rule::exists('escalas', 'id')],
                     'texto'        => ['required', 'string', 'max:1000'],
-                    'tipo'         => ['required', 'string', Rule::in(['texto', 'escala', 'numero', 'boolean'])],
+                    'tipo'         => ['required', 'string', Rule::in(['texto', 'escala', 'numero', 'boolean', 'unica', 'multipla'])],
+                    'opcoes_resposta' => ['nullable', 'array'],
+                    'opcoes_resposta.*' => ['nullable', 'string', 'max:255'],
                     'ordem'        => ['nullable', 'integer', 'min:1', 'max:999'],
                     'fixa'         => ['nullable', 'boolean'],
                 ],
@@ -207,21 +212,25 @@ class TemplateAvaliacaoController extends Controller
                     'escala_id'    => "questoes.$index.escala_id",
                     'texto'        => "questoes.$index.texto",
                     'tipo'         => "questoes.$index.tipo",
+                    'opcoes_resposta' => "questoes.$index.opcoes_resposta",
                     'ordem'        => "questoes.$index.ordem",
                     'fixa'         => "questoes.$index.fixa",
                 ]
             );
 
             $validator->after(function ($validator) use ($questao) {
-                // Escala must be selected for 'escala' type
                 if (($questao['tipo'] ?? null) === 'escala' && empty($questao['escala_id'])) {
-                    $validator->errors()->add('escala_id', 'Selecione uma escala para questoes do tipo "Escala".');
+                    $validator->errors()->add('escala_id', 'Selecione uma escala para questões do tipo "Escala".');
+                }
+
+                if (in_array(($questao['tipo'] ?? null), ['unica', 'multipla']) && empty($this->normalizaOpcoesResposta($questao['opcoes_resposta'] ?? []))) {
+                    $validator->errors()->add('opcoes_resposta', 'Informe pelo menos uma opção para questões do tipo "Resposta única/múltipla".');
                 }
 
                 // If question is fixed, evidence selection becomes mandatory
                 $isFixa = ! empty($questao['fixa']);
                 if ($isFixa && empty($questao['evidencia_id'])) {
-                    $validator->errors()->add('evidencia_id', 'Selecione uma evidencia para questoes fixas.');
+                    $validator->errors()->add('evidencia_id', 'Selecione uma evidência para questões fixas.');
                 }
             });
 
@@ -242,6 +251,10 @@ class TemplateAvaliacaoController extends Controller
             if (($dados['tipo'] ?? null) !== 'escala') {
                 $dados['escala_id'] = null;
             }
+
+            $dados['opcoes_resposta'] = in_array(($dados['tipo'] ?? null), ['unica', 'multipla'])
+                ? $this->normalizaOpcoesResposta($dados['opcoes_resposta'] ?? [])
+                : null;
 
             $dados['ordem'] = $dados['ordem'] ?? ($index + 1);
 
@@ -264,6 +277,20 @@ class TemplateAvaliacaoController extends Controller
             ->all();
 
         return [$questoesNormalizadas, $idsRemovidos];
+    }
+
+    private function normalizaOpcoesResposta($opcoes): array
+    {
+        if (! is_array($opcoes)) {
+            return [];
+        }
+
+        return collect($opcoes)
+            ->map(fn ($opcao) => is_string($opcao) ? trim($opcao) : '')
+            ->filter(fn ($opcao) => $opcao !== '')
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function persistQuestoes(TemplateAvaliacao $template, Collection $questoes, array $removidas = []): void

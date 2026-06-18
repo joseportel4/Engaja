@@ -64,3 +64,20 @@ Ele foi projetado para atender instituições que precisam organizar **formaçõ
    php artisan serve
 8. **Acesse o sistema em:**
 👉 http://localhost:8000
+
+---
+
+## 🧠 graphify (opcional — grafo de conhecimento do código)
+
+O projeto está integrado ao [graphify](https://github.com/safishamsi/graphify), que transforma o código num grafo de conhecimento consultável via skill `/graphify` no Claude Code.
+
+É **opcional**: o sistema roda sem ele. Para habilitar, instale uma vez (requer Python 3.10+):
+
+```bash
+# uv é o instalador recomendado
+uv tool install graphifyy        # instala o binário `graphify`
+graphify update .                # constrói o grafo inicial (AST-only, sem custo de API)
+graphify hook install            # opcional: reconstrói o grafo a cada commit
+```
+
+A pasta `graphify-out/` é um artefato reconstruível e **não** é versionada (cada dev gera a sua).

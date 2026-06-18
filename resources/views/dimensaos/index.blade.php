@@ -15,7 +15,7 @@
           value="{{ request('search') }}" placeholder="Digite parte da descrição">
       </div>
       <div class="col-md-4 col-lg-3">
-        <label for="has_indicators" class="form-label">Filtro por indicadores</label>
+        <label for="has_indicators" class="form-label">Filtro por indicador</label>
         <select id="has_indicators" name="has_indicators" class="form-select">
           <option value="">Todas</option>
           <option value="with" @selected(request('has_indicators') === 'with')>Com indicadores</option>
@@ -64,12 +64,14 @@
           <td class="text-end">
             <a href="{{ route('dimensaos.show', $dimensao) }}" class="btn btn-sm btn-outline-primary">Ver</a>
             <a href="{{ route('dimensaos.edit', $dimensao) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
+            @hasanyrole('administrador|gerente|eq_pedagogica')
             <form action="{{ route('dimensaos.destroy', $dimensao) }}" method="POST" class="d-inline">
               @csrf
               @method('DELETE')
               <button type="submit" class="btn btn-sm btn-outline-danger"
                 onclick="return confirm('Tem certeza que deseja excluir esta dimensão?')">Excluir</button>
             </form>
+            @endhasanyrole
           </td>
         </tr>
         @empty
