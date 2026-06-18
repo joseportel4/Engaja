@@ -140,7 +140,7 @@
                                 ->eyeColor(2, 192,12,142,192,12,142)
                                 ->size(200)
                                 ->margin(0)
-                                ->merge(public_path('/images/favicon-eja.png'), 0.3, true)
+                                ->merge(public_path('/images/engaja-qr.png'), 0.3, true)
                                 ->errorCorrection('H')
                                 ->generate(route('presenca.confirmar', $atividade));
                             $qrMime = $qrFormat === 'svg' ? 'image/svg+xml' : 'image/'.$qrFormat;
