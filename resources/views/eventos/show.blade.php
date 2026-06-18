@@ -2,10 +2,6 @@
 
 @section('content')
 <style>
-  :root {
-    --engaja: #421944;
-  }
-
   .ev-card {
     border-radius: .8rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, .06);
@@ -34,7 +30,7 @@
   }
 
   .nav-day .nav-link.active {
-    background: var(--engaja);
+    background: var(--bs-primary);
     color: #fff;
   }
 
@@ -57,9 +53,9 @@
   }
 
   .day-tabs .nav-link.active {
-    background: var(--engaja);
+    background: var(--bs-primary);
     color: #fff;
-    border-color: var(--engaja);
+    border-color: var(--bs-primary);
   }
 
   .timeline {
@@ -145,7 +141,7 @@
   <div class="row g-4 align-items-center mb-4">
     <div class="col-md-5">
       <div class="ev-card bg-light p-4 text-center">
-        <img src="{{ $evento->imagem ? asset('storage/' . $evento->imagem) : asset('images/logo-aeb.png') }}"
+        <img src="{{ $evento->imagem ? asset('storage/' . $evento->imagem) : asset('images/engaja-bg.png') }}"
           class="img-fluid rounded" alt="Capa do evento">
       </div>
     </div>

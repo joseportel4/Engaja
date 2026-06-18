@@ -738,6 +738,6 @@
 @endif
 
 <div class="d-flex justify-content-end gap-2 mt-3">
-  <a href="{{ route('eventos.atividades.index', $evento) }}" class="btn btn-outline-secondary">Cancelar</a>
+  <a href="{{ route('eventos.atividades.index', $evento) }}" class="btn btn-outline-danger">Cancelar</a>
   <button class="btn btn-engaja">{{ $submitLabel ?? 'Salvar' }}</button>
 </div>

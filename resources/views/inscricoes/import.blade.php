@@ -95,8 +95,8 @@
         </div>
 
         <div class="col-12 d-flex justify-content-end gap-2">
-          <a href="{{ route('eventos.show', $evento) }}" class="btn btn-outline-secondary">Cancelar</a>
-          <button type="submit" class="btn btn-engaja" @if($disableImport) disabled @endif>
+          <a href="{{ route('eventos.show', $evento) }}" class="btn btn-outline-danger">Cancelar</a>
+          <button type="submit" class="btn btn-engaja">
             Importar
           </button>
         </div>
