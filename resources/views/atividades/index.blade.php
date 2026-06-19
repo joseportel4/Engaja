@@ -65,21 +65,28 @@
               @auth
               <td class="text-end text-nowrap">
                 @php $minhaAvaliacaoAtividade = $at->minha_avaliacao_atividade; @endphp
+
                 <a href="{{ route('atividades.show', $at) }}" class="btn btn-sm btn-outline-primary">Ver</a>
+
+                @hasanyrole('administrador|gerente|eq_pedagogica')
                 <a href="{{ route('atividades.edit', $at) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
+                @endhasanyrole
+
                  <a href="{{ $minhaAvaliacaoAtividade
-                        ? route('avaliacao-atividade.edit',   $at) 
+                        ? route('avaliacao-atividade.edit',   $at)
                         : route('avaliacao-atividade.create', $at) }}"
                    class="btn btn-sm {{ $minhaAvaliacaoAtividade ? 'btn-warning' : 'btn-outline-warning' }}"
                    title="{{ $minhaAvaliacaoAtividade ? 'Editar meu relatório' : 'Criar meu relatório' }}">
                    📋 {{ $minhaAvaliacaoAtividade ? 'Meu relatório' : 'Criar relatório' }}
                 </a>
 
+                @hasrole('administrador')
                 <form class="d-inline" method="POST" action="{{ route('atividades.destroy', $at) }}"
                   data-confirm="Tem certeza que deseja excluir este momento?">
                   @csrf @method('DELETE')
                   <button class="btn btn-sm btn-outline-danger">Excluir</button>
                 </form>
+                @endhasrole
               </td>
               @endauth
             </tr>
@@ -217,9 +224,9 @@
 
           const salvar = (tipo, itens) => fetch(`/atividades/${atividadeIdAtual}/checklist`, {
               method: 'POST',
-              headers: { 
-                  'Content-Type': 'application/json', 
-                  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content 
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
               },
               body: JSON.stringify({ tipo, itens })
           });

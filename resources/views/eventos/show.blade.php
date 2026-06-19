@@ -207,7 +207,7 @@
           <i class="fas fa-file-pdf"></i> Ver Planejamento da Ação
         </a>
 
-        @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+        @hasanyrole('administrador|gerente|eq_pedagogica')
           <a href="{{ route('inscricoes.selecionar', $evento)}}" class="btn btn-engaja">Inscrever participantes</a>
         @endhasanyrole
 
@@ -222,7 +222,7 @@
               Gerenciar
             </button>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownGerenciarEvento">
-              @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+              @hasanyrole('administrador|gerente|eq_pedagogica')
                 <li>
                   <a class="dropdown-item" href="{{ route('inscricoes.import', $evento)}}">Importar participantes</a>
                 </li>
@@ -239,9 +239,11 @@
                   </a>
                 </li>
                 <li>
+                  @hasanyrole('administrador|gerente|eq_pedagogica')
                   <a class="dropdown-item" href="{{ route('eventos.avaliacoes.consolidado', $evento) }}">
                     Consolidação de avaliações
                   </a>
+                  @endhasrole
                 </li>
                 <li>
                   <button type="button" class="dropdown-item" data-bs-toggle="modal"
