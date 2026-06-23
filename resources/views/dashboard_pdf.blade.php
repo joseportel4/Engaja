@@ -38,6 +38,10 @@
     .filters-applied .title { display:block; font-weight:700; color:#681170; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px; font-size:10px; }
     .filters-applied .chip { display:inline-block; margin:0 6px 6px 0; padding:4px 8px; border-radius:4px; border:1px solid #edd7fc; background:#fff; color:#4a1768; font-size:11px; }
     .filters-applied .chip strong { margin-right:4px; }
+    .badge { display:inline-block; padding:4px 6px; border-radius:4px; font-size:10px; font-weight:bold; }
+    .bg-success { background-color: #198754; color: #fff; }
+    .bg-info { background-color: #0dcaf0; color: #000; }
+    .bg-warning { background-color: #ffc107; color: #000; }
 @endsection
 
 @section('content')
@@ -80,12 +84,11 @@
             $data = $a->dia ? Carbon::parse($a->dia)->format('d/m/Y') : '-';
             $hora = $a->hora_inicio ? substr($a->hora_inicio, 0, 5) : '-';
             $presentes = collect($a->presencas ?? []);
-            $inscricoes = collect($a->inscricoes ?? []);
             $presentesIds = $presentes->pluck('inscricao_id')->filter()->unique();
-            $ausentes = $inscricoes->filter(fn($insc) => !$presentesIds->contains($insc->id))->values();
+            $inscricoes = collect($a->inscricoes ?? [])->sortBy(fn($i) => strtolower($i->participante?->user?->name ?? ''))->values();
             $inscritosCount = $inscricoes->count();
             $presentesCount = $presentesIds->count();
-            $ausentesCount = $ausentes->count();
+            $ausentesCount = max($inscritosCount - $presentesCount, 0);
         @endphp
 
         <section class="atividade-card">
@@ -127,9 +130,9 @@
                 </div>
             </div>
 
-            <div class="section-title fw-bold">Presentes</div>
-            @if($presentes->isEmpty())
-                <div class="small muted mb-10">Nenhum presente listado.</div>
+            <div class="section-title fw-bold">Participantes</div>
+            @if($inscricoes->isEmpty())
+                <div class="small muted mb-10">Nenhum participante listado.</div>
             @else
                 <table class="subtable">
                     <thead>
@@ -142,49 +145,33 @@
                         </tr>
                     </thead>
                     <tbody>
-                    @foreach($presentes as $p)
+                    @foreach($inscricoes as $insc)
                         @php
-                            $insc = optional($p->inscricao);
                             $part = optional($insc->participante);
                             $user = optional($part->user);
-                            $statusLabel = ($insc->ouvinte ?? false) ? 'Ouvinte' : 'Presente';
+                            $isPresente = $presentesIds->contains($insc->id);
+                            
+                            if ($isPresente) {
+                                if ($insc->ouvinte ?? false) {
+                                    $statusLabel = 'Ouvinte';
+                                    $statusClass = 'bg-info';
+                                } else {
+                                    $statusLabel = 'Presente';
+                                    $statusClass = 'bg-success';
+                                }
+                            } else {
+                                $statusLabel = 'Ausente';
+                                $statusClass = 'bg-warning';
+                            }
                         @endphp
                         <tr>
                             <td>{{ $user->name ?? ('Participante #'.$part->id) }}</td>
                             <td>{{ $user->email ?? '-' }}</td>
                             <td>{{ $part->cpf ?: '-' }}</td>
                             <td>{{ $part->tag ?: '-' }}</td>
-                            <td>{{ $statusLabel }}</td>
-                        </tr>
-                    @endforeach
-                    </tbody>
-                </table>
-            @endif
-
-            <div class="section-title fw-bold">Ausentes</div>
-            @if($ausentes->isEmpty())
-                <div class="small muted mb-10">Nenhum ausente listado.</div>
-            @else
-                <table class="subtable">
-                    <thead>
-                        <tr>
-                            <th style="width: 35%;">Nome</th>
-                            <th style="width: 30%;">E-mail</th>
-                            <th style="width: 18%;">CPF</th>
-                            <th style="width: 17%;">Tag</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @foreach($ausentes as $insc)
-                        @php
-                            $part = optional($insc->participante);
-                            $user = optional($part->user);
-                        @endphp
-                        <tr>
-                            <td>{{ $user->name ?? ('Participante #'.$part->id) }}</td>
-                            <td>{{ $user->email ?? '-' }}</td>
-                            <td>{{ $part->cpf ?: '-' }}</td>
-                            <td>{{ $part->tag ?: '-' }}</td>
+                            <td>
+                                <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
+                            </td>
                         </tr>
                     @endforeach
                     </tbody>

@@ -22,8 +22,8 @@
     <div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
         <div>
             <p class="text-uppercase small text-muted mb-1">Dashboards</p>
-            <h1 class="h4 mb-0">Presenças e inscrições</h1>
-            <p class="text-muted small mb-0">Visual completo das ações pedagógicas com expansão de presenças e exportação.</p>
+            <h1 class="h4 mb-0">Inscrições, Presenças e Ausências</h1>
+            <p class="text-muted small mb-0">Visual completo das ações pedagógicas com expansão de presenças e exportação em PDF.</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary btn-sm">Hub de dashboards</a>
@@ -31,7 +31,6 @@
             <a href="{{ route('dashboards.avaliacoes') }}" class="btn btn-outline-primary btn-sm">Dashboard de respostas</a>
         </div>
     </div>
-    @can('evento.criar')
     <div class="card shadow-sm">
         <div class="card-header bg-white">
             <form method="GET" class="row g-2 align-items-end">
@@ -93,7 +92,13 @@
                     class="btn btn-outline-primary btn-sm"
                     data-bs-toggle="modal"
                     data-bs-target="#exportPdfModal">
-                    Baixar PDF
+                    Baixar Listas (PDF)
+                </button>
+                <button type="button"
+                    class="btn btn-outline-success btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#exportExcelModal">
+                    <i class="fas fa-file-excel me-1"></i>Matriz de Presença (Excel)
                 </button>
             </div>
 
@@ -159,7 +164,7 @@
                                     data-bs-toggle="collapse"
                                     href="#{{ $collapseId }}"
                                     role="button"
-                                    data-focus-target="#{{ $collapseId }}-presentes"
+                                    data-focus-target="#{{ $collapseId }}-participantes"
                                     aria-expanded="false"
                                     aria-controls="{{ $collapseId }}">
                                     {{ $presentesCount }}
@@ -171,7 +176,7 @@
                                         data-bs-toggle="collapse"
                                         href="#{{ $collapseId }}"
                                         role="button"
-                                        data-focus-target="#{{ $collapseId }}-ausentes"
+                                        data-focus-target="#{{ $collapseId }}-participantes"
                                         aria-expanded="false"
                                         aria-controls="{{ $collapseId }}">
                                         {{ $ausentesCount }}
@@ -221,7 +226,35 @@
         </div>
         @endif
     </div>
-    @endcan
+</div>
+
+<div class="modal fade" id="exportExcelModal" tabindex="-1" aria-labelledby="exportExcelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="GET" action="{{ route('dashboard.export.excel') }}">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold" id="exportExcelModalLabel">Baixar Excel (Matriz de Frequência)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label mb-1">Ação pedagógica <span class="text-danger">*</span></label>
+                        <select name="evento_id" class="form-select" required>
+                            <option value="">Selecione a ação...</option>
+                            @foreach($eventos as $id => $nome)
+                                <option value="{{ $id }}">{{ $nome }}</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">O arquivo Excel será gerado em formato de Matriz de Presença agrupando as listas da Ação pedagógica selecionada por município.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Gerar Planilha</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <div class="modal fade" id="exportPdfModal" tabindex="-1" aria-labelledby="exportPdfModalLabel" aria-hidden="true">

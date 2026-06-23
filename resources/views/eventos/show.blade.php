@@ -235,7 +235,7 @@
                 <li><hr class="dropdown-divider"></li>
                 <li>
                   <a class="dropdown-item" href="{{ route('dashboards.presencas', ['evento_id' => $evento->id]) }}">
-                    Relação de Inscritos/Presentes da Ação
+                    Relação de Presentes/Ausentes na Ação
                   </a>
                 </li>
                 <li>

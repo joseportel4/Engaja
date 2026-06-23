@@ -162,7 +162,9 @@ class DashboardController extends Controller
         $inscricoes = $atividade->inscricoes()
             ->whereNull('deleted_at')
             ->with('participante.user')
-            ->get();
+            ->get()
+            ->sortBy(fn($i) => strtolower($i->participante?->user?->name ?? ''))
+            ->values();
 
         $presentesIds = $presentes->pluck('inscricao_id')->filter()->unique();
         $ausentes = $inscricoes->filter(fn ($i) => ! $presentesIds->contains($i->id))->values();
@@ -172,7 +174,8 @@ class DashboardController extends Controller
 
         return view('dashboards._presencas_detalhes', compact(
             'presentes', 'ausentes', 'atividade',
-            'inscritosCount', 'presentesCount', 'ausentesCount'
+            'inscritosCount', 'presentesCount', 'ausentesCount',
+            'inscricoes', 'presentesIds'
         ));
     }
 
@@ -433,5 +436,19 @@ class DashboardController extends Controller
             ->format('a4')
             ->withAlfaEjaBrand()
             ->download('dashboard-presencas-'.now()->format('Ymd_His').'.pdf');
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $request->validate([
+            'evento_id' => 'required|exists:eventos,id',
+        ]);
+
+        $eventoId = $request->integer('evento_id');
+        $evento = Evento::findOrFail($eventoId);
+
+        $fileName = 'Matriz_Presenca_' . \Illuminate\Support\Str::slug($evento->nome) . '_' . now()->format('Ymd_Hi') . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\MatrizPresencaExport($eventoId), $fileName);
     }
 }
