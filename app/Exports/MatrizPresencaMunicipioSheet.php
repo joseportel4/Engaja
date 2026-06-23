@@ -51,7 +51,7 @@ class MatrizPresencaMunicipioSheet implements FromView, WithTitle, WithEvents
 
                 if ($isPresente) {
                     $status = ($inscricao->ouvinte ?? false) ? 'Ouvinte' : 'Presente';
-                    if ($status === 'Presente') $participantes[$partId]['presente_count']++;
+                    $participantes[$partId]['presente_count']++;
                 } else {
                     $status = 'Ausente';
                     $participantes[$partId]['ausente_count']++;
@@ -75,7 +75,7 @@ class MatrizPresencaMunicipioSheet implements FromView, WithTitle, WithEvents
 
     public function title(): string
     {
-        // Excel tab names are max 31 characters
+        //limite de caracteres do nome da aba do Excel
         return substr($this->municipioNome, 0, 31);
     }
 
@@ -91,7 +91,7 @@ class MatrizPresencaMunicipioSheet implements FromView, WithTitle, WithEvents
                 $highestRow = $sheet->getHighestRow();
                 $lastCol = $sheet->getHighestColumn();
 
-                // Set bold headers, wrap text, and alignment
+                //coloca os negritos no cabeçalho, alinhamento, etc
                 $sheet->getStyle('A2:' . $lastCol . '2')->getFont()->setBold(true);
                 $sheet->getStyle('A2:' . $lastCol . '2')->getAlignment()->setWrapText(true);
                 $sheet->getStyle('A2:' . $lastCol . '2')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
