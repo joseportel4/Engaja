@@ -21,7 +21,7 @@ class AgendamentoController extends Controller
             ->withCount('participantesClonados')
             ->where('user_id', auth()->id())
             ->orderBy('data_horario')
-            ->paginate(15);
+            ->get();
 
         return view('agendamentos.index', compact('agendamentos'));
     }

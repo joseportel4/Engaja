@@ -14,7 +14,7 @@ class UsuariosSemVinculoController extends Controller
     {
         $usuarios = $service
             ->query($request->user())
-            ->paginate(50);
+            ->get();
 
         return view('usuarios.sem-vinculo.index', [
             'usuarios' => $usuarios,
@@ -25,7 +25,7 @@ class UsuariosSemVinculoController extends Controller
     {
         return Excel::download(
             new UsuariosSemVinculoExport($request->user()),
-            'usuarios-sem-vinculo-' . now()->format('Ymd_His') . '.xlsx'
+            'usuarios-sem-vinculo-'.now()->format('Ymd_His').'.xlsx'
         );
     }
 }
