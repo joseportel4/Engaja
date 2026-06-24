@@ -93,6 +93,8 @@ const initTable = (el) => {
     const rowSelectionMode = el.dataset.rowSelection || null;
     const domLayout = el.dataset.domLayout || "autoHeight";
     const rowClassField = el.dataset.rowClassField || null;
+    const idField = el.dataset.idField || "id";
+    const selectedIds = JSON.parse(el.dataset.selectedIds || "[]").map(String);
 
     const hasHtmlColumn = columns.some((col) => col.html);
 
@@ -125,12 +127,23 @@ const initTable = (el) => {
             checkboxes: true,
             headerCheckbox: rowSelectionMode === "multiple",
         };
+        gridOptions.getRowId = (params) => String(params.data?.[idField]);
         gridOptions.onSelectionChanged = (event) => {
             const selectedRows = event.api.getSelectedRows();
             el.dispatchEvent(
                 new CustomEvent("datatable:selection-changed", { detail: { rows: selectedRows } }),
             );
         };
+
+        if (selectedIds.length) {
+            gridOptions.onGridReady = (event) => {
+                event.api.forEachNode((node) => {
+                    if (selectedIds.includes(String(node.data?.[idField]))) {
+                        node.setSelected(true);
+                    }
+                });
+            };
+        }
     }
 
     if (rowClassField) {

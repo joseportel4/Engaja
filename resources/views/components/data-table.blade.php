@@ -7,6 +7,8 @@
     'rowSelection' => null,
     'domLayout' => 'autoHeight',
     'rowClassField' => null,
+    'idField' => 'id',
+    'selectedIds' => [],
     'class' => '',
 ])
 
@@ -22,4 +24,6 @@
     @if ($rowSelection) data-row-selection="{{ $rowSelection }}" @endif
     data-dom-layout="{{ $domLayout }}"
     @if ($rowClassField) data-row-class-field="{{ $rowClassField }}" @endif
+    @if ($rowSelection) data-id-field="{{ $idField }}" @endif
+    @if ($rowSelection && count($selectedIds)) data-selected-ids="{{ json_encode($selectedIds, JSON_HEX_APOS | JSON_HEX_QUOT) }}" @endif
 ></div>
