@@ -72,6 +72,12 @@ const buildColumnDefs = (columns, rowClassField) =>
             pinned: col.pinned,
             cellClass: col.cellClass,
             headerClass: col.headerClass,
+            // Reordenar colunas via drag nunca foi um requisito (as tabelas
+            // Blade originais tinham ordem fixa) e o comportamento nativo do
+            // AG Grid fica inconsistente entre colunas com headerComponent
+            // customizado (sort link server-side) e colunas normais —
+            // desabilitar em todas evita essa inconsistência.
+            suppressMovable: true,
         };
 
         if (col.headerHtml) {
@@ -97,6 +103,11 @@ const buildColumnDefs = (columns, rowClassField) =>
                 justifyContent: ALIGN_TO_JUSTIFY[col.align] ?? "flex-start",
                 height: "100%",
                 overflow: "visible",
+                // O tema do AG Grid aplica line-height pensado pra texto de uma
+                // linha só; quando o HTML da célula tem 2+ linhas (ex.: data e
+                // "até X" embaixo), isso dobra a altura do conteúdo e o conteúdo
+                // estoura a linha. "normal" deixa cada linha com sua altura real.
+                lineHeight: "normal",
             };
         } else {
             // O AG Grid centraliza células de texto via line-height (display:
