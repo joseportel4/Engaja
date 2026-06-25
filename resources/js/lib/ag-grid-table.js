@@ -23,6 +23,27 @@ class HtmlHeaderComponent {
     }
 }
 
+// Renderer para linhas "full-width" (uma única célula ocupando a largura
+// inteira do grid) usado para simular master/detail sem AG Grid Enterprise:
+// a página insere/remove essas linhas via applyTransaction quando o usuário
+// expande/colapsa uma linha mestre. O conteúdo vem de `data.detailHtml`.
+class FullWidthHtmlRenderer {
+    init(params) {
+        this.eGui = document.createElement("div");
+        this.eGui.className = "dt-detail-row";
+        this.eGui.innerHTML = params.data?.detailHtml ?? "";
+    }
+
+    getGui() {
+        return this.eGui;
+    }
+
+    refresh(params) {
+        this.eGui.innerHTML = params.data?.detailHtml ?? "";
+        return true;
+    }
+}
+
 const buildColumnDefs = (columns, rowClassField) =>
     columns.map((col) => {
         if (col.children) {
@@ -96,6 +117,8 @@ const initTable = (el) => {
     const idField = el.dataset.idField || "id";
     const selectedIds = JSON.parse(el.dataset.selectedIds || "[]").map(String);
     const rowSelectableField = el.dataset.rowSelectableField || null;
+    const detailRowField = el.dataset.detailRowField || null;
+    const detailRowHeight = Number(el.dataset.detailRowHeight || 420);
 
     const hasHtmlColumn = columns.some((col) => col.html);
 
@@ -160,6 +183,21 @@ const initTable = (el) => {
 
     if (rowClassField) {
         gridOptions.getRowClass = (params) => params.data?.[rowClassField] || undefined;
+    }
+
+    if (detailRowField) {
+        gridOptions.getRowId = gridOptions.getRowId ?? ((params) => String(params.data?.[idField]));
+        gridOptions.isFullWidthRow = (params) => !!params.data?.[detailRowField];
+        gridOptions.fullWidthCellRenderer = FullWidthHtmlRenderer;
+        gridOptions.embedFullWidthRows = true;
+        gridOptions.getRowHeight = (params) =>
+            params.data?.[detailRowField] ? detailRowHeight : hasHtmlColumn ? 52 : undefined;
+
+        if (!gridOptions.onGridReady) {
+            gridOptions.onGridReady = (event) => {
+                el.dispatchEvent(new CustomEvent("datatable:ready", { detail: { api: event.api } }));
+            };
+        }
     }
 
     el.dataset.agGridInitialized = "true";
