@@ -16,7 +16,7 @@ class AvaliacaoAtividadeController extends Controller
 {
     use AuthorizesRequests;
 
-    private const REPORT_EDIT_ROLES = ['administrador', 'gerente'];
+    private const REPORT_EDIT_ROLES = ['administrador', 'gerente', 'eq_pedagogica'];
 
     private const REPORT_QUESTION_FIELDS = [
         'questao_unificada' => 'Avaliação Geral do Momento (Logística, Acolhimento, Planejamento, Atuação da equipe, Recursos e Destaques).',

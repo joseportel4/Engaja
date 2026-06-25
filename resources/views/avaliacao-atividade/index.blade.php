@@ -51,7 +51,7 @@
         <div>
             <h1 class="h3 fw-bold text-engaja mb-0">Relatórios dos Momentos</h1>
             <small class="text-muted">
-                {{ auth()->user()?->hasAnyRole(['administrador', 'gerente'])
+                {{ auth()->user()?->hasAnyRole(['administrador', 'gerente', 'eq_pedagogica'])
                     ? 'Relatórios pós-ação preenchidos por utilizadores do sistema'
                     : 'Os seus relatórios individuais pós-ação' }}
             </small>
@@ -144,7 +144,7 @@
                             </span>
                         </span>
                     </button>
-                    @if($atividade && auth()->user()?->hasAnyRole(['administrador', 'gerente']))
+                    @if($atividade && auth()->user()?->hasAnyRole(['administrador', 'gerente', 'eq_pedagogica']))
                     <a href="{{ route('avaliacao-atividade.download-all', $atividade) }}"
                        class="btn btn-sm btn-pdf-geral text-nowrap"
                        title="Baixar PDF consolidado com todos os relatórios deste momento">
