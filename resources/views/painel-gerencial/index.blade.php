@@ -2,17 +2,6 @@
 
 @section('content')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<style>
-    /* Rola o corpo da tabela mantendo o cabeçalho fixo no topo do card. */
-    .painel-scroll { overflow-y: auto; }
-    .painel-scroll thead th {
-        position: sticky;
-        top: 0;
-        background: #fff;
-        z-index: 1;
-        box-shadow: inset 0 -1px 0 #dee2e6;
-    }
-</style>
 <div class="container py-4">
 
     <div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
@@ -141,77 +130,75 @@
     </div>
 
     {{-- Metas por ação (tabela) --}}
+    @php
+        $colunasMetas = [
+            ['field' => 'acao', 'headerName' => 'Ação', 'flex' => 2],
+            ['field' => 'previstas', 'headerName' => 'Previstas', 'flex' => 1, 'align' => 'end'],
+            ['field' => 'inscritos', 'headerName' => 'Inscritos', 'flex' => 1, 'align' => 'end'],
+            ['field' => 'presentes', 'headerName' => 'Presentes', 'flex' => 1, 'align' => 'end'],
+            ['field' => 'avaliacoes', 'headerName' => 'Avaliações', 'flex' => 1, 'align' => 'end'],
+            ['field' => 'pct_realizado', 'headerName' => '% Realizado', 'flex' => 1, 'align' => 'end'],
+        ];
+        $linhasMetas = collect($metas_por_acao)->map(fn ($r) => [
+            'acao' => $r['acao'],
+            'previstas' => $r['previstas'],
+            'inscritos' => $r['inscritos'],
+            'presentes' => $r['presentes'],
+            'avaliacoes' => $r['avaliacoes'],
+            'pct_realizado' => number_format($r['pct_realizado'], 1, ',', '.') . '%',
+        ])->values();
+    @endphp
     <div class="card shadow-sm mb-4"><div class="card-body">
         <h2 class="h6 mb-3">Metas por Ação Pedagógica</h2>
-        <div class="table-responsive painel-scroll" style="max-height: 440px;">
-            <table class="table table-sm table-hover align-middle mb-0">
-                <thead><tr>
-                    <th>Ação</th><th class="text-end">Previstas</th><th class="text-end">Inscritos</th>
-                    <th class="text-end">Presentes</th><th class="text-end">Avaliações</th><th class="text-end">% Realizado</th>
-                </tr></thead>
-                <tbody>
-                    @forelse($metas_por_acao as $r)
-                        <tr>
-                            <td>{{ $r['acao'] }}</td>
-                            <td class="text-end">{{ $r['previstas'] }}</td>
-                            <td class="text-end">{{ $r['inscritos'] }}</td>
-                            <td class="text-end">{{ $r['presentes'] }}</td>
-                            <td class="text-end">{{ $r['avaliacoes'] }}</td>
-                            <td class="text-end">{{ number_format($r['pct_realizado'], 1, ',', '.') }}%</td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="6" class="text-center text-muted py-3">Sem dados para os filtros aplicados.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+        <x-data-table id="grid-painel-metas" :columns="$colunasMetas" :rows="$linhasMetas" :pagination="false" dom-layout="normal" style="height: 440px" />
     </div></div>
 
     {{-- Listas de acompanhamento --}}
+    @php
+        $colunasBaixoEngajamento = [
+            ['field' => 'municipio', 'headerName' => 'Município', 'flex' => 2, 'html' => true],
+            ['field' => 'pct_realizado', 'headerName' => '% Realizado', 'flex' => 1, 'align' => 'end'],
+        ];
+        $linhasBaixoEngajamento = collect($municipios_baixo_engajamento)->map(fn ($r) => [
+            'municipio' => e($r['municipio']) . ' <span class="text-muted small">(' . e($r['regiao']) . ')</span>',
+            'pct_realizado' => '<span class="text-danger">' . number_format($r['pct_realizado'], 1, ',', '.') . '%</span>',
+        ])->values();
+
+        $colunasSemAvaliacao = [
+            ['field' => 'acao_momento', 'headerName' => 'Ação / Momento', 'flex' => 2, 'html' => true],
+            ['field' => 'municipio', 'headerName' => 'Município', 'flex' => 1],
+        ];
+        $linhasSemAvaliacao = collect($eventos_sem_avaliacao)->map(fn ($r) => [
+            'acao_momento' => e($r['acao']) . '<br><span class="text-muted small">' . e($r['momento']) . '</span>',
+            'municipio' => $r['municipio'],
+        ])->values();
+
+        $colunasRecorrenciaAusencia = [
+            ['field' => 'participante', 'headerName' => 'Participante', 'flex' => 2, 'html' => true],
+            ['field' => 'ausencias', 'headerName' => 'Ausências', 'flex' => 1, 'align' => 'end'],
+        ];
+        $linhasRecorrenciaAusencia = collect($recorrencia_ausencia)->map(fn ($r) => [
+            'participante' => e($r['participante']) . ' <span class="text-muted small">(' . e($r['municipio']) . ')</span>',
+            'ausencias' => $r['ausencias'],
+        ])->values();
+    @endphp
     <div class="row g-3">
         <div class="col-lg-4">
             <div class="card shadow-sm h-100"><div class="card-body">
                 <h2 class="h6 mb-3">Municípios com baixo engajamento</h2>
-                <div class="table-responsive painel-scroll" style="max-height: 340px;"><table class="table table-sm mb-0">
-                    <thead><tr><th>Município</th><th class="text-end">% Realizado</th></tr></thead>
-                    <tbody>
-                        @forelse($municipios_baixo_engajamento as $r)
-                            <tr><td>{{ $r['municipio'] }} <span class="text-muted small">({{ $r['regiao'] }})</span></td><td class="text-end text-danger">{{ number_format($r['pct_realizado'], 1, ',', '.') }}%</td></tr>
-                        @empty
-                            <tr><td colspan="2" class="text-center text-muted py-3">Nenhum.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table></div>
+                <x-data-table id="grid-painel-baixo-engajamento" :columns="$colunasBaixoEngajamento" :rows="$linhasBaixoEngajamento" :pagination="false" dom-layout="normal" style="height: 340px" />
             </div></div>
         </div>
         <div class="col-lg-4">
             <div class="card shadow-sm h-100"><div class="card-body">
                 <h2 class="h6 mb-3">Eventos sem avaliação registrada</h2>
-                <div class="table-responsive painel-scroll" style="max-height: 340px;"><table class="table table-sm mb-0">
-                    <thead><tr><th>Ação / Momento</th><th>Município</th></tr></thead>
-                    <tbody>
-                        @forelse($eventos_sem_avaliacao as $r)
-                            <tr><td>{{ $r['acao'] }}<br><span class="text-muted small">{{ $r['momento'] }}</span></td><td>{{ $r['municipio'] }}</td></tr>
-                        @empty
-                            <tr><td colspan="2" class="text-center text-muted py-3">Nenhum.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table></div>
+                <x-data-table id="grid-painel-sem-avaliacao" :columns="$colunasSemAvaliacao" :rows="$linhasSemAvaliacao" :pagination="false" dom-layout="normal" style="height: 340px" />
             </div></div>
         </div>
         <div class="col-lg-4">
             <div class="card shadow-sm h-100"><div class="card-body">
                 <h2 class="h6 mb-3">Participantes com recorrência de ausência</h2>
-                <div class="table-responsive painel-scroll" style="max-height: 340px;"><table class="table table-sm mb-0">
-                    <thead><tr><th>Participante</th><th class="text-end">Ausências</th></tr></thead>
-                    <tbody>
-                        @forelse($recorrencia_ausencia as $r)
-                            <tr><td>{{ $r['participante'] }} <span class="text-muted small">({{ $r['municipio'] }})</span></td><td class="text-end">{{ $r['ausencias'] }}</td></tr>
-                        @empty
-                            <tr><td colspan="2" class="text-center text-muted py-3">Nenhum.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table></div>
+                <x-data-table id="grid-painel-recorrencia-ausencia" :columns="$colunasRecorrenciaAusencia" :rows="$linhasRecorrenciaAusencia" :pagination="false" dom-layout="normal" style="height: 340px" />
             </div></div>
         </div>
     </div>

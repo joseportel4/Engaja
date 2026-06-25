@@ -33,7 +33,11 @@ class PainelGerencialControllerTest extends TestCase
         $this->actingAs($this->comPapel('gerente'))
             ->get(route('painel-gerencial.index'))
             ->assertOk()
-            ->assertViewIs('painel-gerencial.index');
+            ->assertViewIs('painel-gerencial.index')
+            ->assertSee('grid-painel-metas', false)
+            ->assertSee('grid-painel-baixo-engajamento', false)
+            ->assertSee('grid-painel-sem-avaliacao', false)
+            ->assertSee('grid-painel-recorrencia-ausencia', false);
     }
 
     public function test_index_negado_para_participante(): void
