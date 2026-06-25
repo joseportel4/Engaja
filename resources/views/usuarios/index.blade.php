@@ -1,13 +1,5 @@
 ﻿@extends('layouts.app')
 
-@push('styles')
-<style>
-  .usuarios-actions-dropdown .dropdown-menu {
-    position: fixed !important;
-  }
-</style>
-@endpush
-
 @section('content')
 <div class="mb-4">
     <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
@@ -99,81 +91,64 @@
   <form method="POST" action="{{ route('usuarios.certificados.emitir') }}" id="form-emitir-certificados">
     @csrf
     <input type="hidden" name="modelo_id" id="modelo_id_hidden">
+    <div id="participantes-hidden-inputs"></div>
+
+    @php
+        $columns = [
+            ['field' => 'nome', 'headerName' => 'Nome', 'flex' => 2],
+            ['field' => 'email', 'headerName' => 'E-mail', 'flex' => 2],
+            ['field' => 'cpf', 'headerName' => 'CPF', 'flex' => 1],
+            ['field' => 'telefone', 'headerName' => 'Telefone', 'flex' => 1],
+            ['field' => 'acoes', 'headerName' => 'Ação', 'flex' => 1, 'html' => true],
+        ];
+
+        $rows = $users->map(function ($u) {
+            $cpfRaw = $u->participante->cpf ?? null;
+            $cpfFmt = $cpfRaw ? preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', $cpfRaw) : '--';
+            $telRaw = $u->participante->telefone ?? null;
+            $telFmt = $telRaw
+                ? preg_replace('/(\d{2})(\d{4,5})(\d{4})/', '($1) $2-$3', $telRaw)
+                : '--';
+
+            $acoesHtml = '<div class="dropdown d-inline-block">'
+                . '<button class="btn btn-sm btn-engaja dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">Gerenciar</button>'
+                . '<ul class="dropdown-menu dropdown-menu-end shadow-sm">';
+
+            if (auth()->user()->hasAnyRole(['administrador', 'gerente'])) {
+                $acoesHtml .= '<li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalParticipacoesUsuario' . $u->id . '">Ver participações</button></li>';
+            }
+
+            $acoesHtml .= '<li><a href="' . route('usuarios.edit', $u) . '" class="dropdown-item">Editar</a></li>';
+
+            if (auth()->user()->hasRole('administrador')) {
+                $acoesHtml .= '<li><button type="button" class="dropdown-item js-reset-password" data-bs-toggle="modal" data-bs-target="#modalRedefinirSenha" data-action="' . route('usuarios.password.reset', $u) . '" data-user-name="' . e($u->name) . '">Redefinir senha</button></li>';
+            }
+
+            $acoesHtml .= '</ul></div>';
+
+            return [
+                'id' => 'u-' . $u->id,
+                'participante_id' => $u->participante->id ?? null,
+                '_selectable' => (bool) $u->participante,
+                'nome' => $u->name,
+                'email' => $u->email,
+                'cpf' => $cpfFmt,
+                'telefone' => $telFmt,
+                'acoes' => $acoesHtml,
+            ];
+        })->values();
+    @endphp
+
     <div class="card shadow-sm">
       <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th class="ps-4" style="width: 40px;">
-                  <input type="checkbox" id="check-all">
-                </th>
-                <th>Nome</th>
-                <th>E-mail</th>
-                <th>CPF</th>
-                <th>Telefone</th>
-                <th class="text-end pe-4">Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              @foreach ($users as $u)
-                @php
-                  $cpfRaw = $u->participante->cpf ?? null;
-                  $cpfFmt = $cpfRaw ? preg_replace('/(\\d{3})(\\d{3})(\\d{3})(\\d{2})/', '$1.$2.$3-$4', $cpfRaw) : '--';
-                  $telRaw = $u->participante->telefone ?? null;
-                  $telFmt = $telRaw
-                    ? preg_replace('/(\\d{2})(\\d{4,5})(\\d{4})/', '($1) $2-$3', $telRaw)
-                    : '--';
-                @endphp
-                <tr>
-                  <td class="ps-4">
-                    <input type="checkbox" name="participantes[]" value="{{ $u->participante->id ?? '' }}" @disabled(!$u->participante)>
-                  </td>
-                  <td>
-                    <div class="fw-semibold">{{ $u->name }}</div>
-                  </td>
-                  <td>{{ $u->email }}</td>
-                  <td>{{ $cpfFmt }}</td>
-                  <td>{{ $telFmt }}</td>
-                  <td class="text-end pe-4">
-                    <div class="dropdown d-inline-block usuarios-actions-dropdown">
-                      <button class="btn btn-sm btn-engaja dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
-                        Gerenciar
-                      </button>
-                      <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                        @hasanyrole('administrador|gerente')
-                          <li>
-                            <button type="button"
-                                    class="dropdown-item"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#modalParticipacoesUsuario{{ $u->id }}">
-                              Ver participações
-                            </button>
-                          </li>
-                        @endhasanyrole
-                        <li>
-                          <a href="{{ route('usuarios.edit', $u) }}" class="dropdown-item">Editar</a>
-                        </li>
-                        @role('administrador')
-                          <li>
-                            <button type="button"
-                                    class="dropdown-item js-reset-password"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#modalRedefinirSenha"
-                                    data-action="{{ route('usuarios.password.reset', $u) }}"
-                                    data-user-name="{{ $u->name }}">
-                              Redefinir senha
-                            </button>
-                          </li>
-                        @endrole
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
-              @endforeach
-            </tbody>
-          </table>
-        </div>
+        <x-data-table
+            id="grid-usuarios"
+            :columns="$columns"
+            :rows="$rows"
+            :pagination="false"
+            row-selection="multiple"
+            row-selectable-field="_selectable"
+        />
       </div>
         @if($users->hasPages())
             <div class="card-footer bg-white d-flex justify-content-center overflow-auto py-3 border-top-0">
@@ -510,55 +485,37 @@
 @push('scripts')
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const checkAll = document.getElementById('check-all');
+    const gridEl = document.getElementById('grid-usuarios');
+    const hiddenInputs = document.getElementById('participantes-hidden-inputs');
     const btnOpen = document.getElementById('btn-open-modal');
     const btnConfirm = document.getElementById('btn-confirmar-emissao');
     const selectModelo = document.getElementById('select-modelo');
     const modeloHidden = document.getElementById('modelo_id_hidden');
     const form = document.getElementById('form-emitir-certificados');
-    const btnSelectAllPage = document.getElementById('btn-select-all-page');
-    const btnSelectAllGlobal = document.getElementById('btn-select-all-global');
-    const selectAllPagesHidden = document.getElementById('select_all_pages_hidden');
     const resetPasswordForm = document.getElementById('form-redefinir-senha');
     const resetPasswordUserName = document.getElementById('reset-password-user-name');
 
-    if (checkAll) {
-      checkAll.addEventListener('change', () => {
-        document.querySelectorAll('input[name="participantes[]"]:not(:disabled)').forEach(cb => {
-          cb.checked = checkAll.checked;
-        });
+    gridEl?.addEventListener('datatable:selection-changed', (event) => {
+      hiddenInputs.innerHTML = '';
+      event.detail.rows.forEach((row) => {
+        if (!row.participante_id) return;
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'participantes[]';
+        input.value = row.participante_id;
+        hiddenInputs.appendChild(input);
       });
-    }
+    });
 
     if (btnOpen) {
       btnOpen.addEventListener('click', () => {
-        const selecionados = Array.from(document.querySelectorAll('input[name="participantes[]"]:checked'));
+        const selecionados = gridEl?._agGridApi?.getSelectedRows() || [];
         if (selecionados.length === 0) {
           alert('Selecione ao menos um participante.');
           return;
         }
         const modal = new bootstrap.Modal(document.getElementById('modalModeloCertificado'));
         modal.show();
-      });
-    }
-
-    if (btnSelectAllPage) {
-      btnSelectAllPage.addEventListener('click', () => {
-        document.querySelectorAll('input[name="participantes[]"]:not(:disabled)').forEach(cb => {
-          cb.checked = true;
-        });
-        if (checkAll) checkAll.checked = true;
-        if (selectAllPagesHidden) selectAllPagesHidden.value = '';
-      });
-    }
-
-    if (btnSelectAllGlobal) {
-      btnSelectAllGlobal.addEventListener('click', () => {
-        document.querySelectorAll('input[name="participantes[]"]:not(:disabled)').forEach(cb => {
-          cb.checked = true;
-        });
-        if (checkAll) checkAll.checked = true;
-        if (selectAllPagesHidden) selectAllPagesHidden.value = '1';
       });
     }
 
@@ -574,16 +531,19 @@
       });
     }
 
-    document.querySelectorAll('.js-reset-password').forEach(button => {
-      button.addEventListener('click', () => {
-        if (resetPasswordForm) {
-          resetPasswordForm.action = button.dataset.action || '';
-          resetPasswordForm.reset();
-        }
-        if (resetPasswordUserName) {
-          resetPasswordUserName.textContent = button.dataset.userName || '';
-        }
-      });
+    // Delegação de evento: os botões .js-reset-password são renderizados pelo
+    // AG Grid de forma assíncrona (depois do DOMContentLoaded).
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('.js-reset-password');
+      if (!button) return;
+
+      if (resetPasswordForm) {
+        resetPasswordForm.action = button.dataset.action || '';
+        resetPasswordForm.reset();
+      }
+      if (resetPasswordUserName) {
+        resetPasswordUserName.textContent = button.dataset.userName || '';
+      }
     });
 
     @if($errors->resetPassword->any() && session('reset_password_action'))

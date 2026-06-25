@@ -95,6 +95,7 @@ const initTable = (el) => {
     const rowClassField = el.dataset.rowClassField || null;
     const idField = el.dataset.idField || "id";
     const selectedIds = JSON.parse(el.dataset.selectedIds || "[]").map(String);
+    const rowSelectableField = el.dataset.rowSelectableField || null;
 
     const hasHtmlColumn = columns.some((col) => col.html);
 
@@ -128,6 +129,11 @@ const initTable = (el) => {
             headerCheckbox: rowSelectionMode === "multiple",
         };
         gridOptions.getRowId = (params) => String(params.data?.[idField]);
+
+        if (rowSelectableField) {
+            gridOptions.rowSelection.isRowSelectable = (rowNode) => !!rowNode.data?.[rowSelectableField];
+        }
+
         gridOptions.onSelectionChanged = (event) => {
             const selectedRows = event.api.getSelectedRows();
             el.dispatchEvent(
