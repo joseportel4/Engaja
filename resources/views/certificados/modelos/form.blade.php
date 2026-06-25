@@ -196,8 +196,7 @@
 </div>
 
 @push('scripts')
-{{-- Carrega Fabric somente nesta tela de modelo de certificado --}}
-<script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
+{{-- Fabric é carregado pelo bundle (resources/js/app.js) somente nesta tela, via import dinâmico --}}
 <script>
   function simplePreview(inputId, previewWrapperId) {
     const input = document.getElementById(inputId);
@@ -218,10 +217,7 @@
       cb();
       return;
     }
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/fabric@5.3.0/dist/fabric.min.js';
-    script.onload = cb;
-    document.head.appendChild(script);
+    document.addEventListener('fabric:ready', cb, { once: true });
   }
 
   function initFabricPreview(opts) {
@@ -297,8 +293,7 @@
     const setInitialSize = () => {
       const w = container?.clientWidth || 960;
       const h = 400;
-      canvas.setWidth(w);
-      canvas.setHeight(h);
+      canvas.setDimensions({ width: w, height: h });
       drawGuides();
       canvas.renderAll();
     };
@@ -429,8 +424,8 @@
         updateHidden();
       });
       canvas.add(qrObj);
-      qrObj.bringToFront();
-      textObj && textObj.bringToFront();
+      canvas.bringObjectToFront(qrObj);
+      textObj && canvas.bringObjectToFront(textObj);
       updateHidden();
       canvas.renderAll();
     };
@@ -471,8 +466,8 @@
       dateObj.on('scaled', () => { lockDateScale(); updateHidden(); });
       dateObj.on('scaling', () => { lockDateScale(); updateHidden(); });
       canvas.add(dateObj);
-      textObj && textObj.bringToFront();
-      dateObj.bringToFront();
+      textObj && canvas.bringObjectToFront(textObj);
+      canvas.bringObjectToFront(dateObj);
       updateHidden();
       canvas.renderAll();
     };
@@ -487,8 +482,7 @@
       const fallbackSize = () => {
         const targetW = (container?.clientWidth ?? 960) - 24;
         const targetH = Math.round(targetW * 0.6);
-        canvas.setWidth(targetW);
-        canvas.setHeight(targetH);
+        canvas.setDimensions({ width: targetW, height: targetH });
         canvasEl.style.width = `${targetW}px`;
         canvasEl.style.height = `${targetH}px`;
         if (container) container.style.height = `${targetH}px`;
@@ -511,8 +505,7 @@
         const imgW = imgEl.naturalWidth * scale;
         const imgH = imgEl.naturalHeight * scale;
 
-        canvas.setWidth(imgW);
-        canvas.setHeight(imgH);
+        canvas.setDimensions({ width: imgW, height: imgH });
         canvasEl.style.width = `${imgW}px`;
         canvasEl.style.height = `${imgH}px`;
         if (canvasWInput) canvasWInput.value = Math.round(imgW);
@@ -530,12 +523,8 @@
           scaleY: scale,
         });
 
-        canvas.setBackgroundImage(fabricImg, canvas.renderAll.bind(canvas), {
-          originX: 'left',
-          originY: 'top',
-          left: 0,
-          top: 0,
-        });
+        canvas.backgroundImage = fabricImg;
+        canvas.renderAll();
         drawGuides();
         if (textObj) {
           textObj.text = textArea.value || 'Texto';

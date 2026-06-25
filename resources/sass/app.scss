@@ -1,5 +1,8 @@
 /* ===== Engaja Theme (Bootstrap 5) ===== */
 
+@use "sass:color";
+@use "sass:map";
+
 /* Fonte Montserrat */
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
 
@@ -25,7 +28,7 @@ $border-radius-lg: .8rem;
 
 @import "bootstrap/scss/bootstrap";
 
-$theme-colors: map-merge(
+$theme-colors: map.merge(
   $theme-colors,
   (
     "engaja": $engaja-purple,
@@ -101,9 +104,9 @@ $theme-colors: map-merge(
 }
 
 .ag-row-hover.dt-row-subtotal {
-  background-color: darken(#e8daea, 8%) !important;
+  background-color: color.adjust(#e8daea, $lightness: -8%) !important;
 }
 
 .ag-row-hover.dt-row-unidentified {
-  background-color: darken(#f8f5f0, 6%) !important;
+  background-color: color.adjust(#f8f5f0, $lightness: -6%) !important;
 }

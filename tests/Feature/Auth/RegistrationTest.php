@@ -6,6 +6,8 @@ use App\Models\Estado;
 use App\Models\Municipio;
 use App\Models\Participante;
 use App\Models\Regiao;
+use App\Models\User;
+use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -14,6 +16,13 @@ use Tests\TestCase;
 class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolesPermissionsSeeder::class);
+    }
 
     public function test_registration_screen_can_be_rendered(): void
     {
@@ -72,7 +81,7 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
         ]);
 
-        $user = \App\Models\User::where('email', 'test@example.com')->firstOrFail();
+        $user = User::where('email', 'test@example.com')->firstOrFail();
 
         $this->assertNotNull($user->profile_photo_path);
         Storage::disk('public')->assertExists($user->profile_photo_path);
