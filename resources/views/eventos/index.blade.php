@@ -39,12 +39,26 @@
         </form>
 
         @php
+            if (!function_exists('evento_sort_link')) {
+                function evento_sort_link($label, $key) {
+                    $currentSort = request('sort', 'id');
+                    $currentDir = strtolower((string) request('dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+                    $nextDir = ($currentSort === $key && $currentDir === 'asc') ? 'desc' : 'asc';
+                    $params = array_merge(request()->except('page'), ['sort' => $key, 'dir' => $nextDir]);
+                    $url = request()->url() . '?' . http_build_query($params);
+                    $isActive = $currentSort === $key;
+                    $arrow = $isActive ? ($currentDir === 'asc' ? '↑' : '↓') : '';
+
+                    return '<a href="' . $url . '" class="text-decoration-none text-nowrap">' . e($label) . ' <span class="text-muted">' . $arrow . '</span></a>';
+                }
+            }
+
             $columns = [
-                ['field' => 'nome', 'headerName' => 'Nome', 'flex' => 2, 'html' => true],
+                ['field' => 'nome', 'headerHtml' => evento_sort_link('Nome', 'nome'), 'flex' => 2, 'html' => true],
                 ['field' => 'subacao', 'headerName' => 'Sub-Ação', 'flex' => 2, 'html' => true],
-                ['field' => 'tipo', 'headerName' => 'Tipo', 'flex' => 1],
-                ['field' => 'periodo', 'headerName' => 'Período', 'flex' => 1, 'html' => true],
-                ['field' => 'criado_por', 'headerName' => 'Criado por', 'flex' => 1],
+                ['field' => 'tipo', 'headerHtml' => evento_sort_link('Tipo', 'tipo'), 'flex' => 1],
+                ['field' => 'periodo', 'headerHtml' => evento_sort_link('Período', 'periodo'), 'flex' => 1, 'html' => true],
+                ['field' => 'criado_por', 'headerHtml' => evento_sort_link('Criado por', 'criado_por'), 'flex' => 1],
                 ['field' => 'acoes', 'headerName' => 'Ações', 'flex' => 1, 'html' => true],
             ];
 

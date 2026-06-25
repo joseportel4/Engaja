@@ -37,7 +37,10 @@ class EventoController extends Controller
 
     public function index(Request $r)
     {
-        $eventos = Evento::with(['user'])
+        $sort = $r->query('sort', 'id');
+        $dir = strtolower((string) $r->query('dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $query = Evento::with(['user'])
             ->when($r->q, function ($q) use ($r) {
                 $search = mb_strtolower($r->q);
                 $q->where(function ($w) use ($search) {
@@ -47,9 +50,20 @@ class EventoController extends Controller
                 });
             })
             ->when($r->acao_geral, fn ($q) => $q->where('acao_geral', $r->acao_geral))
-            ->when($r->de, fn ($q) => $q->whereDate('data_inicio', '>=', $r->de))
-            ->orderByDesc('id')
-            ->paginate(10);
+            ->when($r->de, fn ($q) => $q->whereDate('data_inicio', '>=', $r->de));
+
+        match ($sort) {
+            'nome' => $query->orderBy('nome', $dir),
+            'tipo' => $query->orderBy('tipo', $dir),
+            'periodo' => $query->orderBy('data_inicio', $dir),
+            'criado_por' => $query->orderBy(
+                User::select('name')->whereColumn('users.id', 'eventos.user_id'),
+                $dir
+            ),
+            default => $query->orderBy('id', $dir),
+        };
+
+        $eventos = $query->paginate(10)->appends($r->query());
 
         $modelosCertificados = ModeloCertificado::orderBy('nome')->get();
 
