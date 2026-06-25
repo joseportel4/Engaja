@@ -115,16 +115,16 @@
                 }
 
                 $columns = [
-                    ['field' => 'toggle', 'headerName' => '', 'width' => 44, 'resizable' => false, 'html' => true],
+                    ['field' => 'toggle', 'headerName' => '', 'width' => 44, 'resizable' => false, 'html' => true, 'align' => 'center'],
                     ['field' => 'data', 'headerHtml' => sort_link('Data', 'dia'), 'minWidth' => 110, 'flex' => 1],
                     ['field' => 'hora', 'headerHtml' => sort_link('Hora', 'hora'), 'minWidth' => 80, 'flex' => 1],
                     ['field' => 'momento', 'headerHtml' => sort_link('Momento', 'momento'), 'flex' => 2],
                     ['field' => 'municipio', 'headerHtml' => sort_link('Município', 'municipio'), 'flex' => 2],
                     ['field' => 'acao', 'headerHtml' => sort_link('Ação pedagógica', 'acao'), 'flex' => 2],
-                    ['field' => 'inscritos', 'headerHtml' => sort_link('Inscritos', 'inscritos'), 'flex' => 1, 'cellClass' => 'text-end'],
-                    ['field' => 'presentes', 'headerHtml' => sort_link('Presentes', 'presentes'), 'flex' => 1, 'html' => true],
-                    ['field' => 'ausentes', 'headerHtml' => sort_link('Ausentes', 'ausentes'), 'flex' => 1, 'html' => true],
-                    ['field' => 'acoes', 'headerName' => 'Ações', 'width' => 130, 'html' => true],
+                    ['field' => 'inscritos', 'headerHtml' => sort_link('Inscritos', 'inscritos'), 'flex' => 1, 'align' => 'end'],
+                    ['field' => 'presentes', 'headerHtml' => sort_link('Presentes', 'presentes'), 'flex' => 1, 'html' => true, 'align' => 'end'],
+                    ['field' => 'ausentes', 'headerHtml' => sort_link('Ausentes', 'ausentes'), 'flex' => 1, 'html' => true, 'align' => 'end'],
+                    ['field' => 'acoes', 'headerName' => 'Ações', 'width' => 130, 'html' => true, 'align' => 'center'],
                 ];
 
                 $rows = $atividades->map(function ($a) {
@@ -291,6 +291,23 @@
             setToggleExpanded(api, atividadeId, false);
         };
 
+        // Mede a altura natural do conteúdo já renderizado e ajusta a altura
+        // real da linha, respeitando o teto (data-detail-row-height) — acima
+        // dele o .dt-detail-row passa a rolar internamente (overflow-y: auto).
+        const fitRowHeight = (atividadeId) => {
+            const api = gridEl._agGridApi;
+            const node = api.getRowNode(detailRowId(atividadeId));
+            if (!node) return;
+
+            requestAnimationFrame(() => {
+                const rowEl = gridEl.querySelector('[row-id="' + detailRowId(atividadeId) + '"] .dt-detail-row');
+                if (!rowEl) return;
+                const maxHeight = Number(gridEl.dataset.detailRowHeight || 420);
+                node.setRowHeight(Math.min(rowEl.scrollHeight, maxHeight));
+                api.onRowHeightChanged();
+            });
+        };
+
         const expandRow = (atividadeId, focusTarget) => {
             const api = gridEl._agGridApi;
             if (api.getRowNode(detailRowId(atividadeId))) return; // já expandida
@@ -309,8 +326,9 @@
                 .then((html) => {
                     const node = api.getRowNode(detailRowId(atividadeId));
                     if (!node) return; // foi recolhida antes do fetch terminar
-                    node.updateData({ ...node.data, detailHtml: '<div style="max-height: 420px; overflow-y: auto;">' + html + '</div>' });
+                    node.updateData({ ...node.data, detailHtml: html });
                     api.redrawRows({ rowNodes: [node] });
+                    fitRowHeight(atividadeId);
 
                     if (focusTarget) {
                         requestAnimationFrame(() => {
@@ -324,6 +342,7 @@
                     if (!node) return;
                     node.updateData({ ...node.data, detailHtml: errorHtml });
                     api.redrawRows({ rowNodes: [node] });
+                    fitRowHeight(atividadeId);
                 });
         };
 

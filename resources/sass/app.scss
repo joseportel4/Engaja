@@ -69,6 +69,16 @@ $theme-colors: map-merge(
   white-space: nowrap;
 }
 
+/* Linha de detalhe "full-width" (simula master/detail sem AG Grid Enterprise).
+   A altura real é ajustada via JS conforme o conteúdo (node.setRowHeight),
+   respeitando um teto — acima dele, rola internamente em vez de estourar a
+   altura alocada da linha. */
+.dt-detail-row {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+
 /* Hover do AG Grid: o padrão do tema Quartz é um cinza muito sutil, quase
    imperceptível. Usa a cor da marca com mais saturação para ficar visível. */
 .ag-row-hover {

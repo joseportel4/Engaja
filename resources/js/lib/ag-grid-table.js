@@ -44,6 +44,9 @@ class FullWidthHtmlRenderer {
     }
 }
 
+const ALIGN_TO_JUSTIFY = { start: "flex-start", end: "flex-end", center: "center" };
+const ALIGN_TO_TEXT_CLASS = { start: "text-start", end: "text-end", center: "text-center" };
+
 const buildColumnDefs = (columns, rowClassField) =>
     columns.map((col) => {
         if (col.children) {
@@ -91,6 +94,7 @@ const buildColumnDefs = (columns, rowClassField) =>
             def.cellStyle = {
                 display: "flex",
                 alignItems: "center",
+                justifyContent: ALIGN_TO_JUSTIFY[col.align] ?? "flex-start",
                 height: "100%",
                 overflow: "visible",
             };
@@ -101,6 +105,10 @@ const buildColumnDefs = (columns, rowClassField) =>
                 params.value !== undefined && params.value !== null && params.value !== ""
                     ? String(params.value)
                     : undefined;
+
+            if (col.align) {
+                def.cellClass = [col.cellClass, ALIGN_TO_TEXT_CLASS[col.align]].filter(Boolean).join(" ");
+            }
         }
 
         return def;
@@ -191,8 +199,12 @@ const initTable = (el) => {
         gridOptions.isFullWidthRow = (params) => !!params.rowNode?.data?.[detailRowField];
         gridOptions.fullWidthCellRenderer = FullWidthHtmlRenderer;
         gridOptions.embedFullWidthRows = true;
+        // Altura inicial pequena (cabe o spinner de "carregando"); depois que o
+        // conteúdo real chega, a página mede a altura natural e ajusta via
+        // node.setRowHeight()/api.onRowHeightChanged(), respeitando o teto de
+        // detailRowHeight (acima disso o .dt-detail-row rola internamente).
         gridOptions.getRowHeight = (params) =>
-            params.data?.[detailRowField] ? detailRowHeight : hasHtmlColumn ? 52 : undefined;
+            params.data?.[detailRowField] ? 70 : hasHtmlColumn ? 52 : undefined;
 
         if (!gridOptions.onGridReady) {
             gridOptions.onGridReady = (event) => {
