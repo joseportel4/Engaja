@@ -99,6 +99,19 @@ const buildColumnDefs = (columns, rowClassField) =>
                 overflow: "visible",
             };
         } else {
+            // O AG Grid centraliza células de texto via line-height (display:
+            // block), que não alinha verticalmente com colunas HTML (que usam
+            // flex). Forçar o mesmo mecanismo flex aqui também, preservando a
+            // truncagem com "...": min-width:0 deixa o item flex encolher
+            // (senão o flex impede o overflow:hidden/text-overflow:ellipsis
+            // já aplicado pela classe ag-cell-value de funcionar).
+            def.cellStyle = {
+                display: "flex",
+                alignItems: "center",
+                justifyContent: ALIGN_TO_JUSTIFY[col.align] ?? "flex-start",
+                minWidth: "0",
+            };
+
             // Trunca com "..." (comportamento padrão do AG Grid para células de
             // texto) e mostra o conteúdo completo em tooltip só quando truncado.
             def.tooltipValueGetter = (params) =>

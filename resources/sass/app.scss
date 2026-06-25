@@ -77,6 +77,13 @@ $theme-colors: map-merge(
   width: 100%;
   height: 100%;
   overflow-y: auto;
+
+  /* O AG Grid desabilita seleção de texto nas linhas (.ag-row { user-select:
+     none }) para evitar interferir no drag de seleção de células. Essa linha
+     é só HTML estático (sem interação de grid), então a seleção de texto
+     deve funcionar normalmente para o usuário poder copiar os dados. */
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* Hover do AG Grid: o padrão do tema Quartz é um cinza muito sutil, quase
