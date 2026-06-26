@@ -71,16 +71,16 @@
         </div>
 
         <div class="col-12">
-          <label class="form-label">Arquivo Excel (.xlsx) <span class="text-danger">*</span></label>
+          <label class="form-label">Arquivo Excel ou CSV (.xlsx, .xls, .csv) <span class="text-danger">*</span></label>
           <input type="file"
             name="your_file"
             class="form-control @error('your_file') is-invalid @enderror"
-            accept=".xlsx,.xls"
+            accept=".xlsx,.xls,.csv"
             @if($disableImport) disabled @endif
             required>
           @error('your_file') <div class="invalid-feedback">{{ $message }}</div> @enderror
           <div class="form-text">
-            Envie um arquivo Excel com a primeira linha como cabeçalho.
+            Envie um arquivo Excel ou CSV com a primeira linha como cabeçalho.
           </div>
         </div>
         <div class="mb-3">
