@@ -83,7 +83,7 @@
           </div>
         </div>
 
-        @php($avaliacoesOpen = request()->routeIs('avaliacoes.*') || request()->routeIs('avaliacoes-universais.*') || request()->routeIs('templates-avaliacao.*') || request()->routeIs('dimensaos.*') || request()->routeIs('indicadors.*') || request()->routeIs('evidencias.*') || request()->routeIs('escalas.*'))
+        @php($avaliacoesOpen = request()->routeIs('avaliacoes.*') || request()->routeIs('avaliacoes-universais.*') || request()->routeIs('avaliacoes-consolidadas.*') || request()->routeIs('templates-avaliacao.*') || request()->routeIs('dimensaos.*') || request()->routeIs('indicadors.*') || request()->routeIs('evidencias.*') || request()->routeIs('escalas.*'))
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingAvaliacoes">
             <button class="accordion-button admin-accordion-button {{ $avaliacoesOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarAvaliacoes" aria-expanded="{{ $avaliacoesOpen ? 'true' : 'false' }}" aria-controls="sidebarAvaliacoes">
@@ -102,6 +102,9 @@
               </a>
               <a class="admin-nav-link {{ request()->routeIs('avaliacoes-universais.*') ? 'active' : '' }}" href="{{ route('avaliacoes-universais.index') }}">
                 Avaliações universais
+              </a>
+              <a class="admin-nav-link {{ request()->routeIs('avaliacoes-consolidadas.*') ? 'active' : '' }}" href="{{ route('avaliacoes-consolidadas.index') }}">
+                Consolidação de avaliações
               </a>
               <div class="admin-subsection__label">Configurações</div>
               <a class="admin-nav-link {{ request()->routeIs('templates-avaliacao.*') ? 'active' : '' }}" href="{{ route('templates-avaliacao.index') }}">
@@ -143,6 +146,7 @@
               <a class="admin-nav-link {{ request()->routeIs('relatorio-quantitativo.*') ? 'active' : '' }}" href="{{ route('relatorio-quantitativo.index') }}">
                 Relatório Quantitativo
               </a>
+
               <a class="admin-nav-link {{ request()->routeIs('painel-gerencial.*') ? 'active' : '' }}" href="{{ route('painel-gerencial.index') }}">
                 Painel Gerencial
               </a>

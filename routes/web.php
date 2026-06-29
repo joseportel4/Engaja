@@ -7,6 +7,7 @@ use App\Http\Controllers\AtividadeAcaoController;
 use App\Http\Controllers\AtividadeController;
 use App\Http\Controllers\AutorizacaoImagemImportController;
 use App\Http\Controllers\AvaliacaoAtividadeController;
+use App\Http\Controllers\AvaliacaoConsolidadaController;
 use App\Http\Controllers\AvaliacaoController;
 use App\Http\Controllers\CertificadoController;
 use App\Http\Controllers\DashboardController;
@@ -238,6 +239,10 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
     });
 
 Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {
+    Route::get('/avaliacoes-consolidadas', [AvaliacaoConsolidadaController::class, 'index'])
+        ->name('avaliacoes-consolidadas.index');
+    Route::get('/avaliacoes-consolidadas/pdf', [AvaliacaoConsolidadaController::class, 'pdf'])
+        ->name('avaliacoes-consolidadas.pdf');
     Route::get('/eventos/{evento}/relatorios', [EventoController::class, 'relatorios'])
         ->name('eventos.relatorios');
     Route::get('/eventos/{evento}/avaliacoes/consolidado', [EventoController::class, 'avaliacoesConsolidadas'])
