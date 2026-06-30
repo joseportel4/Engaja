@@ -20,11 +20,11 @@
         <input type="hidden" name="contexto" value="evento">
       @endif
 
-      <input type="text" 
-             name="participante" 
-             value="{{ $filtroParticipante ?? '' }}" 
-             class="form-control" 
-             placeholder="Filtrar por participante ou CPF" 
+      <input type="text"
+             name="participante"
+             value="{{ $filtroParticipante ?? '' }}"
+             class="form-control"
+             placeholder="Filtrar por participante ou CPF"
              aria-label="Filtrar por participante ou CPF">
 
       @if(empty($contextoEvento))
@@ -38,7 +38,7 @@
         </select>
       @endif
 
-      <button class="btn btn-engaja" type="submit">Filtrar</button>      
+      <button class="btn btn-engaja" type="submit">Filtrar</button>
       <a href="{{ !empty($contextoEvento) && !empty($filtroEventoId) ? route('certificados.emitidos', ['evento_id' => $filtroEventoId, 'contexto' => 'evento']) : route('certificados.emitidos') }}" class="btn btn-outline-secondary">Limpar</a>
     </form>
   </div>
