@@ -284,7 +284,7 @@
       const g = [
         new fabric.Line([w / 2, 0, w / 2, h], { stroke: '#cbd5e1', strokeDashArray: [5, 5], selectable: false, evented: false }),
         new fabric.Line([0, h / 2, w, h / 2], { stroke: '#cbd5e1', strokeDashArray: [5, 5], selectable: false, evented: false }),
-        new fabric.Rect({ left: w * 0.05, top: h * 0.05, width: w * 0.9, height: h * 0.9, stroke: '#e2e8f0', strokeDashArray: [4, 6], fill: 'rgba(0,0,0,0)', selectable: false, evented: false })
+        new fabric.Rect({ left: w * 0.05, top: h * 0.05, originX: 'left', originY: 'top', width: w * 0.9, height: h * 0.9, stroke: '#e2e8f0', strokeDashArray: [4, 6], fill: 'rgba(0,0,0,0)', selectable: false, evented: false })
       ];
       g.forEach(line => canvas.add(line));
       guides = g;
@@ -343,6 +343,8 @@
       textObj = new fabric.Textbox(textArea.value || 'Texto', {
         left: parseFloat(xInput.value) || 40,
         top: parseFloat(yInput.value) || 40,
+        originX: 'left',
+        originY: 'top',
         width: parseFloat(wInput.value) || 300,
         height: parseFloat(hInput.value) || undefined,
         fill: textColorInput ? textColorInput.value : '#111111',
@@ -400,6 +402,8 @@
       qrObj = new fabric.Rect({
         left: qx,
         top: qy,
+        originX: 'left',
+        originY: 'top',
         width: qs,
         height: qs,
         fill: 'rgba(34,197,94,0.18)',
@@ -439,6 +443,8 @@
       dateObj = new fabric.Textbox(defaultDateText, {
         left: dx,
         top: dy,
+        originX: 'left',
+        originY: 'top',
         width: parseFloat(dateWInput.value) || 320,
         height: parseFloat(dateHInput.value) || undefined,
         fill: textColorInput ? textColorInput.value : '#111111',
