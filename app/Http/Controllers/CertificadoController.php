@@ -14,7 +14,9 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Spatie\Browsershot\Browsershot;
 use Spatie\LaravelPdf\Facades\Pdf;
+use Spatie\LaravelPdf\PdfBuilder;
 use ZipArchive;
 
 class CertificadoController extends Controller
@@ -552,11 +554,24 @@ class CertificadoController extends Controller
         $certificado->load('modelo');
         $fileName = 'certificado-'.$certificado->id.'.pdf';
 
+        return $this->certificadoPdf($certificado)->download($fileName);
+    }
+
+    /**
+     * Monta o PdfBuilder do certificado com a configuração de página compartilhada
+     * pelos pontos de download/zip/preview.
+     *
+     * `preferCSSPageSize` alinha a folha do PDF ao `@page` do CSS (A4 paisagem,
+     * 297x210mm). Sem isso o Puppeteer gera a folha alguns décimos de mm maior que
+     * a área pintada, deixando uma faixa branca fina nas bordas do certificado.
+     */
+    private function certificadoPdf(Certificado $certificado): PdfBuilder
+    {
         return Pdf::view('certificados.pdf', ['certificado' => $certificado])
             ->format('a4')
             ->landscape()
             ->margins(0, 0, 0, 0)
-            ->download($fileName);
+            ->withBrowsershot(fn (Browsershot $browsershot) => $browsershot->setOption('preferCSSPageSize', true));
     }
 
     private function usuarioPodeBaixarCertificado(Certificado $certificado): bool
@@ -771,11 +786,7 @@ class CertificadoController extends Controller
         $nomesUsados = [];
         foreach ($certificados as $certificado) {
             $pdfConteudo = base64_decode(
-                Pdf::view('certificados.pdf', ['certificado' => $certificado])
-                    ->format('a4')
-                    ->landscape()
-                    ->margins(0, 0, 0, 0)
-                    ->base64(),
+                $this->certificadoPdf($certificado)->base64(),
                 true
             );
 
@@ -900,11 +911,7 @@ class CertificadoController extends Controller
         $certificado->codigo_validacao = Str::uuid()->toString();
         $certificado->carga_horaria = 600;
 
-        return Pdf::view('certificados.pdf', ['certificado' => $certificado])
-            ->format('a4')
-            ->landscape()
-            ->margins(0, 0, 0, 0)
-            ->inline('certificado-preview.pdf');
+        return $this->certificadoPdf($certificado)->inline('certificado-preview.pdf');
     }
 
     private function formatarListaNomes(array $nomes): string
