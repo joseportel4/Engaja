@@ -502,7 +502,7 @@
         return;
       }
 
-      const absoluteUrl = url.startsWith('http') ? url : `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
+      const absoluteUrl = (url.startsWith('http') || url.startsWith('blob:')) ? url : `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
       const imgEl = new Image();
       imgEl.crossOrigin = 'anonymous';
       imgEl.onload = () => {
