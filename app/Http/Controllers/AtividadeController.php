@@ -464,6 +464,7 @@ class AtividadeController extends Controller
         $inscricoes = $atividade->inscricoes()->with([
             'participante.user',
             'participante.municipio.estado',
+            'presencas' => fn ($q) => $q->where('atividade_id', $atividade->id),
         ])->get()->sortBy(function ($inscricao) {
             return Str::ascii(mb_strtolower($inscricao->participante->user->name ?? ''));
         })->values();
