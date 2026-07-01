@@ -19,7 +19,7 @@
     {{ $attributes->except('class') }}
     id="{{ $id }}"
     data-ag-grid
-    class="{{ $class }}"
+    class="ag-theme-quartz {{ $class }}"
     data-columns="{{ json_encode($columns, JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) }}"
     data-rows="{{ json_encode($rows, JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) }}"
     data-pagination="{{ $pagination ? 'true' : 'false' }}"

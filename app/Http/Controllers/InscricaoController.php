@@ -1015,6 +1015,7 @@ class InscricaoController extends Controller
 
         $validated = $request->validate([
             'your_file' => 'required|file|mimes:xlsx,xls,csv|max:20480',
+            'origem' => ['nullable', 'string', 'max:255'],
             'atividade_id' => [
                 'nullable',
                 'integer',
@@ -1023,6 +1024,7 @@ class InscricaoController extends Controller
         ]);
 
         $modoTodosMomentos = $validated['atividade_id'] === null;
+        $origemImportacao = trim((string) ($validated['origem'] ?? ''));
 
         $atividadesEvento = $evento->atividades()
             ->orderBy('dia')
@@ -1110,6 +1112,7 @@ class InscricaoController extends Controller
             session([$sessionKey => [
                 'modo_todos_momentos' => $modoTodosMomentos,
                 'atividade_id' => $modoTodosMomentos ? null : $validated['atividade_id'],
+                'origem' => $origemImportacao !== '' ? $origemImportacao : null,
                 'rows' => $rows,
             ]]);
 
@@ -1322,6 +1325,7 @@ class InscricaoController extends Controller
         }
 
         $allRows = collect($sessionPayload['rows']);
+        $origemImportacao = trim((string) ($sessionPayload['origem'] ?? ''));
 
         $resumoImportacao = $this->montarResumoImportacao($allRows);
 
@@ -1368,6 +1372,7 @@ class InscricaoController extends Controller
             'participanteTags' => $participanteTags,
             'usuariosExistentesCount' => $resumoImportacao['usuariosExistentesCount'],
             'usuariosNovosCount' => $resumoImportacao['usuariosNovosCount'],
+            'origemImportacao' => $origemImportacao,
         ]);
     }
 
@@ -1452,6 +1457,7 @@ class InscricaoController extends Controller
             $sessionKey => [
                 'modo_todos_momentos' => $modoTodosMomentos,
                 'atividade_id' => $modoTodosMomentos ? null : $atividadeId,
+                'origem' => $sessionPayload['origem'] ?? null,
                 'rows' => $allRows->values()->all(),
             ],
         ]);
@@ -1531,8 +1537,9 @@ class InscricaoController extends Controller
         }
 
         $rows = collect($sessionPayload['rows']);
+        $origemImportacao = trim((string) ($sessionPayload['origem'] ?? ''));
 
-        DB::transaction(function () use ($rows, $evento, $atividadesAlvo) {
+        DB::transaction(function () use ($rows, $evento, $atividadesAlvo, $origemImportacao) {
             $ids = [];
 
             $emails = collect($rows)->pluck('email')->map(fn ($e) => strtolower(trim((string) $e)))->unique()->filter()->values();
@@ -1554,6 +1561,28 @@ class InscricaoController extends Controller
             if (count($novosUsuarios)) {
                 User::insert($novosUsuarios);
                 $usersExistentes = User::whereIn('email', $emails)->get()->keyBy(fn ($u) => strtolower($u->email));
+            }
+
+            if ($origemImportacao !== '' && $usersExistentes->isNotEmpty()) {
+                $now = now();
+                $origens = $usersExistentes
+                    ->pluck('id')
+                    ->unique()
+                    ->map(fn ($userId) => [
+                        'evento_id' => $evento->id,
+                        'user_id' => $userId,
+                        'origem' => $origemImportacao,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ])
+                    ->values()
+                    ->all();
+
+                DB::table('origem_usuario')->upsert(
+                    $origens,
+                    ['evento_id', 'user_id'],
+                    ['origem', 'updated_at']
+                );
             }
 
             $userIds = $usersExistentes->pluck('id')->values();
