@@ -15,13 +15,15 @@
 
     .section-title { font-size: 13px; font-weight: 700; color: #421944; border-left: 5px solid #421944; padding-left: 8px; margin: 0 0 10px 0; }
 
-    .participant-list { list-style: none; margin: 0; padding: 0; }
-    .participant-item { display: table; width: 100%; border-bottom: 1px solid #e5e7eb; padding: 7px 0; }
-    .participant-item:last-child { border-bottom: none; }
-    .item-num { display: table-cell; width: 26px; font-weight: 700; color: #9ca3af; vertical-align: middle; }
-    .item-body { display: table-cell; vertical-align: middle; }
-    .item-name { font-weight: 700; color: #111827; font-size: 11px; }
-    .item-details { color: #6b7280; font-size: 10px; margin-top: 2px; }
+    .participant-table { width: 100%; border-collapse: collapse; }
+    .participant-table th { background: #421944; color: #fff; font-size: 10px; font-weight: 700; padding: 6px 8px; text-align: left; }
+    .participant-table th.center { text-align: center; }
+    .participant-table td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; font-size: 10px; }
+    .participant-table tr:last-child td { border-bottom: none; }
+    .participant-table tr:nth-child(even) td { background: #f9fafb; }
+    .td-num { width: 28px; text-align: center; font-weight: 700; color: #9ca3af; }
+    .td-name { font-weight: 700; color: #111827; }
+    .td-center { text-align: center; }
     .badge-ouvinte { background: #f5f3ff; color: #2c1230; border-radius: 4px; padding: 1px 5px; font-size: 9px; font-weight: 700; margin-left: 5px; }
 
     .total { text-align: right; font-size: 10px; color: #6b7280; margin-top: 10px; }
@@ -43,6 +45,12 @@
 </div>
 
 <table class="info-grid">
+    @if($atividade->evento)
+    <tr>
+        <td class="label">Ação pedagógica</td>
+        <td colspan="3">{{ $atividade->evento->nome }}</td>
+    </tr>
+    @endif
     <tr>
         <td class="label">Momento</td>
         <td colspan="3">{{ $atividade->descricao }}</td>
@@ -57,12 +65,6 @@
         <td class="label">Município</td>
         <td colspan="3">{{ $munLabel }}</td>
     </tr>
-    @if($atividade->evento)
-    <tr>
-        <td class="label">Ação pedagógica</td>
-        <td colspan="3">{{ $atividade->evento->nome }}</td>
-    </tr>
-    @endif
 </table>
 
 <h2 class="section-title">Participantes</h2>
@@ -70,33 +72,50 @@
 @if($inscricoes->isEmpty())
     <p class="empty">Nenhum participante registrado para este momento.</p>
 @else
-    <ul class="participant-list">
-        @foreach($inscricoes as $i => $inscricao)
-            @php
-                $p = $inscricao->participante;
-                $u = $p?->user;
-                $m = $p?->municipio;
-                $munPart = $m ? ($m->nome . ' - ' . ($m->estado?->sigla ?? '')) : null;
-            @endphp
-            <li class="participant-item">
-                <span class="item-num">{{ $i + 1 }}</span>
-                <span class="item-body">
-                    <div class="item-name">
+    <table class="participant-table">
+        <thead>
+            <tr>
+                <th class="center">#</th>
+                <th>Nome</th>
+                <th>CPF</th>
+                <th>Município</th>
+                <th>Presença registrada em</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($inscricoes as $i => $inscricao)
+                @php
+                    $p = $inscricao->participante;
+                    $u = $p?->user;
+                    $m = $p?->municipio;
+                    $munPart = $m ? ($m->nome . ' - ' . ($m->estado?->sigla ?? '')) : '—';
+
+                    $cpfSujo = $p?->cpf ?? '';
+                    $cpfLimpo = preg_replace('/[^0-9]/', '', $cpfSujo);
+                    $cpfFormatado = strlen($cpfLimpo) === 11
+                        ? preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', $cpfLimpo)
+                        : ($cpfSujo ?: '—');
+
+                    $presenca = $inscricao->presencas->first();
+                    $registradoEm = $presenca?->created_at
+                        ? \Carbon\Carbon::parse($presenca->created_at)->format('d/m/Y H:i')
+                        : '—';
+                @endphp
+                <tr>
+                    <td class="td-num">{{ $i + 1 }}</td>
+                    <td class="td-name">
                         {{ $u->name ?? '—' }}
                         @if($inscricao->ouvinte)
                             <span class="badge-ouvinte">Ouvinte</span>
                         @endif
-                    </div>
-                    <div class="item-details">
-                        {{ $u->email ?? '' }}
-                        @if($munPart)
-                            &nbsp;·&nbsp; {{ $munPart }}
-                        @endif
-                    </div>
-                </span>
-            </li>
-        @endforeach
-    </ul>
+                    </td>
+                    <td class="td-center">{{ $cpfFormatado }}</td>
+                    <td>{{ $munPart }}</td>
+                    <td class="td-center">{{ $registradoEm }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
     <div class="total">Total: {{ $inscricoes->count() }} participante(s)</div>
 @endif
 @endsection
