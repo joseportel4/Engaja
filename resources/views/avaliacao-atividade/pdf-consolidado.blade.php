@@ -42,8 +42,10 @@
     <x-pdf.header
         title="Relatórios do Momento"
         subtitle="Documento institucional consolidado · Todos os relatórios pós-ação do mesmo momento"
-        :meta="['Total: ' . $relatorios->count() . ' relatório(s)']"
-    />
+    >
+        @php $totalRelatorios = $relatorios->count(); @endphp
+        Consolidando <strong>{{ $totalRelatorios }}</strong> {{ $totalRelatorios === 1 ? 'relatório' : 'relatórios' }} deste momento.
+    </x-pdf.header>
 
     <div class="content">
         <div class="card">

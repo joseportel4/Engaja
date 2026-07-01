@@ -39,11 +39,12 @@
 @endsection
 
 @section('content')
-    <x-pdf.header
-        title="Lista de Presenças"
-        subtitle="Dashboard de presenças"
-        :meta="['Total de momentos: ' . (is_countable($atividades) ? count($atividades) : $atividades->count())]"
-    />
+    @php
+        $totalMomentos = is_countable($atividades) ? count($atividades) : $atividades->count();
+    @endphp
+    <x-pdf.header title="Lista de Presenças" subtitle="Dashboard de presenças">
+        Exibindo <strong>{{ $totalMomentos }}</strong> {{ $totalMomentos === 1 ? 'momento' : 'momentos' }}.
+    </x-pdf.header>
 
     @if(!empty($truncado))
         <div class="filters-applied" style="border-color:#f0c36d; background:#fff8e8;">

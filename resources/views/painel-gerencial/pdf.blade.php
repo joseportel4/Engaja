@@ -21,17 +21,26 @@
 
 @section('content')
     @php
-        $metaPainel = [];
+        $modelos = [
+            'Ação' => 'da ação %s',
+            'Município' => 'no município de %s',
+            'Região' => 'na região %s',
+            'Período' => 'no período %s',
+            'Turno' => 'no turno da %s',
+        ];
+        $partes = [];
         foreach ($filtros ?? [] as $rotulo => $valor) {
-            $metaPainel[] = $rotulo . ': ' . $valor;
+            $modelo = $modelos[$rotulo] ?? ($rotulo . ' %s');
+            $partes[] = sprintf($modelo, '<strong>' . e($valor) . '</strong>');
         }
+        $contexto = count($partes)
+            ? 'Exibindo os quantitativos ' . implode(', ', $partes) . '.'
+            : 'Exibindo os quantitativos de todas as ações pedagógicas (sem filtros aplicados).';
     @endphp
 
-    <x-pdf.header
-        title="Painel Gerencial de Quantitativos"
-        subtitle="Projeto Alfa-EJA"
-        :meta="$metaPainel"
-    />
+    <x-pdf.header title="Painel Gerencial de Quantitativos" subtitle="Projeto Alfa-EJA">
+        {!! $contexto !!}
+    </x-pdf.header>
 
     <h2>Resumo</h2>
     <table class="kpis">

@@ -33,37 +33,40 @@
     $dimensoes = $dimensoes ?? [];
     $fmtPct = fn($v) => $v > 0 ? number_format($v, 1, ',', '.') . '%' : '—';
 
-    $filtrosAplicados = [];
+    $partes = [];
     if (request('evento_id')) {
         $evento = \App\Models\Evento::find(request('evento_id'));
-        if ($evento) $filtrosAplicados[] = 'Ação: ' . $evento->nome;
+        if ($evento) $partes[] = 'da ação <strong>' . e($evento->nome) . '</strong>';
     }
     if (request('regiao_id')) {
         $regiao = \App\Models\Regiao::find(request('regiao_id'));
-        if ($regiao) $filtrosAplicados[] = 'Região: ' . $regiao->nome;
+        if ($regiao) $partes[] = 'na região <strong>' . e($regiao->nome) . '</strong>';
     }
     if (request('municipio_id')) {
         $municipio = \App\Models\Municipio::find(request('municipio_id'));
-        if ($municipio) $filtrosAplicados[] = 'Município: ' . $municipio->nome;
+        if ($municipio) $partes[] = 'no município de <strong>' . e($municipio->nome) . '</strong>';
     }
     if (request('de') || request('ate')) {
         $de = request('de') ? \Carbon\Carbon::parse(request('de'))->format('d/m/Y') : '';
         $ate = request('ate') ? \Carbon\Carbon::parse(request('ate'))->format('d/m/Y') : '';
-        $intervalo = ($de && $ate) ? "$de até $ate" : ($de ? "a partir de $de" : "até $ate");
-        $filtrosAplicados[] = 'Período: ' . $intervalo;
+        $intervalo = ($de && $ate) ? "de $de a $ate" : ($de ? "a partir de $de" : "até $ate");
+        $partes[] = 'no período <strong>' . $intervalo . '</strong>';
     }
+
+    $totalMunicipios = $totalGeral->filter(fn($r) => ! isset($r['_is_total']) && ! isset($r['_is_unidentified']))->count();
+    $contexto = 'Exibindo o total de participantes em <strong>'.$totalMunicipios.'</strong> '.($totalMunicipios === 1 ? 'município' : 'municípios');
+    $contexto .= count($partes) ? ' '.implode(', ', $partes) : '';
+    $contexto .= '.';
+
     if (count($dimensoes)) {
         $labels = ['cpf' => 'CPF', 'raca_cor' => 'Raça/Cor', 'genero' => 'Gênero', 'pcd' => 'PcD', 'certificados' => 'Certificados', 'tag' => 'Tag'];
-        $filtrosAplicados[] = 'Dimensões: ' . implode(', ', array_map(fn($d) => $labels[$d] ?? $d, $dimensoes));
+        $contexto .= ' Detalhando as dimensões: <strong>'.e(implode(', ', array_map(fn($d) => $labels[$d] ?? $d, $dimensoes))).'</strong>.';
     }
-    $totalMunicipios = $totalGeral->filter(fn($r) => ! isset($r['_is_total']) && ! isset($r['_is_unidentified']))->count();
-    $filtrosAplicados[] = 'Total de municípios: ' . $totalMunicipios;
 @endphp
 
-<x-pdf.header
-    title="Total Geral de Participantes"
-    :meta="$filtrosAplicados"
-/>
+<x-pdf.header title="Total Geral de Participantes">
+    {!! $contexto !!}
+</x-pdf.header>
 
 @if($totalGeral->filter(fn($r) => !isset($r['_is_total']))->isEmpty())
     <p style="text-align:center;color:#666;">Nenhum dado encontrado com os filtros aplicados.</p>
