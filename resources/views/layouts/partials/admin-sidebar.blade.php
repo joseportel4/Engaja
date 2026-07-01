@@ -50,7 +50,9 @@
             </div>
           </div>
         </div>
+      @endhasanyrole
 
+      @hasanyrole('administrador|gerente|eq_pedagogica|articulador|SME')
         @php($operacoesOpen = request()->routeIs('eventos.*') || request()->routeIs('agendamentos.*') || request()->routeIs('atividade-acoes.*'))
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingOperacoes">
@@ -65,9 +67,11 @@
           </h2>
           <div id="sidebarOperacoes" class="accordion-collapse collapse {{ $operacoesOpen ? 'show' : '' }}" aria-labelledby="headingOperacoes" data-bs-parent="#sidebarAccordion">
             <div class="accordion-body">
-              <a class="admin-nav-link {{ request()->routeIs('eventos.*') ? 'active' : '' }}" href="{{ route('eventos.index') }}">
-                Ações pedagógicas
-              </a>
+              @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
+                <a class="admin-nav-link {{ request()->routeIs('eventos.*') ? 'active' : '' }}" href="{{ route('eventos.index') }}">
+                  Ações pedagógicas
+                </a>
+              @endhasanyrole
               <a class="admin-nav-link {{ request()->routeIs('agendamentos.*') && !request()->routeIs('agendamentos.efetivacoes.*') ? 'active' : '' }}" href="{{ route('agendamentos.index') }}">
                 Agendamentos
               </a>
@@ -82,7 +86,9 @@
             </div>
           </div>
         </div>
+      @endhasanyrole
 
+      @hasanyrole('administrador|gerente|eq_pedagogica|articulador')
         @php($avaliacoesOpen = request()->routeIs('avaliacoes.*') || request()->routeIs('avaliacoes-universais.*') || request()->routeIs('avaliacoes-consolidadas.*') || request()->routeIs('templates-avaliacao.*') || request()->routeIs('dimensaos.*') || request()->routeIs('indicadors.*') || request()->routeIs('evidencias.*') || request()->routeIs('escalas.*'))
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingAvaliacoes">
@@ -187,7 +193,7 @@
         </div>
       @endhasanyrole
 
-      @hasanyrole('administrador|gerente|eq_pedagogica|articulador|participante')
+      @hasanyrole('administrador|gerente|eq_pedagogica|articulador|participante|SME')
         @php($certificadosOpen = request()->routeIs('profile.certificados') || request()->routeIs('certificados.*'))
         <div class="accordion-item">
           <h2 class="accordion-header" id="headingCertificados">
