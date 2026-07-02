@@ -42,10 +42,6 @@
         $regiao = \App\Models\Regiao::find(request('regiao_id'));
         if ($regiao) $partes[] = 'na região <strong>' . e($regiao->nome) . '</strong>';
     }
-    if (request('municipio_id')) {
-        $municipio = \App\Models\Municipio::find(request('municipio_id'));
-        if ($municipio) $partes[] = 'no município de <strong>' . e($municipio->nome) . '</strong>';
-    }
     if (request('de') || request('ate')) {
         $de = request('de') ? \Carbon\Carbon::parse(request('de'))->format('d/m/Y') : '';
         $ate = request('ate') ? \Carbon\Carbon::parse(request('ate'))->format('d/m/Y') : '';

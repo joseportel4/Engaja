@@ -116,7 +116,6 @@ class RelatorioQuantitativoController extends Controller
     private function buildTotalGeralData(Request $request)
     {
         $eventoId = $request->integer('evento_id');
-        $municipioIdFiltro = $request->integer('municipio_id');
         $regiaoId = $request->integer('regiao_id');
         $de = $request->date('de');
         $ate = $request->date('ate');
@@ -129,7 +128,6 @@ class RelatorioQuantitativoController extends Controller
             ->select('municipio_id')
             ->selectRaw('SUM(publico_esperado) as previstos')
             ->when($eventoId, fn ($q) => $q->where('evento_id', $eventoId))
-            ->when($municipioIdFiltro, fn ($q) => $q->where('municipio_id', $municipioIdFiltro))
             ->when($de && $ate, fn ($q) => $q->whereBetween('dia', [$de, $ate]))
             ->when($de && ! $ate, fn ($q) => $q->where('dia', '>=', $de))
             ->when(! $de && $ate, fn ($q) => $q->where('dia', '<=', $ate))
@@ -164,7 +162,6 @@ class RelatorioQuantitativoController extends Controller
             ->whereNull('atividades.deleted_at')
             ->whereNotNull('atividades.evento_id')
             ->when($eventoId, fn ($q) => $q->where('atividades.evento_id', $eventoId))
-            ->when($municipioIdFiltro, fn ($q) => $q->where('atividades.municipio_id', $municipioIdFiltro))
             ->when($de && $ate, fn ($q) => $q->whereBetween('atividades.dia', [$de, $ate]))
             ->when($de && ! $ate, fn ($q) => $q->where('atividades.dia', '>=', $de))
             ->when(! $de && $ate, fn ($q) => $q->where('atividades.dia', '<=', $ate))

@@ -59,4 +59,24 @@ class RelatorioQuantitativoControllerTest extends TestCase
             ->assertOk()
             ->assertSee('grid-relatorio-total-geral', false);
     }
+
+    public function test_total_geral_ignora_filtro_de_municipio(): void
+    {
+        $evento = Evento::factory()->create(['nome' => 'Formação Alfa-EJA']);
+        $municipioA = Municipio::factory()->create(['nome' => 'Alpha City']);
+        $municipioB = Municipio::factory()->create(['nome' => 'Beta City']);
+
+        Atividade::factory()->create(['evento_id' => $evento->id, 'municipio_id' => $municipioA->id, 'publico_esperado' => 10]);
+        Atividade::factory()->create(['evento_id' => $evento->id, 'municipio_id' => $municipioB->id, 'publico_esperado' => 20]);
+
+        $user = User::factory()->create();
+        $user->assignRole('administrador');
+
+        // Mesmo passando municipio_id, o relatório continua listando todos os municípios.
+        $this->actingAs($user)
+            ->get(route('relatorio-quantitativo.index', ['tab' => 'total-geral', 'municipio_id' => $municipioA->id]))
+            ->assertOk()
+            ->assertSee('Alpha City')
+            ->assertSee('Beta City');
+    }
 }
