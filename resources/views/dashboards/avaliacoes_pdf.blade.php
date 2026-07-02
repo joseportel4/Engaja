@@ -76,15 +76,11 @@
 @section('content')
     <div class="sheet">
         <div class="content">
-            <table class="title-row">
-                <tr>
-                    <td>
-                        <h1 class="report-title">{{ $titulo }}</h1>
-                        <div class="report-subtitle">Relatório de respostas · {{ $tipo === 'universal' ? 'Avaliação universal' : 'Avaliação anônima' }}</div>
-                    </td>
-                    <td class="report-generated">Gerado em {{ $geradoEm->format('d/m/Y H:i') }}</td>
-                </tr>
-            </table>
+            <x-pdf.header
+                :title="$titulo"
+                :subtitle="'Relatório de respostas · ' . ($tipo === 'universal' ? 'Avaliação universal' : 'Avaliação anônima')"
+                :meta="($de || $ate) ? ['Período: ' . ($de ?? 'Início') . ' até ' . ($ate ?? 'Hoje')] : []"
+            />
 
             <div class="card">
                 <div class="intro-box">

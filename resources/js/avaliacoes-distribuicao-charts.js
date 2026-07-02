@@ -643,7 +643,9 @@ function renderChartsInner(opts) {
 }
 
 function bootInline(root) {
-    const jsonEl = document.getElementById("avaliacoes-perguntas-json");
+    const jsonEl = root.querySelector(
+        'script[type="application/json"][data-avaliacoes-perguntas], #avaliacoes-perguntas-json',
+    );
     let perguntas = [];
     try {
         perguntas = jsonEl ? JSON.parse(jsonEl.textContent || "[]") : [];
@@ -651,12 +653,15 @@ function bootInline(root) {
         perguntas = [];
     }
 
-    const cardsQuestoes = root.querySelector("#cards-questoes-momento");
+    const cardsQuestoes = root.querySelector(
+        "[data-cards-questoes], #cards-questoes-momento",
+    );
     if (!cardsQuestoes || typeof window.Chart === "undefined") return;
 
     const chartInstances = new Map();
     const chartPreferences = new Map();
-    const textModalEl = document.getElementById("textAnswersModalMomento");
+    const modalId = root.dataset.textModalId || "textAnswersModalMomento";
+    const textModalEl = document.getElementById(modalId);
     const textModalTitle = textModalEl?.querySelector(".js-text-modal-title");
     const textModalList = textModalEl?.querySelector(".js-text-modal-list");
     const textModalCount = textModalEl?.querySelector(".js-text-modal-count");
@@ -746,6 +751,9 @@ function boot() {
     if (inlineRoot) {
         bootInline(inlineRoot);
     }
+    document.querySelectorAll("[data-avaliacoes-inline-root]").forEach((root) => {
+        bootInline(root);
+    });
 }
 
 if (document.readyState === "loading") {

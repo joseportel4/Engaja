@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\MatrizPresencaExport;
 use App\Models\Atividade;
 use App\Models\Avaliacao;
 use App\Models\Evento;
@@ -14,6 +15,10 @@ use App\Services\AvaliacaoRespostasDashboardService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 use Spatie\LaravelPdf\Facades\Pdf;
 
 class DashboardController extends Controller
@@ -163,7 +168,7 @@ class DashboardController extends Controller
             ->whereNull('deleted_at')
             ->with('participante.user')
             ->get()
-            ->sortBy(fn($i) => strtolower($i->participante?->user?->name ?? ''))
+            ->sortBy(fn ($i) => strtolower($i->participante?->user?->name ?? ''))
             ->values();
 
         $presentesIds = $presentes->pluck('inscricao_id')->filter()->unique();
@@ -199,43 +204,16 @@ class DashboardController extends Controller
 
     public function avaliacoesData(Request $request, AvaliacaoRespostasDashboardService $avaliacaoRespostas)
     {
+        $this->validateAvaliacoesDashboardFilters($request);
         $this->authorizeAvaliacoesDashboardRequest($request);
-
-        $request->validate([
-            'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-        ]);
-
-        // Se não houver filtros específicos, pegamos a data da última resposta como padrão
-        if (! $request->filled('evento_id') && ! $request->filled('atividade_id') && ! $request->filled('avaliacao_id') && ! $request->filled('de') && ! $request->filled('ate')) {
-            $ultimaResposta = RespostaAvaliacao::latest('created_at')->first();
-            if ($ultimaResposta) {
-                $dataFiltro = $ultimaResposta->created_at->format('Y-m-d');
-                $request->merge([
-                    'de' => $dataFiltro,
-                    'ate' => $dataFiltro,
-                ]);
-            }
-        }
 
         return response()->json($avaliacaoRespostas->buildDashboardPayload($request));
     }
 
     public function avaliacoesPdf(Request $request, AvaliacaoRespostasDashboardService $avaliacaoRespostas)
     {
+        $this->validateAvaliacoesDashboardFilters($request);
         $this->authorizeAvaliacoesDashboardRequest($request);
-
-        // Se não houver filtros específicos, pegamos a data da última resposta como padrão
-        if (! $request->filled('evento_id') && ! $request->filled('atividade_id') && ! $request->filled('avaliacao_id') && ! $request->filled('de') && ! $request->filled('ate')) {
-            $ultimaResposta = RespostaAvaliacao::latest('created_at')->first();
-            if ($ultimaResposta) {
-                $dataFiltro = $ultimaResposta->created_at->format('Y-m-d');
-                $request->merge([
-                    'de' => $dataFiltro,
-                    'ate' => $dataFiltro,
-                ]);
-            }
-        }
 
         // Para o PDF, queremos todas as questões, sem paginação
         $request->merge(['per_page' => 1000]);
@@ -274,6 +252,53 @@ class DashboardController extends Controller
     /**
      * Garante que filtros por momento ou ação pedagógica só devolvem dados se o utilizador puder editar esse evento.
      */
+    private function validateAvaliacoesDashboardFilters(Request $request): array
+    {
+        $tipo = (string) $request->query('tipo', 'momento');
+
+        $validator = Validator::make($request->all(), [
+            'tipo' => ['required', 'string', Rule::in(['momento', 'transcricao', 'universal'])],
+            'evento_id' => [
+                Rule::requiredIf(fn () => in_array($tipo, ['momento', 'transcricao'], true)),
+                'nullable',
+                'integer',
+                'exists:eventos,id',
+            ],
+            'atividade_id' => ['nullable', 'integer', 'exists:atividades,id'],
+            'avaliacao_id' => [
+                Rule::requiredIf(fn () => $tipo === 'universal'),
+                'nullable',
+                'integer',
+                'exists:avaliacaos,id',
+            ],
+            'de' => ['nullable', 'date'],
+            'ate' => ['nullable', 'date', 'after_or_equal:de'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $validator->after(function ($validator) use ($request) {
+            $eventoId = $request->integer('evento_id');
+            $atividadeId = $request->integer('atividade_id');
+
+            if ($eventoId && $atividadeId) {
+                $atividadePertenceAoEvento = Atividade::query()
+                    ->whereKey($atividadeId)
+                    ->where('evento_id', $eventoId)
+                    ->exists();
+
+                if (! $atividadePertenceAoEvento) {
+                    $validator->errors()->add(
+                        'atividade_id',
+                        'O momento selecionado não pertence à ação pedagógica escolhida.'
+                    );
+                }
+            }
+        });
+
+        return $validator->validate();
+    }
+
     private function authorizeAvaliacoesDashboardRequest(Request $request): void
     {
         $atividadeId = $request->integer('atividade_id');
@@ -447,8 +472,8 @@ class DashboardController extends Controller
         $eventoId = $request->integer('evento_id');
         $evento = Evento::findOrFail($eventoId);
 
-        $fileName = 'Matriz_Presenca_' . \Illuminate\Support\Str::slug($evento->nome) . '_' . now()->format('Ymd_Hi') . '.xlsx';
+        $fileName = 'Matriz_Presenca_'.Str::slug($evento->nome).'_'.now()->format('Ymd_Hi').'.xlsx';
 
-        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\MatrizPresencaExport($eventoId), $fileName);
+        return Excel::download(new MatrizPresencaExport($eventoId), $fileName);
     }
 }

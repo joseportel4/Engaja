@@ -19,7 +19,7 @@ class AvaliacaoAtividadeController extends Controller
     private const REPORT_EDIT_ROLES = ['administrador', 'gerente', 'eq_pedagogica'];
 
     private const REPORT_QUESTION_FIELDS = [
-        'questao_unificada' => 'Avaliação Geral do Momento (Logística, Acolhimento, Planejamento, Atuação da equipe, Recursos e Destaques).',
+        'questao_unificada' => 'Relatório Geral do Momento (Logística, Acolhimento, Planejamento, Atuação da equipe, Recursos e Destaques).',
     ];
 
     private function parseIntArray(Request $request, string $key): array
@@ -188,6 +188,10 @@ class AvaliacaoAtividadeController extends Controller
 
         $dados = $request->validate($this->rules());
 
+        if (isset($dados['questao_unificada'])) {
+            $dados['questao_unificada'] = clean($dados['questao_unificada']);
+        }
+
         $atividade->avaliacaoAtividades()->updateOrCreate(
             [
                 'atividade_id' => $atividade->id,
@@ -223,6 +227,10 @@ class AvaliacaoAtividadeController extends Controller
         $this->authorizeReport($atividade);
 
         $dados = $request->validate($this->rules());
+
+        if (isset($dados['questao_unificada'])) {
+            $dados['questao_unificada'] = clean($dados['questao_unificada']);
+        }
 
         $atividade->avaliacaoAtividades()->updateOrCreate(
             [

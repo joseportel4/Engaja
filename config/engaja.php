@@ -32,5 +32,6 @@ return [
     'participante_tags' => [
         'Rede de Ensino',
         'Movimento Social',
+        'Como Alfabetizar com Paulo Freire',
     ],
 ];

@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\AgendamentoController;
 use App\Http\Controllers\AgendamentoEfetivacaoController;
+use App\Http\Controllers\AgendamentoNotificacaoController;
 use App\Http\Controllers\AgendamentoParticipanteController;
 use App\Http\Controllers\AtividadeAcaoController;
 use App\Http\Controllers\AtividadeController;
 use App\Http\Controllers\AutorizacaoImagemImportController;
 use App\Http\Controllers\AvaliacaoAtividadeController;
+use App\Http\Controllers\AvaliacaoConsolidadaController;
 use App\Http\Controllers\AvaliacaoController;
 use App\Http\Controllers\CertificadoController;
 use App\Http\Controllers\DashboardController;
@@ -222,12 +224,18 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
             Route::get('sem-vinculo', [UsuariosSemVinculoController::class, 'index'])->name('sem-vinculo.index');
             Route::get('sem-vinculo/exportar', [UsuariosSemVinculoController::class, 'exportar'])->name('sem-vinculo.exportar');
         });
+        Route::middleware('role:administrador')->group(function () {
+            Route::get('notificacoes-agendamento', [AgendamentoNotificacaoController::class, 'index'])->name('notificacoes-agendamento.index');
+            Route::post('{managedUser}/notificacoes-agendamento', [AgendamentoNotificacaoController::class, 'toggle'])->name('notificacoes-agendamento.toggle');
+        });
         Route::get('{managedUser}/editar', [UserManagementController::class, 'edit'])->name('edit');
         Route::put('{managedUser}', [UserManagementController::class, 'update'])->name('update');
         Route::post('{managedUser}/redefinir-senha', [UserManagementController::class, 'resetPassword'])
             ->middleware('role:administrador')
             ->name('password.reset');
-        Route::post('certificados/emitir', [CertificadoController::class, 'emitirPorParticipantes'])->name('certificados.emitir');
+        Route::post('certificados/emitir', [CertificadoController::class, 'emitirPorParticipantes'])
+            ->middleware('role:administrador|gerente')
+            ->name('certificados.emitir');
         Route::get('exportar', [UserManagementController::class, 'export'])->name('export');
         Route::get('autorizacoes-imagem/importar', [AutorizacaoImagemImportController::class, 'import'])->name('autorizacoes.import');
         Route::post('autorizacoes-imagem/importar', [AutorizacaoImagemImportController::class, 'upload'])->name('autorizacoes.upload');
@@ -236,6 +244,10 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
     });
 
 Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {
+    Route::get('/avaliacoes-consolidadas', [AvaliacaoConsolidadaController::class, 'index'])
+        ->name('avaliacoes-consolidadas.index');
+    Route::get('/avaliacoes-consolidadas/pdf', [AvaliacaoConsolidadaController::class, 'pdf'])
+        ->name('avaliacoes-consolidadas.pdf');
     Route::get('/eventos/{evento}/relatorios', [EventoController::class, 'relatorios'])
         ->name('eventos.relatorios');
     Route::get('/eventos/{evento}/avaliacoes/consolidado', [EventoController::class, 'avaliacoesConsolidadas'])
@@ -317,8 +329,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/minhas-presencas', [ProfileController::class, 'presencas'])->name('profile.presencas');
 });
 
-Route::middleware(['auth', 'role:administrador|gerente'])->group(function () {
+Route::middleware(['auth', 'permission:certificado.baixar'])->group(function () {
     Route::get('/certificados/emitidos', [CertificadoController::class, 'emitidos'])->name('certificados.emitidos');
+    Route::get('/certificados/emitidos/zip', [CertificadoController::class, 'downloadZipEmitidos'])->name('certificados.emitidos.zip');
+});
+
+Route::middleware(['auth', 'role:administrador|gerente'])->group(function () {
     Route::get('/certificados/{certificado}/edit', [CertificadoController::class, 'edit'])
         ->whereNumber('certificado')
         ->name('certificados.edit');

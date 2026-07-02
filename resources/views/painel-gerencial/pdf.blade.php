@@ -5,33 +5,33 @@
 @section('styles')
     /* Conteúdo longo / multipágina: sobrescreve o body centralizado do layout. */
     body { display: block; height: auto; font-size: 9px; color: #222; }
-    h1 { font-size: 14px; color: #421944; margin-bottom: 2px; }
     h2 { font-size: 11px; color: #421944; margin: 10px 0 4px; }
-    .sub { font-size: 8px; color: #666; margin-bottom: 6px; }
-    .filtros { font-size: 8px; color: #444; margin-bottom: 8px; }
-    .filtros span { display: inline-block; margin-right: 10px; }
-    th, td { border: 1px solid #ccc; padding: 3px 5px; text-align: left; }
-    th { background: #e8daea; color: #421944; font-weight: 700; }
+    th, td { padding: 4px 6px; text-align: left; }
+    th { background: #421944; color: #fff; font-weight: 700; }
+    td { border-bottom: 1px solid #e5e7eb; }
+    tbody tr:nth-child(even) td { background: #f9fafb; }
     table { margin-bottom: 6px; }
     td.num, th.num { text-align: right; }
-    .kpis td { width: 25%; }
+    .kpis td { width: 25%; border-bottom: none; }
+    .kpis tr:nth-child(even) td { background: transparent; }
     .kpis .label { color: #666; font-size: 8px; }
     .kpis .valor { font-size: 13px; font-weight: 700; color: #421944; }
     .vazio { color: #888; font-style: italic; }
 @endsection
 
 @section('content')
-    <h1>Painel Gerencial de Quantitativos</h1>
-    <div class="sub">Alfa-EJA — gerado em {{ now()->format('d/m/Y H:i') }}</div>
+    @php
+        $metaPainel = [];
+        foreach ($filtros ?? [] as $rotulo => $valor) {
+            $metaPainel[] = $rotulo . ': ' . $valor;
+        }
+    @endphp
 
-    @if(!empty($filtros))
-        <div class="filtros">
-            <strong>Filtros:</strong>
-            @foreach($filtros as $rotulo => $valor)
-                <span>{{ $rotulo }}: {{ $valor }}</span>
-            @endforeach
-        </div>
-    @endif
+    <x-pdf.header
+        title="Painel Gerencial de Quantitativos"
+        subtitle="Projeto Alfa-EJA"
+        :meta="$metaPainel"
+    />
 
     <h2>Resumo</h2>
     <table class="kpis">

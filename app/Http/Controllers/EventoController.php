@@ -15,7 +15,6 @@ use App\Models\Participante;
 use App\Models\Presenca;
 use App\Models\SituacaoDesafiadora;
 use App\Models\User;
-use App\Services\AvaliacaoConsolidacaoService;
 use App\Support\CargaHoraria;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -37,7 +36,10 @@ class EventoController extends Controller
 
     public function index(Request $r)
     {
-        $eventos = Evento::with(['user'])
+        $sort = $r->query('sort', 'id');
+        $dir = strtolower((string) $r->query('dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $query = Evento::with(['user'])
             ->when($r->q, function ($q) use ($r) {
                 $search = mb_strtolower($r->q);
                 $q->where(function ($w) use ($search) {
@@ -47,9 +49,20 @@ class EventoController extends Controller
                 });
             })
             ->when($r->acao_geral, fn ($q) => $q->where('acao_geral', $r->acao_geral))
-            ->when($r->de, fn ($q) => $q->whereDate('data_inicio', '>=', $r->de))
-            ->orderByDesc('id')
-            ->paginate(10);
+            ->when($r->de, fn ($q) => $q->whereDate('data_inicio', '>=', $r->de));
+
+        match ($sort) {
+            'nome' => $query->orderBy('nome', $dir),
+            'tipo' => $query->orderBy('tipo', $dir),
+            'periodo' => $query->orderBy('data_inicio', $dir),
+            'criado_por' => $query->orderBy(
+                User::select('name')->whereColumn('users.id', 'eventos.user_id'),
+                $dir
+            ),
+            default => $query->orderBy('id', $dir),
+        };
+
+        $eventos = $query->paginate(10)->appends($r->query());
 
         $modelosCertificados = ModeloCertificado::orderBy('nome')->get();
 
@@ -154,14 +167,16 @@ class EventoController extends Controller
         return view('eventos.show', compact('evento', 'atividades', 'presencasPorAtividade'));
     }
 
-    public function avaliacoesConsolidadas(Request $request, Evento $evento, AvaliacaoConsolidacaoService $service)
+    public function avaliacoesConsolidadas(Request $request, Evento $evento)
     {
         $this->authorize('update', $evento);
 
         $agrupamento = $request->get('agrupamento', 'geral');
-        $grupos = $service->build($evento, $agrupamento);
 
-        return view('eventos.avaliacoes-consolidadas', compact('evento', 'agrupamento', 'grupos'));
+        return redirect()->route('avaliacoes-consolidadas.index', [
+            'evento_id' => $evento->id,
+            'agrupamento' => $agrupamento,
+        ]);
     }
 
     public function relatorios(Request $request, Evento $evento)

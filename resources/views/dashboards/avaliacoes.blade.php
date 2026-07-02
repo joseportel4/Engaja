@@ -88,6 +88,8 @@
     </div>
   </div>
 
+  <div id="dashboard-avaliacoes-notice" class="alert alert-info border-0 shadow-sm py-2 px-3 small mb-3 d-none" role="alert" aria-live="polite"></div>
+
   <div class="row g-3 mb-3" id="cards-totais">
     <div class="col-lg-3 col-sm-6">
       <div class="card shadow-sm border-0 h-100">
@@ -248,6 +250,7 @@
   const cardsQuestoes = document.getElementById('cards-questoes');
   const chartInstances = new Map();
   const chartPreferences = new Map();
+  const noticeEl = document.getElementById('dashboard-avaliacoes-notice');
   let cachedPerguntas = [];
   const atividadePlaceholder = filters.atividade?.querySelector('option[value=""]');
   const atividadeOptions = filters.atividade
@@ -281,31 +284,114 @@
     return params.toString();
   }
 
-    //valida se os filtros obrigatórios foram preenchidos
-    function hasRequiredFilters() {
-        const tipo = currentTipo();
-        if (tipo === 'universal') {
-            return !!filters.avaliacaoUniversal?.value;
-        } else {
-            return !!filters.evento?.value;
-        }
+  function clearNotice() {
+    if (!noticeEl) return;
+
+    noticeEl.classList.add('d-none');
+    noticeEl.innerHTML = '';
+  }
+
+  function showNotice(type, title, messages) {
+    if (!noticeEl) return;
+
+    const items = Array.isArray(messages) ? messages.filter(Boolean) : [messages].filter(Boolean);
+    if (items.length === 0) {
+      clearNotice();
+      return;
     }
 
-    //mostra o estado vazio e zera os placares
-    function showEmptyState() {
-        renderTotals({ submissoes: '-', questoes: '-', eventos: '-', ultima: '-' });
-        cardsQuestoes.innerHTML = `
+    noticeEl.className = `alert alert-${type} border-0 shadow-sm py-2 px-3 small mb-3`;
+    noticeEl.innerHTML = '';
+
+    if (title) {
+      const strong = document.createElement('strong');
+      strong.className = 'd-block mb-1';
+      strong.textContent = title;
+      noticeEl.appendChild(strong);
+    }
+
+    if (items.length === 1) {
+      const message = document.createElement('div');
+      message.textContent = items[0];
+      noticeEl.appendChild(message);
+    } else {
+      const list = document.createElement('ul');
+      list.className = 'mb-0 ps-3';
+      items.forEach((item) => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        list.appendChild(li);
+      });
+      noticeEl.appendChild(list);
+    }
+
+    noticeEl.classList.remove('d-none');
+  }
+
+  function getFilterValidation() {
+    const tipo = currentTipo();
+    const issues = [];
+
+    if (tipo === 'universal') {
+      if (!filters.avaliacaoUniversal?.value) {
+        issues.push({
+          level: 'info',
+          title: 'Filtro obrigatório',
+          message: 'Selecione uma avaliação universal para carregar os resultados.',
+          blocking: true,
+        });
+      }
+    } else if (!filters.evento?.value) {
+      issues.push({
+        level: 'info',
+        title: 'Filtro obrigatório',
+        message: 'Selecione uma ação pedagógica para carregar as avaliações.',
+        blocking: true,
+      });
+    }
+
+    if (filters.de?.value && filters.ate?.value && filters.de.value > filters.ate.value) {
+      const inicio = filters.de.value;
+      filters.de.value = filters.ate.value;
+      filters.ate.value = inicio;
+      issues.push({
+        level: 'warning',
+        title: 'Período ajustado',
+        message: 'A data inicial era maior que a final, então o intervalo foi corrigido automaticamente.',
+        blocking: false,
+      });
+    }
+
+    if (tipo !== 'universal' && filters.evento?.value && filters.atividade?.value) {
+      const selectedOption = filters.atividade.selectedOptions?.[0];
+      if (selectedOption && selectedOption.dataset.eventoId && selectedOption.dataset.eventoId !== filters.evento.value) {
+        filters.atividade.value = '';
+        issues.push({
+          level: 'warning',
+          title: 'Momento ignorado',
+          message: 'O momento selecionado não pertence à ação pedagógica escolhida e foi removido.',
+          blocking: false,
+        });
+      }
+    }
+
+    return issues;
+  }
+
+  function renderEmptyState(message) {
+    renderTotals({ submissoes: '-', questoes: '-', eventos: '-', ultima: '-' });
+    cardsQuestoes.innerHTML = `
       <div class="col-12">
         <div class="card border-0 shadow-sm text-center py-5">
           <div class="card-body">
             <h5 class="fw-bold text-muted mb-2">Aguardando filtros</h5>
-            <p class="text-muted mb-0">Selecione uma <strong>Ação Pedagógica</strong> ou <strong>Avaliação Universal</strong> acima para carregar as respostas e gráficos.</p>
+            <p class="text-muted mb-0">${message}</p>
           </div>
         </div>
       </div>`;
-        paginacaoNav.style.display = 'none';
-        badgePagina.style.setProperty('display', 'none', 'important');
-    }
+    paginacaoNav.style.display = 'none';
+    badgePagina.style.setProperty('display', 'none', 'important');
+  }
 
   function updateModeUi() {
     const tipo = currentTipo();
@@ -443,9 +529,10 @@
       cardsQuestoes.innerHTML = `
         <div class="col-12">
           <div class="card border-0 shadow-sm">
-            <div class="card-body text-muted text-center">Nenhum dado encontrado para os filtros selecionados.</div>
+            <div class="card-body text-muted text-center">Nenhuma avaliação encontrada para a combinação atual de filtros.</div>
           </div>
         </div>`;
+      showNotice('info', 'Sem resultados', 'Não encontramos avaliações para essa combinação de filtros. Tente ampliar o período ou trocar a ação pedagógica.');
       return;
     }
 
@@ -685,9 +772,20 @@
   }
 
   async function loadData(page = 1) {
-    if (!hasRequiredFilters()) {
-       showEmptyState();
+    const validationIssues = getFilterValidation();
+    const blockingIssue = validationIssues.find((issue) => issue.blocking);
+    const nonBlockingIssues = validationIssues.filter((issue) => !issue.blocking);
+
+    if (blockingIssue) {
+      showNotice(blockingIssue.level, blockingIssue.title, blockingIssue.message);
+      renderEmptyState(blockingIssue.message);
        return;
+    }
+
+    if (nonBlockingIssues.length > 0) {
+      showNotice(nonBlockingIssues[0].level, nonBlockingIssues[0].title, nonBlockingIssues.map((issue) => issue.message));
+    } else {
+      clearNotice();
     }
 
     currentPage = page;
@@ -695,6 +793,19 @@
     try {
       const url = `${endpoint}?${buildParams()}&page=${page}&per_page=50`;
       const response = await fetch(url, { headers: { Accept: 'application/json' } });
+
+      if (!response.ok) {
+        if (response.status === 422) {
+          const payload = await response.json();
+          const errors = Object.values(payload.errors || {}).flat().filter(Boolean);
+          showNotice('danger', 'Filtro inválido', errors.length > 0 ? errors : ['Revise os campos selecionados e tente novamente.']);
+          renderEmptyState('Revise os campos destacados e tente novamente.');
+          return;
+        }
+
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       const payload = await response.json();
 
       renderTotals(payload.totais || {});
@@ -706,12 +817,17 @@
           filters.de.value = payload.filtros.de.split(' ')[0];
         }
         if (!filters.ate.value && payload.filtros.ate) {
+
+      if ((payload.perguntas || []).length > 0 && nonBlockingIssues.length === 0) {
+        clearNotice();
+      }
           filters.ate.value = payload.filtros.ate.split(' ')[0];
         }
       }
 
       if (page > 1) {
-        cardsQuestoes.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showNotice('danger', 'Falha ao carregar', 'Erro ao carregar os dados. Verifique a conexão e tente novamente.');
+      cardsQuestoes.innerHTML = '<div class="card border-0 shadow-sm"><div class="card-body text-danger">Erro ao carregar dados. Verifique sua conexão.</div></div>';
       }
     } catch (error) {
       cardsQuestoes.innerHTML = '<div class=\"card border-0 shadow-sm\"><div class=\"card-body text-danger\">Erro ao carregar dados. Verifique sua conexão.</div></div>';
@@ -737,10 +853,24 @@
   
   //define a interface e chama o estado vazio
   updateModeUi();
-  showEmptyState();
+  renderEmptyState('Selecione uma ação pedagógica ou uma avaliação universal para carregar os dados.');
 
   if (btnExportarPdf) {
     btnExportarPdf.addEventListener('click', () => {
+      const validationIssues = getFilterValidation();
+      const blockingIssue = validationIssues.find((issue) => issue.blocking);
+      const nonBlockingIssues = validationIssues.filter((issue) => !issue.blocking);
+
+      if (blockingIssue) {
+        showNotice(blockingIssue.level, blockingIssue.title, blockingIssue.message);
+        renderEmptyState(blockingIssue.message);
+        return;
+      }
+
+      if (nonBlockingIssues.length > 0) {
+        showNotice(nonBlockingIssues[0].level, nonBlockingIssues[0].title, nonBlockingIssues.map((issue) => issue.message));
+      }
+
       const submissoesRaw = totalsEls.submissoes.textContent.replace(/[^\d]/g, '');
       const submissoes = parseInt(submissoesRaw) || 0;
 

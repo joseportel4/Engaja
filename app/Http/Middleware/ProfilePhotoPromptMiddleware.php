@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Oferece o modal de foto de perfil nas telas iniciais (/, dashboard, eventos.index), sem foto cadastrada.
+ * Oferece o modal de foto de perfil em qualquer rota GET autenticada, sem foto cadastrada.
  * O aviso repete no máximo a cada {@see HOURS_BETWEEN_PROMPTS} horas (sessão longa sem logout).
  */
 class ProfilePhotoPromptMiddleware
@@ -41,10 +41,6 @@ class ProfilePhotoPromptMiddleware
             return $next($request);
         }
 
-        if (! $this->isEntryHomeRoute($request)) {
-            return $next($request);
-        }
-
         $request->session()->put(self::SESSION_KEY_OFFERED_AT, now());
         View::share('showProfilePhotoPromptModal', true);
 
@@ -64,18 +60,5 @@ class ProfilePhotoPromptMiddleware
             : Carbon::parse($last);
 
         return $lastAt->copy()->addHours(self::HOURS_BETWEEN_PROMPTS)->isPast();
-    }
-
-    private function isEntryHomeRoute(Request $request): bool
-    {
-        if ($request->routeIs('dashboard')) {
-            return true;
-        }
-
-        if ($request->routeIs('eventos.index')) {
-            return true;
-        }
-
-        return $request->is('/');
     }
 }

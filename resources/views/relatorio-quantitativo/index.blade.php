@@ -145,76 +145,78 @@
             @if($atividades->isEmpty())
                 <div class="p-4 text-center text-muted">Nenhum encontro encontrado com os filtros aplicados.</div>
             @else
-            <div class="table-responsive">
-                <table class="table table-sm table-bordered align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>{!! rq_sort_link('Ação', 'acao') !!}</th>
-                            <th>{!! rq_sort_link('Momento', 'momento') !!}</th>
-                            <th>{!! rq_sort_link('Município', 'municipio') !!}</th>
-                            <th>{!! rq_sort_link('Data', 'dia') !!}</th>
-                            <th>{!! rq_sort_link('Período', 'periodo') !!}</th>
-                            <th class="text-end">{!! rq_sort_link('Qtd Previstas', 'previstas') !!}</th>
-                            <th class="text-end">{!! rq_sort_link('Qtd Presentes', 'presentes') !!}</th>
-                            <th class="text-end">Presentes / Previstas</th>
-                            <th class="text-end">{!! rq_sort_link('Qtd Avaliações', 'avaliacoes') !!}</th>
-                            <th class="text-end">Avaliações / Presentes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($atividades->groupBy('evento_nome') as $nomeAcao => $grupo)
+                @php
+                    $columns = [
+                        ['field' => 'acao', 'headerHtml' => rq_sort_link('Ação', 'acao'), 'flex' => 2, 'colSpanWhen' => 'dt-row-subtotal', 'colSpanCount' => 5],
+                        ['field' => 'momento', 'headerHtml' => rq_sort_link('Momento', 'momento'), 'flex' => 2],
+                        ['field' => 'municipio', 'headerHtml' => rq_sort_link('Município', 'municipio'), 'flex' => 2],
+                        ['field' => 'dia', 'headerHtml' => rq_sort_link('Data', 'dia'), 'flex' => 1],
+                        ['field' => 'periodo', 'headerHtml' => rq_sort_link('Período', 'periodo'), 'flex' => 1],
+                        ['field' => 'previstas', 'headerHtml' => rq_sort_link('Qtd Previstas', 'previstas'), 'flex' => 1],
+                        ['field' => 'presentes', 'headerHtml' => rq_sort_link('Qtd Presentes', 'presentes'), 'flex' => 1],
+                        ['field' => 'prop_presentes', 'headerName' => 'Presentes / Previstas', 'flex' => 1],
+                        ['field' => 'avaliacoes', 'headerHtml' => rq_sort_link('Qtd Avaliações', 'avaliacoes'), 'flex' => 1],
+                        ['field' => 'prop_avaliacoes', 'headerName' => 'Avaliações / Presentes', 'flex' => 1],
+                    ];
 
-                            @foreach($grupo as $a)
-                            @php
-                                $horaStr = substr($a->hora_inicio ?? '', 0, 5);
-                                $hora    = (int) substr($horaStr, 0, 2);
-                                $periodoLabel = $hora < 12 ? 'Manhã' : ($hora < 18 ? 'Tarde' : 'Noite');
+                    $rows = [];
 
-                                $previstas  = (int) $a->publico_esperado;
-                                $presentes  = (int) $a->presentes_count;
-                                $avaliacoes = (int) $a->avaliacoes_count;
+                    foreach ($atividades->groupBy('evento_nome') as $nomeAcao => $grupo) {
+                        foreach ($grupo as $a) {
+                            $horaStr = substr($a->hora_inicio ?? '', 0, 5);
+                            $hora = (int) substr($horaStr, 0, 2);
+                            $periodoLabel = $hora < 12 ? 'Manhã' : ($hora < 18 ? 'Tarde' : 'Noite');
 
-                                $propPres = $previstas > 0 ? round($presentes  / $previstas  * 100, 1) : 0;
-                                $propAval = $presentes > 0 ? round($avaliacoes / $presentes  * 100, 1) : 0;
-                            @endphp
-                            <tr>
-                                <td>{{ $a->evento_nome ?? '—' }}</td>
-                                <td>{{ $a->descricao ?? '—' }}</td>
-                                <td>{{ $a->municipio_nome ?? '—' }}</td>
-                                <td>{{ $a->dia ? \Carbon\Carbon::parse($a->dia)->format('d/m/Y') : '—' }}</td>
-                                <td>{{ $horaStr ? $periodoLabel . ' (' . $horaStr . ')' : '—' }}</td>
-                                <td class="text-end">{{ $previstas ?: '—' }}</td>
-                                <td class="text-end">{{ $presentes }}</td>
-                                <td class="text-end">{{ $previstas > 0 ? $propPres . '%' : '—' }}</td>
-                                <td class="text-end">{{ $avaliacoes }}</td>
-                                <td class="text-end">{{ $presentes > 0 ? $propAval . '%' : '—' }}</td>
-                            </tr>
-                            @endforeach
+                            $previstas = (int) $a->publico_esperado;
+                            $presentes = (int) $a->presentes_count;
+                            $avaliacoes = (int) $a->avaliacoes_count;
 
-                            @php
-                                $totalPrevistas  = $grupo->sum('publico_esperado');
-                                $totalPresentes  = $grupo->sum('presentes_count');
-                                $totalAvaliacoes = $grupo->sum('avaliacoes_count');
-                                $propTotPres = $totalPrevistas > 0
-                                    ? round($totalPresentes  / $totalPrevistas  * 100, 1) : 0;
-                                $propTotAval = $totalPresentes > 0
-                                    ? round($totalAvaliacoes / $totalPresentes  * 100, 1) : 0;
-                            @endphp
-                            <tr style="background-color:#e8daea; font-weight:700;">
-                                <td colspan="5" class="text-end pe-3">
-                                    Subtotal — {{ $nomeAcao ?? 'Sem ação' }}
-                                </td>
-                                <td class="text-end">{{ $totalPrevistas ?: '—' }}</td>
-                                <td class="text-end">{{ $totalPresentes }}</td>
-                                <td class="text-end">{{ $totalPrevistas > 0 ? $propTotPres . '%' : '—' }}</td>
-                                <td class="text-end">{{ $totalAvaliacoes }}</td>
-                                <td class="text-end">{{ $totalPresentes > 0 ? $propTotAval . '%' : '—' }}</td>
-                            </tr>
+                            $propPres = $previstas > 0 ? round($presentes / $previstas * 100, 1) : 0;
+                            $propAval = $presentes > 0 ? round($avaliacoes / $presentes * 100, 1) : 0;
 
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+                            $rows[] = [
+                                'acao' => $a->evento_nome ?? '—',
+                                'momento' => $a->descricao ?? '—',
+                                'municipio' => $a->municipio_nome ?? '—',
+                                'dia' => $a->dia ? \Carbon\Carbon::parse($a->dia)->format('d/m/Y') : '—',
+                                'periodo' => $horaStr ? $periodoLabel . ' (' . $horaStr . ')' : '—',
+                                'previstas' => $previstas ?: '—',
+                                'presentes' => $presentes,
+                                'prop_presentes' => $previstas > 0 ? $propPres . '%' : '—',
+                                'avaliacoes' => $avaliacoes,
+                                'prop_avaliacoes' => $presentes > 0 ? $propAval . '%' : '—',
+                            ];
+                        }
+
+                        $totalPrevistas = $grupo->sum('publico_esperado');
+                        $totalPresentes = $grupo->sum('presentes_count');
+                        $totalAvaliacoes = $grupo->sum('avaliacoes_count');
+                        $propTotPres = $totalPrevistas > 0 ? round($totalPresentes / $totalPrevistas * 100, 1) : 0;
+                        $propTotAval = $totalPresentes > 0 ? round($totalAvaliacoes / $totalPresentes * 100, 1) : 0;
+
+                        $rows[] = [
+                            'acao' => 'Subtotal — ' . ($nomeAcao ?? 'Sem ação'),
+                            'momento' => '',
+                            'municipio' => '',
+                            'dia' => '',
+                            'periodo' => '',
+                            'previstas' => $totalPrevistas ?: '—',
+                            'presentes' => $totalPresentes,
+                            'prop_presentes' => $totalPrevistas > 0 ? $propTotPres . '%' : '—',
+                            'avaliacoes' => $totalAvaliacoes,
+                            'prop_avaliacoes' => $totalPresentes > 0 ? $propTotAval . '%' : '—',
+                            '_rowClass' => 'dt-row-subtotal',
+                        ];
+                    }
+                @endphp
+
+                <x-data-table
+                    id="grid-relatorio-momento"
+                    :columns="$columns"
+                    :rows="$rows"
+                    :pagination="false"
+                    row-class-field="_rowClass"
+                />
             @endif
         </div>
     </div>
@@ -308,162 +310,112 @@
             @if($totalGeral->filter(fn($r) => !isset($r['_is_total']))->isEmpty())
                 <div class="p-4 text-center text-muted">Nenhum dado encontrado com os filtros aplicados.</div>
             @else
-            @php
-                $fmtPct = fn($v) => $v > 0 ? number_format($v, 1, ',', '.') . '%' : '—';
-            @endphp
-            <div class="table-responsive">
-                <table class="table table-sm table-bordered align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th rowspan="2">{!! tg_sort_link('Região', 'regiao') !!}</th>
-                            <th rowspan="2">{!! tg_sort_link('Município', 'municipio') !!}</th>
-                            <th rowspan="2" class="text-end">{!! tg_sort_link('Previstos', 'previstos') !!}</th>
-                            <th rowspan="2" class="text-end">{!! tg_sort_link('Total Presentes', 'total_presentes') !!}</th>
-                            <th colspan="3" class="text-center dim-col dim-cpf" style="border-bottom:1px solid #dee2e6;">CPF</th>
-                            <th colspan="10" class="text-center dim-col dim-raca_cor d-none" style="border-bottom:1px solid #dee2e6;">Raça/Cor</th>
-                            <th colspan="6" class="text-center dim-col dim-genero d-none" style="border-bottom:1px solid #dee2e6;">Gênero</th>
-                            <th colspan="2" class="text-center dim-col dim-pcd d-none" style="border-bottom:1px solid #dee2e6;">PcD</th>
-                            <th colspan="2" class="text-center dim-col dim-certificados d-none" style="border-bottom:1px solid #dee2e6;">Certificados</th>
-                            <th colspan="4" class="text-center dim-col dim-tag d-none" style="border-bottom:1px solid #dee2e6;">Tag</th>
-                        </tr>
-                        <tr id="tg-header-row2">
-                            <th class="text-end dim-col dim-cpf">{!! tg_sort_link('Com CPF', 'com_cpf') !!}</th>
-                            <th class="text-end dim-col dim-cpf">{!! tg_sort_link('Sem CPF', 'sem_cpf') !!}</th>
-                            <th class="text-end dim-col dim-cpf">{!! tg_sort_link('% Com CPF', 'pct_cpf') !!}</th>
-                            <th class="text-end dim-col dim-raca_cor d-none">Branca</th>
-                            <th class="text-end dim-col dim-raca_cor d-none">%</th>
-                            <th class="text-end dim-col dim-raca_cor d-none">Parda</th>
-                            <th class="text-end dim-col dim-raca_cor d-none">%</th>
-                            <th class="text-end dim-col dim-raca_cor d-none">Preta</th>
-                            <th class="text-end dim-col dim-raca_cor d-none">%</th>
-                            <th class="text-end dim-col dim-raca_cor d-none">Amarela</th>
-                            <th class="text-end dim-col dim-raca_cor d-none">%</th>
-                            <th class="text-end dim-col dim-raca_cor d-none">Indígena</th>
-                            <th class="text-end dim-col dim-raca_cor d-none">%</th>
-                            <th class="text-end dim-col dim-genero d-none">Mulheres</th>
-                            <th class="text-end dim-col dim-genero d-none">%</th>
-                            <th class="text-end dim-col dim-genero d-none">Homens</th>
-                            <th class="text-end dim-col dim-genero d-none">%</th>
-                            <th class="text-end dim-col dim-genero d-none">Outros/NB</th>
-                            <th class="text-end dim-col dim-genero d-none">%</th>
-                            <th class="text-end dim-col dim-pcd d-none">Qtd</th>
-                            <th class="text-end dim-col dim-pcd d-none">%</th>
-                            <th class="text-end dim-col dim-certificados d-none">Qtd</th>
-                            <th class="text-end dim-col dim-certificados d-none">%</th>
-                            <th class="text-end dim-col dim-tag d-none">Rede Ensino</th>
-                            <th class="text-end dim-col dim-tag d-none">%</th>
-                            <th class="text-end dim-col dim-tag d-none">Mov. Social</th>
-                            <th class="text-end dim-col dim-tag d-none">%</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($totalGeral as $row)
-                            @php $tp = $row['metricas']['total_presentes']; @endphp
-                            @if(isset($row['_is_unidentified']))
-                            <tr style="background-color:#f8f5f0;">
-                                <td colspan="2">{{ $row['municipio_nome'] }}</td>
-                                <td class="text-end">{{ $row['previstos'] ?: '—' }}</td>
-                                <td class="text-end">{{ $tp ?: '—' }}</td>
-                                <td class="text-end dim-col dim-cpf">{{ $row['metricas']['cpf']['com'] }}</td>
-                                <td class="text-end dim-col dim-cpf">{{ $row['metricas']['cpf']['sem'] }}</td>
-                                <td class="text-end dim-col dim-cpf">{{ $tp > 0 ? $fmtPct($row['metricas']['cpf']['pct']) : '—' }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['branca'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_branca']) }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['parda'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_parda']) }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['preta'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_preta']) }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['amarela'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_amarela']) }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['indigena'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_indigena']) }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['mulheres'] }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_mulheres']) }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['homens'] }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_homens']) }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['outros'] }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_outros']) }}</td>
-                                <td class="text-end dim-col dim-pcd d-none">{{ $row['metricas']['pcd']['n'] }}</td>
-                                <td class="text-end dim-col dim-pcd d-none">{{ $fmtPct($row['metricas']['pcd']['pct']) }}</td>
-                                <td class="text-end dim-col dim-certificados d-none">{{ $row['metricas']['certificados']['n'] }}</td>
-                                <td class="text-end dim-col dim-certificados d-none">{{ $fmtPct($row['metricas']['certificados']['pct']) }}</td>
-                                <td class="text-end dim-col dim-tag d-none">{{ $row['metricas']['tag']['rede_ensino'] }}</td>
-                                <td class="text-end dim-col dim-tag d-none">{{ $fmtPct($row['metricas']['tag']['pct_rede_ensino']) }}</td>
-                                <td class="text-end dim-col dim-tag d-none">{{ $row['metricas']['tag']['movimento_social'] }}</td>
-                                <td class="text-end dim-col dim-tag d-none">{{ $fmtPct($row['metricas']['tag']['pct_movimento_social']) }}</td>
-                            </tr>
-                            @elseif(isset($row['_is_total']))
-                            <tr style="background-color:#e8daea; font-weight:700;">
-                                <td colspan="2" class="text-end pe-3">{{ $row['municipio_nome'] }}</td>
-                                <td class="text-end">{{ $row['previstos'] ?: '—' }}</td>
-                                <td class="text-end">{{ $tp ?: '—' }}</td>
-                                <td class="text-end dim-col dim-cpf">{{ $row['metricas']['cpf']['com'] }}</td>
-                                <td class="text-end dim-col dim-cpf">{{ $row['metricas']['cpf']['sem'] }}</td>
-                                <td class="text-end dim-col dim-cpf">{{ $tp > 0 ? $fmtPct($row['metricas']['cpf']['pct']) : '—' }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['branca'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_branca']) }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['parda'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_parda']) }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['preta'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_preta']) }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['amarela'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_amarela']) }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['indigena'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_indigena']) }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['mulheres'] }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_mulheres']) }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['homens'] }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_homens']) }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['outros'] }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_outros']) }}</td>
-                                <td class="text-end dim-col dim-pcd d-none">{{ $row['metricas']['pcd']['n'] }}</td>
-                                <td class="text-end dim-col dim-pcd d-none">{{ $fmtPct($row['metricas']['pcd']['pct']) }}</td>
-                                <td class="text-end dim-col dim-certificados d-none">{{ $row['metricas']['certificados']['n'] }}</td>
-                                <td class="text-end dim-col dim-certificados d-none">{{ $fmtPct($row['metricas']['certificados']['pct']) }}</td>
-                                <td class="text-end dim-col dim-tag d-none">{{ $row['metricas']['tag']['rede_ensino'] }}</td>
-                                <td class="text-end dim-col dim-tag d-none">{{ $fmtPct($row['metricas']['tag']['pct_rede_ensino']) }}</td>
-                                <td class="text-end dim-col dim-tag d-none">{{ $row['metricas']['tag']['movimento_social'] }}</td>
-                                <td class="text-end dim-col dim-tag d-none">{{ $fmtPct($row['metricas']['tag']['pct_movimento_social']) }}</td>
-                            </tr>
-                            @else
-                            <tr>
-                                <td>{{ $row['regiao'] }}</td>
-                                <td>{{ $row['municipio_nome'] }}</td>
-                                <td class="text-end">{{ $row['previstos'] ?: '—' }}</td>
-                                <td class="text-end">{{ $tp ?: '—' }}</td>
-                                <td class="text-end dim-col dim-cpf">{{ $row['metricas']['cpf']['com'] }}</td>
-                                <td class="text-end dim-col dim-cpf">{{ $row['metricas']['cpf']['sem'] }}</td>
-                                <td class="text-end dim-col dim-cpf">{{ $tp > 0 ? $fmtPct($row['metricas']['cpf']['pct']) : '—' }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['branca'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_branca']) }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['parda'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_parda']) }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['preta'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_preta']) }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['amarela'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_amarela']) }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $row['metricas']['raca_cor']['indigena'] }}</td>
-                                <td class="text-end dim-col dim-raca_cor d-none">{{ $fmtPct($row['metricas']['raca_cor']['pct_indigena']) }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['mulheres'] }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_mulheres']) }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['homens'] }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_homens']) }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $row['metricas']['genero']['outros'] }}</td>
-                                <td class="text-end dim-col dim-genero d-none">{{ $fmtPct($row['metricas']['genero']['pct_outros']) }}</td>
-                                <td class="text-end dim-col dim-pcd d-none">{{ $row['metricas']['pcd']['n'] }}</td>
-                                <td class="text-end dim-col dim-pcd d-none">{{ $fmtPct($row['metricas']['pcd']['pct']) }}</td>
-                                <td class="text-end dim-col dim-certificados d-none">{{ $row['metricas']['certificados']['n'] }}</td>
-                                <td class="text-end dim-col dim-certificados d-none">{{ $fmtPct($row['metricas']['certificados']['pct']) }}</td>
-                                <td class="text-end dim-col dim-tag d-none">{{ $row['metricas']['tag']['rede_ensino'] }}</td>
-                                <td class="text-end dim-col dim-tag d-none">{{ $fmtPct($row['metricas']['tag']['pct_rede_ensino']) }}</td>
-                                <td class="text-end dim-col dim-tag d-none">{{ $row['metricas']['tag']['movimento_social'] }}</td>
-                                <td class="text-end dim-col dim-tag d-none">{{ $fmtPct($row['metricas']['tag']['pct_movimento_social']) }}</td>
-                            </tr>
-                            @endif
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+                @php
+                    $fmtPct = fn($v) => $v > 0 ? number_format($v, 1, ',', '.') . '%' : '—';
+
+                    // Cada bloco vira um "column group" do AG Grid (CPF visível por
+                    // padrão, os demais ficam ocultos e são ligados/desligados pelos
+                    // botões .dim-toggle via api.setColumnsVisible()).
+                    $columns = [
+                        ['field' => 'regiao', 'headerHtml' => tg_sort_link('Região', 'regiao'), 'flex' => 1, 'colSpanWhen' => ['dt-row-subtotal', 'dt-row-unidentified'], 'colSpanCount' => 2],
+                        ['field' => 'municipio', 'headerHtml' => tg_sort_link('Município', 'municipio'), 'flex' => 1],
+                        ['field' => 'previstos', 'headerHtml' => tg_sort_link('Previstos', 'previstos'), 'flex' => 1],
+                        ['field' => 'total_presentes', 'headerHtml' => tg_sort_link('Total Presentes', 'total_presentes'), 'flex' => 1],
+                        ['headerName' => 'CPF', 'groupId' => 'cpf', 'children' => [
+                            ['field' => 'com_cpf', 'headerHtml' => tg_sort_link('Com CPF', 'com_cpf'), 'flex' => 1],
+                            ['field' => 'sem_cpf', 'headerHtml' => tg_sort_link('Sem CPF', 'sem_cpf'), 'flex' => 1],
+                            ['field' => 'pct_cpf', 'headerHtml' => tg_sort_link('% Com CPF', 'pct_cpf'), 'flex' => 1],
+                        ]],
+                        ['headerName' => 'Raça/Cor', 'groupId' => 'raca_cor', 'children' => [
+                            ['field' => 'raca_branca', 'headerName' => 'Branca', 'flex' => 1, 'hide' => true],
+                            ['field' => 'pct_raca_branca', 'headerName' => '%', 'flex' => 1, 'hide' => true],
+                            ['field' => 'raca_parda', 'headerName' => 'Parda', 'flex' => 1, 'hide' => true],
+                            ['field' => 'pct_raca_parda', 'headerName' => '%', 'flex' => 1, 'hide' => true],
+                            ['field' => 'raca_preta', 'headerName' => 'Preta', 'flex' => 1, 'hide' => true],
+                            ['field' => 'pct_raca_preta', 'headerName' => '%', 'flex' => 1, 'hide' => true],
+                            ['field' => 'raca_amarela', 'headerName' => 'Amarela', 'flex' => 1, 'hide' => true],
+                            ['field' => 'pct_raca_amarela', 'headerName' => '%', 'flex' => 1, 'hide' => true],
+                            ['field' => 'raca_indigena', 'headerName' => 'Indígena', 'flex' => 1, 'hide' => true],
+                            ['field' => 'pct_raca_indigena', 'headerName' => '%', 'flex' => 1, 'hide' => true],
+                        ]],
+                        ['headerName' => 'Gênero', 'groupId' => 'genero', 'children' => [
+                            ['field' => 'genero_mulheres', 'headerName' => 'Mulheres', 'flex' => 1, 'hide' => true],
+                            ['field' => 'pct_genero_mulheres', 'headerName' => '%', 'flex' => 1, 'hide' => true],
+                            ['field' => 'genero_homens', 'headerName' => 'Homens', 'flex' => 1, 'hide' => true],
+                            ['field' => 'pct_genero_homens', 'headerName' => '%', 'flex' => 1, 'hide' => true],
+                            ['field' => 'genero_outros', 'headerName' => 'Outros/NB', 'flex' => 1, 'hide' => true],
+                            ['field' => 'pct_genero_outros', 'headerName' => '%', 'flex' => 1, 'hide' => true],
+                        ]],
+                        ['headerName' => 'PcD', 'groupId' => 'pcd', 'children' => [
+                            ['field' => 'pcd_n', 'headerName' => 'Qtd', 'flex' => 1, 'hide' => true],
+                            ['field' => 'pcd_pct', 'headerName' => '%', 'flex' => 1, 'hide' => true],
+                        ]],
+                        ['headerName' => 'Certificados', 'groupId' => 'certificados', 'children' => [
+                            ['field' => 'certificados_n', 'headerName' => 'Qtd', 'flex' => 1, 'hide' => true],
+                            ['field' => 'certificados_pct', 'headerName' => '%', 'flex' => 1, 'hide' => true],
+                        ]],
+                        ['headerName' => 'Tag', 'groupId' => 'tag', 'children' => [
+                            ['field' => 'tag_rede_ensino', 'headerName' => 'Rede Ensino', 'flex' => 1, 'hide' => true],
+                            ['field' => 'pct_tag_rede_ensino', 'headerName' => '%', 'flex' => 1, 'hide' => true],
+                            ['field' => 'tag_movimento_social', 'headerName' => 'Mov. Social', 'flex' => 1, 'hide' => true],
+                            ['field' => 'pct_tag_movimento_social', 'headerName' => '%', 'flex' => 1, 'hide' => true],
+                        ]],
+                    ];
+
+                    $rows = $totalGeral->map(function ($row) use ($fmtPct) {
+                        $tp = $row['metricas']['total_presentes'];
+
+                        $rowClass = null;
+                        if (isset($row['_is_total'])) {
+                            $rowClass = 'dt-row-subtotal';
+                        } elseif (isset($row['_is_unidentified'])) {
+                            $rowClass = 'dt-row-unidentified';
+                        }
+
+                        return [
+                            'regiao' => $row['regiao'],
+                            'municipio' => $row['municipio_nome'],
+                            'previstos' => $row['previstos'] ?: '—',
+                            'total_presentes' => $tp ?: '—',
+                            'com_cpf' => $row['metricas']['cpf']['com'],
+                            'sem_cpf' => $row['metricas']['cpf']['sem'],
+                            'pct_cpf' => $tp > 0 ? $fmtPct($row['metricas']['cpf']['pct']) : '—',
+                            'raca_branca' => $row['metricas']['raca_cor']['branca'],
+                            'pct_raca_branca' => $fmtPct($row['metricas']['raca_cor']['pct_branca']),
+                            'raca_parda' => $row['metricas']['raca_cor']['parda'],
+                            'pct_raca_parda' => $fmtPct($row['metricas']['raca_cor']['pct_parda']),
+                            'raca_preta' => $row['metricas']['raca_cor']['preta'],
+                            'pct_raca_preta' => $fmtPct($row['metricas']['raca_cor']['pct_preta']),
+                            'raca_amarela' => $row['metricas']['raca_cor']['amarela'],
+                            'pct_raca_amarela' => $fmtPct($row['metricas']['raca_cor']['pct_amarela']),
+                            'raca_indigena' => $row['metricas']['raca_cor']['indigena'],
+                            'pct_raca_indigena' => $fmtPct($row['metricas']['raca_cor']['pct_indigena']),
+                            'genero_mulheres' => $row['metricas']['genero']['mulheres'],
+                            'pct_genero_mulheres' => $fmtPct($row['metricas']['genero']['pct_mulheres']),
+                            'genero_homens' => $row['metricas']['genero']['homens'],
+                            'pct_genero_homens' => $fmtPct($row['metricas']['genero']['pct_homens']),
+                            'genero_outros' => $row['metricas']['genero']['outros'],
+                            'pct_genero_outros' => $fmtPct($row['metricas']['genero']['pct_outros']),
+                            'pcd_n' => $row['metricas']['pcd']['n'],
+                            'pcd_pct' => $fmtPct($row['metricas']['pcd']['pct']),
+                            'certificados_n' => $row['metricas']['certificados']['n'],
+                            'certificados_pct' => $fmtPct($row['metricas']['certificados']['pct']),
+                            'tag_rede_ensino' => $row['metricas']['tag']['rede_ensino'],
+                            'pct_tag_rede_ensino' => $fmtPct($row['metricas']['tag']['pct_rede_ensino']),
+                            'tag_movimento_social' => $row['metricas']['tag']['movimento_social'],
+                            'pct_tag_movimento_social' => $fmtPct($row['metricas']['tag']['pct_movimento_social']),
+                            '_rowClass' => $rowClass,
+                        ];
+                    })->values();
+                @endphp
+
+                <x-data-table
+                    id="grid-relatorio-total-geral"
+                    :columns="$columns"
+                    :rows="$rows"
+                    :pagination="false"
+                    row-class-field="_rowClass"
+                />
             @endif
         </div>
     </div>
@@ -551,19 +503,25 @@
 })();
 </script>
 
-{{-- Script de alternância de dimensões na aba Total Geral --}}
+{{-- Script de alternância de dimensões na aba Total Geral: liga/desliga os
+     column groups do AG Grid via api.setColumnsVisible() --}}
 <script>
 (function () {
     var toggleBtns = document.querySelectorAll('.dim-toggle');
     if (!toggleBtns.length) return;
 
-    function updateHeaderRow2() {
-        var row2 = document.getElementById('tg-header-row2');
-        if (!row2) return;
-        var anyVisible = Array.from(row2.querySelectorAll('th')).some(function (th) {
-            return !th.classList.contains('d-none');
-        });
-        row2.style.display = anyVisible ? '' : 'none';
+    var dimColumns = {
+        cpf: ['com_cpf', 'sem_cpf', 'pct_cpf'],
+        raca_cor: ['raca_branca', 'pct_raca_branca', 'raca_parda', 'pct_raca_parda', 'raca_preta', 'pct_raca_preta', 'raca_amarela', 'pct_raca_amarela', 'raca_indigena', 'pct_raca_indigena'],
+        genero: ['genero_mulheres', 'pct_genero_mulheres', 'genero_homens', 'pct_genero_homens', 'genero_outros', 'pct_genero_outros'],
+        pcd: ['pcd_n', 'pcd_pct'],
+        certificados: ['certificados_n', 'certificados_pct'],
+        tag: ['tag_rede_ensino', 'pct_tag_rede_ensino', 'tag_movimento_social', 'pct_tag_movimento_social'],
+    };
+
+    function getGridApi() {
+        var gridEl = document.getElementById('grid-relatorio-total-geral');
+        return gridEl ? gridEl._agGridApi : null;
     }
 
     function updateExportUrls() {
@@ -583,16 +541,17 @@
         btn.addEventListener('click', function () {
             var dim = this.dataset.dim;
             var isActive = this.classList.toggle('active');
-            document.querySelectorAll('.dim-' + dim).forEach(function (el) {
-                el.classList.toggle('d-none', !isActive);
-            });
-            updateHeaderRow2();
+            var api = getGridApi();
+            var colIds = dimColumns[dim] || [];
+
+            if (api) {
+                api.setColumnsVisible(colIds, isActive);
+            }
+
             updateExportUrls();
         });
     });
 
-    // Inicializar: CPF já está ativo (não precisa de toggle), demais dimensões ocultas
-    // Acionar updateExportUrls para preencher URL inicial com cpf
     updateExportUrls();
 })();
 </script>

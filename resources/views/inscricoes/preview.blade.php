@@ -39,6 +39,11 @@
     <strong>{{ $usuariosNovosCount }}</strong> novo(s) cadastro(s)
     |
     <strong>{{ $usuariosExistentesCount }}</strong> usuário(s) já existente(s) (dados serão atualizados).
+    @if($origemImportacao !== '')
+      <br>
+      Origem:
+      <strong>{{ $origemImportacao }}</strong>
+    @endif
   </div>
 
   @if ($errors->any())

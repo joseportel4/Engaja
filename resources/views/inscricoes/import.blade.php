@@ -71,16 +71,31 @@
         </div>
 
         <div class="col-12">
-          <label class="form-label">Arquivo Excel (.xlsx) <span class="text-danger">*</span></label>
+          <label class="form-label">Origem da importação</label>
+          <input type="text"
+            name="origem"
+            class="form-control @error('origem') is-invalid @enderror"
+            value="{{ old('origem') }}"
+            maxlength="255"
+            placeholder="Ex.: LP, Moodle, formulário externo"
+            @if($disableImport) disabled @endif>
+          @error('origem') <div class="invalid-feedback">{{ $message }}</div> @enderror
+          <div class="form-text">
+            Se informada, essa origem será gravada para todos os usuários da planilha nesta ação.
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Arquivo Excel ou CSV (.xlsx, .xls, .csv) <span class="text-danger">*</span></label>
           <input type="file"
             name="your_file"
             class="form-control @error('your_file') is-invalid @enderror"
-            accept=".xlsx,.xls"
+            accept=".xlsx,.xls,.csv"
             @if($disableImport) disabled @endif
             required>
           @error('your_file') <div class="invalid-feedback">{{ $message }}</div> @enderror
           <div class="form-text">
-            Envie um arquivo Excel com a primeira linha como cabeçalho.
+            Envie um arquivo Excel ou CSV com a primeira linha como cabeçalho.
           </div>
         </div>
         <div class="mb-3">

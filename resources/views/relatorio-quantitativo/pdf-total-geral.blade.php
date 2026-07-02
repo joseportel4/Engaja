@@ -6,29 +6,29 @@
     .table-header {
         font-size: 10px;
         font-weight: bold;
-        background-color: #f0f0f0;
-        padding: 4px;
+        background-color: #421944;
+        color: #ffffff;
+        padding: 5px 6px;
     }
     .table-header-group {
         font-size: 9px;
         font-weight: bold;
-        background-color: #e0e0e0;
-        padding: 3px;
+        background-color: #5a2b5c;
+        color: #ffffff;
+        padding: 4px 6px;
         text-align: center;
     }
     .table-data {
         font-size: 9px;
-        padding: 3px;
+        padding: 3px 6px;
     }
     .text-end { text-align: right; }
     .text-center { text-align: center; }
     .unidentified-row { background-color: #f8f5f0; font-size: 9px; }
-    .total-row { background-color: #e8daea; font-weight: bold; font-size: 9px; }
+    .total-row { background-color: #ece3ee; font-weight: bold; font-size: 9px; }
 @endsection
 
 @section('content')
-<h2>Total Geral de Participantes</h2>
-
 @php
     $dimensoes = $dimensoes ?? [];
     $fmtPct = fn($v) => $v > 0 ? number_format($v, 1, ',', '.') . '%' : '—';
@@ -56,18 +56,14 @@
         $labels = ['cpf' => 'CPF', 'raca_cor' => 'Raça/Cor', 'genero' => 'Gênero', 'pcd' => 'PcD', 'certificados' => 'Certificados', 'tag' => 'Tag'];
         $filtrosAplicados[] = 'Dimensões: ' . implode(', ', array_map(fn($d) => $labels[$d] ?? $d, $dimensoes));
     }
+    $totalMunicipios = $totalGeral->filter(fn($r) => ! isset($r['_is_total']) && ! isset($r['_is_unidentified']))->count();
+    $filtrosAplicados[] = 'Total de municípios: ' . $totalMunicipios;
 @endphp
 
-@if(count($filtrosAplicados) > 0)
-<div style="margin-bottom:15px;padding:10px;background-color:#f9f9f9;border-left:3px solid #421944;">
-    <p style="margin:0;font-size:11px;color:#555;font-weight:bold;">Filtros Aplicados:</p>
-    <ul style="margin:5px 0 0 20px;font-size:10px;color:#666;">
-        @foreach($filtrosAplicados as $filtro)
-            <li>{{ $filtro }}</li>
-        @endforeach
-    </ul>
-</div>
-@endif
+<x-pdf.header
+    title="Total Geral de Participantes"
+    :meta="$filtrosAplicados"
+/>
 
 @if($totalGeral->filter(fn($r) => !isset($r['_is_total']))->isEmpty())
     <p style="text-align:center;color:#666;">Nenhum dado encontrado com os filtros aplicados.</p>
