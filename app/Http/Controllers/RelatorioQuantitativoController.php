@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\RelatorioMomentoExport;
 use App\Exports\RelatorioTotalGeralExport;
+use App\Http\Controllers\Concerns\ResolvesPdfBrandMargin;
 use App\Models\Atividade;
 use App\Models\Evento;
 use App\Models\Municipio;
@@ -14,6 +15,8 @@ use Spatie\LaravelPdf\Facades\Pdf;
 
 class RelatorioQuantitativoController extends Controller
 {
+    use ResolvesPdfBrandMargin;
+
     public function index(Request $request)
     {
         $eventoId = $request->integer('evento_id');
@@ -113,7 +116,6 @@ class RelatorioQuantitativoController extends Controller
     private function buildTotalGeralData(Request $request)
     {
         $eventoId = $request->integer('evento_id');
-        $municipioIdFiltro = $request->integer('municipio_id');
         $regiaoId = $request->integer('regiao_id');
         $de = $request->date('de');
         $ate = $request->date('ate');
@@ -126,7 +128,6 @@ class RelatorioQuantitativoController extends Controller
             ->select('municipio_id')
             ->selectRaw('SUM(publico_esperado) as previstos')
             ->when($eventoId, fn ($q) => $q->where('evento_id', $eventoId))
-            ->when($municipioIdFiltro, fn ($q) => $q->where('municipio_id', $municipioIdFiltro))
             ->when($de && $ate, fn ($q) => $q->whereBetween('dia', [$de, $ate]))
             ->when($de && ! $ate, fn ($q) => $q->where('dia', '>=', $de))
             ->when(! $de && $ate, fn ($q) => $q->where('dia', '<=', $ate))
@@ -161,7 +162,6 @@ class RelatorioQuantitativoController extends Controller
             ->whereNull('atividades.deleted_at')
             ->whereNotNull('atividades.evento_id')
             ->when($eventoId, fn ($q) => $q->where('atividades.evento_id', $eventoId))
-            ->when($municipioIdFiltro, fn ($q) => $q->where('atividades.municipio_id', $municipioIdFiltro))
             ->when($de && $ate, fn ($q) => $q->whereBetween('atividades.dia', [$de, $ate]))
             ->when($de && ! $ate, fn ($q) => $q->where('atividades.dia', '>=', $de))
             ->when(! $de && $ate, fn ($q) => $q->where('atividades.dia', '<=', $ate))
@@ -418,11 +418,12 @@ class RelatorioQuantitativoController extends Controller
 
         if ($formato === 'pdf') {
             $atividades = $this->getAtividadesData($request);
+            $marginTop = $this->brandImageMarginMm('images/Alfa-Eja Header.png', 297, 40);
 
             return Pdf::view('relatorio-quantitativo.pdf-momento', compact('atividades'))
                 ->format('a4')
                 ->landscape()
-                ->withAlfaEjaBrand(35, 10, 25, 10)
+                ->withAlfaEjaBrand($marginTop, 10, 25, 10)
                 ->download('relatorio-momento-'.now()->format('Ymd_His').'.pdf');
         }
 
@@ -439,11 +440,12 @@ class RelatorioQuantitativoController extends Controller
         if ($formato === 'pdf') {
             $totalGeral = $this->buildTotalGeralData($request);
             $dimensoes = $request->input('dimensoes', []);
+            $marginTop = $this->brandImageMarginMm('images/Alfa-Eja Header.png', 297, 40);
 
             return Pdf::view('relatorio-quantitativo.pdf-total-geral', compact('totalGeral', 'dimensoes'))
                 ->format('a4')
                 ->landscape()
-                ->withAlfaEjaBrand(35, 10, 25, 10)
+                ->withAlfaEjaBrand($marginTop, 10, 25, 10)
                 ->download('relatorio-total-geral-'.now()->format('Ymd_His').'.pdf');
         }
 

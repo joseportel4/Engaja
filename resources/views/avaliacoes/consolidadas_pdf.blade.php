@@ -3,10 +3,10 @@
 @php
     use Carbon\Carbon;
     $palette = ['#421944', '#008BBC', '#FDB913', '#E62270', '#2EB57D', '#601F69', '#6C345E', '#9602C7'];
-    $agrupamentoLabel = match($agrupamento) {
-        'regiao'    => 'Agrupado por Região',
-        'municipio' => 'Agrupado por Município',
-        default     => 'Todos os Municípios Consolidados',
+    $contextoConsolidacao = match($agrupamento) {
+        'regiao'    => 'Respostas consolidadas e agrupadas por <strong>região</strong>.',
+        'municipio' => 'Respostas consolidadas e agrupadas por <strong>município</strong>.',
+        default     => 'Respostas consolidadas de <strong>todos os municípios</strong>.',
     };
 @endphp
 
@@ -56,8 +56,9 @@
             <x-pdf.header
                 title="Consolidação de Avaliações"
                 :subtitle="$evento->nome"
-                :meta="[$agrupamentoLabel]"
-            />
+            >
+                {!! $contextoConsolidacao !!}
+            </x-pdf.header>
 
     @if(empty($grupos))
         <div class="empty-state">Nenhum dado de avaliação encontrado para esta ação pedagógica.</div>

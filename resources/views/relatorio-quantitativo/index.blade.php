@@ -129,6 +129,7 @@
     <div class="card shadow-sm">
         <div class="card-body p-0">
             @php
+                if (! function_exists('rq_sort_link')) {
                 function rq_sort_link(string $label, string $key): string {
                     $curr   = request('sort', 'dia');
                     $curDir = request('dir', 'asc') === 'asc' ? 'asc' : 'desc';
@@ -139,6 +140,7 @@
                     return '<a href="' . e($url) . '" class="text-decoration-none text-dark">'
                          . e($label)
                          . '<span class="text-muted small">' . $arrow . '</span></a>';
+                }
                 }
             @endphp
 
@@ -250,18 +252,6 @@
                 </div>
 
                 <div class="col-md-3 col-lg-2">
-                    <label class="form-label mb-1 small fw-semibold">Município</label>
-                    <select name="municipio_id" id="filter-municipio-total" class="form-select form-select-sm">
-                        <option value="">Todos</option>
-                        @foreach($municipios as $municipio)
-                            <option value="{{ $municipio->id }}" @selected(request('municipio_id') == $municipio->id)>
-                                {{ $municipio->nome_com_estado }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="col-md-3 col-lg-2">
                     <label class="form-label mb-1 small fw-semibold">Intervalo</label>
                     <input type="text" id="filter-daterange-total" class="form-control form-control-sm" placeholder="De ... até">
                     <input type="hidden" name="de" id="filter-de-total">
@@ -294,6 +284,7 @@
     <div class="card shadow-sm">
         <div class="card-body p-0">
             @php
+                if (! function_exists('tg_sort_link')) {
                 function tg_sort_link(string $label, string $key): string {
                     $curr   = request('sort', 'regiao');
                     $curDir = request('dir', 'asc') === 'asc' ? 'asc' : 'desc';
@@ -304,6 +295,7 @@
                     return '<a href="' . e($url) . '" class="text-decoration-none text-dark">'
                          . e($label)
                          . '<span class="text-muted small">' . $arrow . '</span></a>';
+                }
                 }
             @endphp
 
@@ -553,30 +545,6 @@
     });
 
     updateExportUrls();
-})();
-</script>
-
-{{-- Script para desmarcar região/município na aba Total Geral --}}
-<script>
-(function () {
-    var municipioSelectTotal = document.getElementById('filter-municipio-total');
-    var regiaoSelectTotal = document.getElementById('filter-regiao-total');
-
-    if (!municipioSelectTotal || !regiaoSelectTotal) return;
-
-    // Desmarcar região quando município for selecionado (aba Total Geral)
-    municipioSelectTotal.addEventListener('change', function () {
-        if (this.value) {
-            regiaoSelectTotal.value = '';
-        }
-    });
-
-    // Desmarcar município quando região for selecionada (aba Total Geral)
-    regiaoSelectTotal.addEventListener('change', function () {
-        if (this.value) {
-            municipioSelectTotal.value = '';
-        }
-    });
 })();
 </script>
 
