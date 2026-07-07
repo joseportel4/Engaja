@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Participante;
+use App\Notifications\CartasResetPasswordNotification;
+use Illuminate\Auth\Notifications\ResetPassword;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,6 +18,10 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, SoftDeletes, hasRoles;
 
+    public const SISTEMA_ENGAJA = 'engaja';
+
+    public const SISTEMA_CARTAS = 'cartas';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -25,6 +31,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'sistema_origem',
+        'cartas_terms_accepted_at',
         'force_password_change',
         'profile_photo_path',
         'identidade_genero',
@@ -57,9 +65,27 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'cartas_terms_accepted_at' => 'datetime',
             'password' => 'hashed',
             'force_password_change' => 'boolean',
         ];
+    }
+
+    public function isCartasUser(): bool
+    {
+        return $this->sistema_origem === self::SISTEMA_CARTAS;
+    }
+
+    public function isEngajaUser(): bool
+    {
+        return ! $this->isCartasUser();
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify($this->isCartasUser()
+            ? new CartasResetPasswordNotification($token)
+            : new ResetPassword($token));
     }
 
     public function participante()

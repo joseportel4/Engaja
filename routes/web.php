@@ -11,6 +11,7 @@ use App\Http\Controllers\AvaliacaoAtividadeController;
 use App\Http\Controllers\AvaliacaoConsolidadaController;
 use App\Http\Controllers\AvaliacaoController;
 use App\Http\Controllers\CertificadoController;
+use App\Http\Controllers\Cartas\AuthController as CartasAuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DimensaoController;
 use App\Http\Controllers\EscalaController;
@@ -36,6 +37,30 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+Route::prefix('cartas')->name('cartas.')->group(function () {
+    Route::middleware('guest')->group(function () {
+        Route::get('/', [CartasAuthController::class, 'login'])->name('login');
+        Route::get('/login', [CartasAuthController::class, 'login'])->name('login.form');
+        Route::post('/login', [CartasAuthController::class, 'authenticate'])->name('login.store');
+        Route::get('/cadastro', [CartasAuthController::class, 'register'])->name('register');
+        Route::post('/cadastro', [CartasAuthController::class, 'storeRegister'])->name('register.store');
+        Route::get('/recuperar-senha', [CartasAuthController::class, 'forgotPassword'])->name('password.request');
+        Route::post('/recuperar-senha', [CartasAuthController::class, 'sendResetLink'])->name('password.email');
+        Route::get('/resetar-senha/{token}', [CartasAuthController::class, 'resetPassword'])->name('password.reset');
+        Route::post('/resetar-senha', [CartasAuthController::class, 'storeNewPassword'])->name('password.store');
+    });
+
+    Route::middleware('auth')->group(function () {
+        Route::get('/termos', [CartasAuthController::class, 'terms'])->name('terms');
+        Route::post('/termos', [CartasAuthController::class, 'acceptTerms'])->name('terms.accept');
+        Route::get('/verificar-email', [CartasAuthController::class, 'verificationNotice'])->name('verification.notice');
+
+        Route::middleware('cartas.verified')->group(function () {
+            Route::get('/dashboard', fn () => view('cartas.dashboard'))->name('dashboard');
+        });
+    });
 });
 
 Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador'])->group(function () {
