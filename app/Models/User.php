@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
-use App\Models\Participante;
+use App\Models\Cartas\Carta;
+use App\Models\Cartas\CartaEvento;
+use App\Models\Cartas\CartaMensagem;
 use App\Notifications\CartasResetPasswordNotification;
-use Illuminate\Auth\Notifications\ResetPassword;
-
+use Database\Factories\UserFactory;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -15,8 +17,8 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes, hasRoles;
+    /** @use HasFactory<UserFactory> */
+    use HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     public const SISTEMA_ENGAJA = 'engaja';
 
@@ -93,6 +95,31 @@ class User extends Authenticatable
         return $this->hasOne(Participante::class, 'user_id');
     }
 
+    public function cartasComoVoluntario()
+    {
+        return $this->hasMany(Carta::class, 'voluntario_user_id');
+    }
+
+    public function cartaMensagensComoRemetente()
+    {
+        return $this->hasMany(CartaMensagem::class, 'remetente_user_id');
+    }
+
+    public function cartaMensagensComoDestinatario()
+    {
+        return $this->hasMany(CartaMensagem::class, 'destinatario_user_id');
+    }
+
+    public function cartaMensagensVerificadas()
+    {
+        return $this->hasMany(CartaMensagem::class, 'verificada_por');
+    }
+
+    public function cartaEventos()
+    {
+        return $this->hasMany(CartaEvento::class, 'user_id');
+    }
+
     public function eventos()
     {
         return $this->hasMany(Evento::class);
@@ -109,7 +136,7 @@ class User extends Authenticatable
             return null;
         }
 
-        return '/storage/' . ltrim($this->profile_photo_path, '/');
+        return '/storage/'.ltrim($this->profile_photo_path, '/');
     }
 
     public function getProfileInitialAttribute(): string
@@ -127,9 +154,9 @@ class User extends Authenticatable
     {
         static::created(function (User $user) {
             $user->participante()->firstOrCreate(['user_id' => $user->id], [
-                'cpf'            => null,
-                'telefone'       => null,
-                'municipio_id'   => null,
+                'cpf' => null,
+                'telefone' => null,
+                'municipio_id' => null,
                 'escola_unidade' => null,
                 'tipo_organizacao' => null,
                 'tag' => null,

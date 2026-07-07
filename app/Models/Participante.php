@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Cartas\Carta;
+use App\Models\Cartas\CartaMensagem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -46,6 +48,21 @@ class Participante extends Model
     public function inscricoes()
     {
         return $this->hasMany(Inscricao::class, 'participante_id');
+    }
+
+    public function cartasComoEducando()
+    {
+        return $this->hasMany(Carta::class, 'educando_participante_id');
+    }
+
+    public function cartaMensagensComoRemetente()
+    {
+        return $this->hasMany(CartaMensagem::class, 'remetente_participante_id');
+    }
+
+    public function cartaMensagensComoDestinatario()
+    {
+        return $this->hasMany(CartaMensagem::class, 'destinatario_participante_id');
     }
 
     public function eventos()
