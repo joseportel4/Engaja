@@ -8,7 +8,9 @@
             <div class="cartas-dashboard__header-inner">
                 <span class="cartas-dashboard__header-spacer" aria-hidden="true"></span>
 
-                <img src="{{ asset('images/cartas/cartas-logo.png') }}" alt="Cartas para Esperançar">
+                <a href="{{ route('cartas.dashboard') }}" aria-label="Voltar ao dashboard do Cartas">
+                    <img src="{{ asset('images/cartas/cartas-logo.png') }}" alt="Cartas para Esperançar">
+                </a>
 
                 <div class="cartas-user-menu" id="cartasUserMenu">
                     <button class="cartas-user-menu__trigger" type="button" aria-expanded="false" aria-controls="cartasUserDropdown">

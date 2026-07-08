@@ -5,11 +5,13 @@
         <aside class="cartas-auth-side" aria-hidden="true"></aside>
         <section class="cartas-auth-main">
             <div class="cartas-auth-content">
-                <img
-                    src="{{ asset('images/cartas/cartas-logo.png') }}"
-                    alt="Cartas para Esperançar"
-                    class="cartas-logo @yield('logoClass')"
-                >
+                <a href="{{ Auth::check() ? route('cartas.dashboard') : route('cartas.login') }}" aria-label="Voltar para o início do Cartas">
+                    <img
+                        src="{{ asset('images/cartas/cartas-logo.png') }}"
+                        alt="Cartas para Esperançar"
+                        class="cartas-logo @yield('logoClass')"
+                    >
+                </a>
                 @yield('auth-content')
             </div>
         </section>
