@@ -18,6 +18,8 @@ use Spatie\Permission\Models\Role;
 
 class AuthController extends Controller
 {
+    private const PENDING_REGISTRATION_SESSION_KEY = 'cartas.pending_registration';
+
     public function login(): View
     {
         return view('cartas.auth.login');
@@ -28,9 +30,10 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
-            'terms' => ['accepted'],
         ], [
-            'terms.accepted' => 'Confirme que leu e concorda com os termos de uso.',
+            'email.required' => 'Informe seu e-mail.',
+            'email.email' => 'Informe um e-mail válido.',
+            'password.required' => 'Informe sua senha.',
         ]);
 
         $user = User::where('email', $credentials['email'])
@@ -80,34 +83,89 @@ class AuthController extends Controller
                 Rule::unique('users', 'email')->where('sistema_origem', User::SISTEMA_CARTAS),
             ],
             'password' => ['required', Rules\Password::defaults()],
+        ], [
+            'name.required' => 'Informe seu nome.',
+            'name.max' => 'O nome deve ter no máximo 255 caracteres.',
+            'email.required' => 'Informe seu e-mail.',
+            'email.email' => 'Informe um e-mail válido.',
+            'email.unique' => 'Este e-mail já está cadastrado no Cartas para Esperançar.',
+            'password.required' => 'Informe sua senha.',
+            'password.min' => 'A senha deve ter pelo menos :min caracteres.',
         ]);
 
-        $user = User::create([
+        $request->session()->put(self::PENDING_REGISTRATION_SESSION_KEY, [
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'sistema_origem' => User::SISTEMA_CARTAS,
         ]);
-
-        if ($role = Role::where('name', 'cartas_voluntario')->where('guard_name', 'web')->first()) {
-            $user->assignRole($role);
-        }
-
-        Auth::login($user);
-
-        $request->session()->regenerate();
 
         return redirect()->route('cartas.terms');
     }
 
-    public function terms(): View
+    public function terms(Request $request): RedirectResponse|View
     {
+        if ($request->user()) {
+            if (! $request->user()->isCartasUser()) {
+                abort(403);
+            }
+
+            return view('cartas.auth.terms');
+        }
+
+        if (! $request->session()->has(self::PENDING_REGISTRATION_SESSION_KEY)) {
+            return redirect()->route('cartas.register');
+        }
+
         return view('cartas.auth.terms');
     }
 
     public function acceptTerms(Request $request): RedirectResponse
     {
         $user = $request->user();
+
+        if (! $user && $request->session()->has(self::PENDING_REGISTRATION_SESSION_KEY)) {
+            $pendingRegistration = $request->session()->get(self::PENDING_REGISTRATION_SESSION_KEY);
+
+            validator($pendingRegistration, [
+                'name' => ['required', 'string', 'max:255'],
+                'email' => [
+                    'required', 'string', 'lowercase', 'email', 'max:255',
+                    Rule::unique('users', 'email')->where('sistema_origem', User::SISTEMA_CARTAS),
+                ],
+                'password' => ['required', 'string'],
+            ], [
+                'name.required' => 'Informe seu nome.',
+                'email.required' => 'Informe seu e-mail.',
+                'email.email' => 'Informe um e-mail válido.',
+                'email.unique' => 'Este e-mail já está cadastrado no Cartas para Esperançar.',
+                'password.required' => 'Informe sua senha.',
+            ])->validate();
+
+            $user = User::create([
+                'name' => $pendingRegistration['name'],
+                'email' => $pendingRegistration['email'],
+                'password' => $pendingRegistration['password'],
+                'sistema_origem' => User::SISTEMA_CARTAS,
+                'cartas_terms_accepted_at' => now(),
+            ]);
+
+            if ($role = Role::where('name', 'cartas_voluntario')->where('guard_name', 'web')->first()) {
+                $user->assignRole($role);
+            }
+
+            $request->session()->forget(self::PENDING_REGISTRATION_SESSION_KEY);
+
+            Auth::login($user);
+            $request->session()->regenerate();
+
+            $user->sendEmailVerificationNotification();
+
+            return redirect()->route('cartas.verification.notice');
+        }
+
+        if (! $user) {
+            return redirect()->route('cartas.register');
+        }
 
         if (! $user->isCartasUser()) {
             abort(403);
@@ -140,6 +198,9 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => ['required', 'email'],
+        ], [
+            'email.required' => 'Informe seu e-mail.',
+            'email.email' => 'Informe um e-mail válido.',
         ]);
 
         $user = User::where('email', $request->email)
@@ -153,7 +214,7 @@ class AuthController extends Controller
         $token = Password::broker()->createToken($user);
         $user->sendPasswordResetNotification($token);
 
-        return back()->with('status', __(Password::RESET_LINK_SENT));
+        return back()->with('status', 'Enviamos o link de redefinição de senha para seu e-mail.');
     }
 
     public function resetPassword(Request $request, string $token): View
@@ -170,6 +231,13 @@ class AuthController extends Controller
             'token' => ['required'],
             'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'token.required' => 'O token de redefinição é obrigatório.',
+            'email.required' => 'Informe seu e-mail.',
+            'email.email' => 'Informe um e-mail válido.',
+            'password.required' => 'Informe a nova senha.',
+            'password.confirmed' => 'A confirmação da senha não confere.',
+            'password.min' => 'A senha deve ter pelo menos :min caracteres.',
         ]);
 
         $existingUser = User::where('email', $request->email)
@@ -185,7 +253,7 @@ class AuthController extends Controller
         if (! Password::broker()->tokenExists($existingUser, $request->token)) {
             return back()
                 ->withInput($request->only('email'))
-                ->withErrors(['email' => __(Password::INVALID_TOKEN)]);
+                ->withErrors(['email' => 'Este link de redefinição de senha é inválido ou expirou.']);
         }
 
         $existingUser->forceFill([
@@ -195,6 +263,6 @@ class AuthController extends Controller
 
         Password::broker()->deleteToken($existingUser);
 
-        return redirect()->route('cartas.login')->with('status', __(Password::PASSWORD_RESET));
+        return redirect()->route('cartas.login')->with('status', 'Sua senha foi redefinida com sucesso.');
     }
 }

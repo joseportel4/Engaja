@@ -40,6 +40,9 @@ Route::get('/', function () {
 });
 
 Route::prefix('cartas')->name('cartas.')->group(function () {
+    Route::get('/termos', [CartasAuthController::class, 'terms'])->name('terms');
+    Route::post('/termos', [CartasAuthController::class, 'acceptTerms'])->name('terms.accept');
+
     Route::middleware('guest')->group(function () {
         Route::get('/', [CartasAuthController::class, 'login'])->name('login');
         Route::get('/login', [CartasAuthController::class, 'login'])->name('login.form');
@@ -53,11 +56,9 @@ Route::prefix('cartas')->name('cartas.')->group(function () {
     });
 
     Route::middleware('auth')->group(function () {
-        Route::get('/termos', [CartasAuthController::class, 'terms'])->name('terms');
-        Route::post('/termos', [CartasAuthController::class, 'acceptTerms'])->name('terms.accept');
         Route::get('/verificar-email', [CartasAuthController::class, 'verificationNotice'])->name('verification.notice');
 
-        Route::middleware(['cartas.verified', 'permission:cartas.ver'])->group(function () {
+        Route::middleware('cartas.verified')->group(function () {
             Route::get('/dashboard', fn () => view('cartas.dashboard'))->name('dashboard');
         });
     });
