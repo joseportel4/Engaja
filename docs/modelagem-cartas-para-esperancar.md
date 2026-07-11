@@ -27,9 +27,14 @@ Resumo atual:
 | Models do modulo | `[IMPLEMENTADO]` | `app/Models/Cartas` |
 | Relacoes com `users`, `participantes`, `eventos`, `atividades`, `municipios` | `[IMPLEMENTADO]` | models existentes e models de Cartas |
 | Workflow de envio, aprovacao e ajuste de mensagem | `[IMPLEMENTADO]` | `App\Services\Cartas\CartaMensagemWorkflowService` |
-| Aplicacao real do timbrado/PDF final | `[PENDENTE]` | falta servico de geracao do documento final |
-| Controllers operacionais de cartas, mensagens, verificacao e relatorios | `[PENDENTE]` | ainda nao criados |
-| Telas de cadastro/lista/resposta/verificacao/relatorios | `[PENDENTE]` | ainda nao criadas |
+| Aplicacao real do timbrado/PDF final | `[IMPLEMENTADO]` | `App\Services\Cartas\CartaTimbradoService` sobrepoe o texto digitado no PDF timbrado (FPDI); so para resposta digitada |
+| Controllers operacionais de cartas, mensagens, verificacao e relatorios | `[PARCIAL]` | `CartaController` cobre cadastro/mensagens/verificacao; relatorios ainda nao |
+| Telas de cadastro/lista/resposta/verificacao | `[IMPLEMENTADO]` | views em `resources/views/cartas` |
+| Filtro de remetentes pela acao especial (`eventos.is_cartas`) | `[IMPLEMENTADO]` | coluna `is_cartas` (marcada direto no banco), filtro em `CartaController::engajaUsersQuery` |
+| Busca no dropdown de remetente | `[IMPLEMENTADO]` | combobox `cpe-combobox` em `gestor/index.blade.php` + `_scripts.blade.php` |
+| Envio mostra so o campo da opcao (texto ou anexo) | `[IMPLEMENTADO]` | `data-modo-form`/`cpe-modo-field` em `show.blade.php` + `_scripts.blade.php` |
+| Intercalacao (uma carta por vez, alternando os lados) | `[IMPLEMENTADO]` | `Carta::proximoTipoRemetente()` e guardas em `storeMessage`/`respond` |
+| Telas de relatorios | `[PENDENTE]` | ainda nao criadas |
 
 ## Reaproveitamento do sistema atual
 
@@ -38,7 +43,7 @@ Nao criar novo cadastro de login. Usar:
 - `[IMPLEMENTADO]` `users`: autenticacao, nome, email, senha, papeis e separacao por `sistema_origem`.
 - `[IMPLEMENTADO]` `participantes`: dados complementares, CPF, telefone, municipio, escola/unidade e tipo de organizacao.
 - `[IMPLEMENTADO]` `municipios`, `estados`, `regiaos`: segmentacao territorial.
-- `[IMPLEMENTADO]` `eventos`: pode representar a acao pedagogica "Cartas para Esperancar - 2026".
+- `[IMPLEMENTADO]` `eventos`: representa a acao pedagogica "Cartas para Esperancar". A coluna booleana `eventos.is_cartas` marca qual(is) evento(s) sao a acao especial de cartas. A marcacao e feita **direto no banco** (ex.: `UPDATE eventos SET is_cartas = true WHERE id = ?`), nao ha checkbox no formulario. Somente participantes inscritos em um evento com `is_cartas = true` aparecem como remetentes no cadastro de cartas (`CartaController::engajaUsersQuery`).
 - `[IMPLEMENTADO]` `atividades`: pode representar os momentos/oficinas em que as cartas foram produzidas.
 - `[IMPLEMENTADO]` tabelas do Spatie Permission: controle de acesso restrito ao novo modulo.
 
@@ -164,10 +169,10 @@ Regras:
 
 - `[IMPLEMENTADO]` Para uma mesma `carta_id`, `rodada` deve ser sequencial por indice unico.
 - `[IMPLEMENTADO]` O primeiro envio normalmente tem `tipo_remetente = educando`.
-- `[IMPLEMENTADO]` As proximas mensagens alternam entre voluntario e educando, mas o sistema nao precisa impor alternancia rigida se a administracao precisar corrigir fluxo.
+- `[IMPLEMENTADO]` As proximas mensagens alternam entre voluntario e educando. A alternancia agora e imposta pelo backend: `storeMessage` (educando) e `respond` (voluntario) so aceitam envio quando e a vez daquele lado e nao ha mensagem pendente. Ver `Carta::proximoTipoRemetente()`, `podeEducandoEnviar()`, `podeVoluntarioEnviar()` e `temMensagemPendente()`.
 - `[IMPLEMENTADO]` Anexo original e arquivo final devem apontar para disco privado, nao publico.
-- `[PARCIAL]` Resposta digitada pelo voluntario usa `texto` e depois gera `arquivo_final_path` com timbrado. Campos existem; falta geracao do PDF/timbrado.
-- `[PARCIAL]` Resposta manuscrita pelo voluntario usa `anexo_original_path` e depois gera `arquivo_final_path` com timbrado. Campos existem; falta geracao do PDF/timbrado.
+- `[IMPLEMENTADO]` Resposta digitada pelo voluntario usa `texto` e gera `arquivo_final_path` com o timbrado aplicado (`CartaTimbradoService`), setando tambem `arquivo_final_*` e `timbrado_aplicado_em`.
+- `[IMPLEMENTADO]` Resposta manuscrita pelo voluntario usa `anexo_original_path` como documento final (nao recebe timbrado, por decisao de escopo); `arquivo_final_*` fica nulo.
 - `[IMPLEMENTADO]` Aprovacao por `cartas.verificar` muda a mensagem para `aprovada`; reprovacao muda para `ajuste_solicitado`.
 
 Indices:
@@ -322,14 +327,14 @@ As caixas amarelas representam as unicas tabelas novas. As demais mostram soment
 
 ## Fluxo operacional
 
-1. `[PARCIAL]` Administracao cria ou usa um `evento` do tipo "Cartas para Esperancar". O tipo existe no Engaja; falta amarracao operacional especifica do modulo.
+1. `[IMPLEMENTADO]` Administracao cria (em producao) um `evento` e marca `eventos.is_cartas = true` **direto no banco**. Os participantes inscritos nesse evento passam a ser os remetentes disponiveis no cadastro de cartas.
 2. `[IMPLEMENTADO]` Educandos seguem reaproveitando `participantes`; voluntarios Petrobras e gestao do modulo usam `users` com `sistema_origem = cartas`.
 3. `[IMPLEMENTADO]` Voluntarios recebem papel `cartas_voluntario`; gestao e administracao recebem seus papeis especificos.
-4. `[PENDENTE]` Gestao ou administracao cadastra uma `carta` para o educando, informando remetente, municipio, turma e anexando a primeira `carta_mensagem`.
+4. `[IMPLEMENTADO]` Gestao ou administracao cadastra uma `carta` para o educando: seleciona o remetente por um dropdown com busca (combobox) que lista apenas participantes da acao Cartas, e anexa a primeira `carta_mensagem` (upload).
 5. `[IMPLEMENTADO]` Ao enviar, a mensagem deixa de ser editavel pelo remetente comum.
 6. `[PENDENTE]` Administrador distribui manualmente ou automaticamente as cartas para voluntarios.
-7. `[PENDENTE]` Voluntario visualiza apenas as cartas atribuidas a ele e responde digitando texto ou anexando manuscrito.
-8. `[PARCIAL]` Sistema gera o documento final timbrado e deixa a mensagem em `aguardando_verificacao`. Status existe; falta geracao do documento.
+7. `[IMPLEMENTADO]` Voluntario visualiza apenas as cartas atribuidas a ele e responde digitando texto **ou** anexando manuscrito. A tela mostra somente o campo da opcao escolhida.
+8. `[IMPLEMENTADO]` Ao responder digitando, o sistema gera o documento final timbrado (`CartaTimbradoService::aplicar`, via FPDI sobre `public/images/cartas/PAEB_CartasparaEsperançar_PapeldeCarta.pdf`, A5), salva em `arquivo_final_path` (disco `local`, privado) e deixa a mensagem em `aguardando_verificacao`. Respostas manuscritas nao geram timbrado (usam o anexo original). Geometria/caminho em `config/cartas.php`.
 9. `[IMPLEMENTADO]` Jacira/Giovana ou outro perfil com `cartas.verificar` aprova ou solicita ajuste no backend.
 10. `[PENDENTE]` Apos aprovacao, gestao ou administracao imprime a resposta e registra nova rodada se o educando responder novamente.
 11. `[IMPLEMENTADO]` O ciclo pode continuar sem limite, sempre adicionando novas linhas em `carta_mensagens`.
