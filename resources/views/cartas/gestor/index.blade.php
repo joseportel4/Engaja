@@ -31,14 +31,24 @@
                         </span>
                     </label>
 
-                    <select name="remetente_user_id" class="cpe-select" required>
-                        <option value="">Remetente</option>
-                        @foreach($engajaUsers as $engajaUser)
-                            <option value="{{ $engajaUser->id }}" @selected(old('remetente_user_id') == $engajaUser->id)>
-                                {{ $engajaUser->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    @php
+                        $remetenteSelecionado = $engajaUsers->firstWhere('id', (int) old('remetente_user_id'));
+                    @endphp
+                    <div class="cpe-combobox" data-combobox>
+                        <input type="hidden" name="remetente_user_id" value="{{ old('remetente_user_id') }}" data-combobox-value>
+                        <input type="text" class="cpe-field cpe-combobox__input" placeholder="Remetente"
+                            autocomplete="off" role="combobox" aria-expanded="false"
+                            value="{{ $remetenteSelecionado?->name }}" data-combobox-input>
+                        <ul class="cpe-combobox__list" role="listbox" data-combobox-list>
+                            @foreach($engajaUsers as $engajaUser)
+                                <li class="cpe-combobox__option" role="option"
+                                    data-value="{{ $engajaUser->id }}" data-label="{{ $engajaUser->name }}">
+                                    {{ $engajaUser->name }}
+                                </li>
+                            @endforeach
+                            <li class="cpe-combobox__empty" data-combobox-empty hidden>Nenhum participante encontrado.</li>
+                        </ul>
+                    </div>
 
                     <button type="submit" class="cpe-button">Enviar carta</button>
                 </form>

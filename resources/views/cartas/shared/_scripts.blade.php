@@ -73,6 +73,180 @@
             });
         });
 
+        const normalize = (value) => (value || '')
+            .toString()
+            .normalize('NFD')
+            .replace(/[̀-ͯ]/g, '')
+            .toLowerCase()
+            .trim();
+
+        document.querySelectorAll('[data-combobox]').forEach((combobox) => {
+            const input = combobox.querySelector('[data-combobox-input]');
+            const hidden = combobox.querySelector('[data-combobox-value]');
+            const options = Array.from(combobox.querySelectorAll('.cpe-combobox__option'));
+            const empty = combobox.querySelector('[data-combobox-empty]');
+
+            if (!input || !hidden) {
+                return;
+            }
+
+            const setActive = (option) => {
+                options.forEach((item) => item.classList.remove('is-active'));
+                if (option) {
+                    option.classList.add('is-active');
+                    option.scrollIntoView({ block: 'nearest' });
+                }
+            };
+
+            const filter = () => {
+                const term = normalize(input.value);
+                let visible = 0;
+
+                options.forEach((option) => {
+                    const match = term === '' || normalize(option.dataset.label).includes(term);
+                    option.hidden = !match;
+                    if (match) {
+                        visible++;
+                    }
+                });
+
+                if (empty) {
+                    empty.hidden = visible > 0;
+                }
+            };
+
+            const select = (option) => {
+                hidden.value = option.dataset.value;
+                input.value = option.dataset.label;
+                combobox.classList.remove('is-open');
+                input.setAttribute('aria-expanded', 'false');
+                setActive(null);
+            };
+
+            const open = () => {
+                filter();
+                combobox.classList.add('is-open');
+                input.setAttribute('aria-expanded', 'true');
+            };
+
+            const close = () => {
+                combobox.classList.remove('is-open');
+                input.setAttribute('aria-expanded', 'false');
+                setActive(null);
+
+                if (!hidden.value) {
+                    const exact = options.find((option) => normalize(option.dataset.label) === normalize(input.value));
+                    if (exact) {
+                        select(exact);
+                    } else {
+                        input.value = '';
+                    }
+                }
+            };
+
+            input.addEventListener('focus', open);
+            input.addEventListener('click', open);
+            input.addEventListener('input', () => {
+                hidden.value = '';
+                open();
+            });
+
+            options.forEach((option) => {
+                option.addEventListener('mousedown', (event) => {
+                    event.preventDefault();
+                    select(option);
+                });
+            });
+
+            input.addEventListener('keydown', (event) => {
+                const visibleOptions = options.filter((option) => !option.hidden);
+                const current = combobox.querySelector('.cpe-combobox__option.is-active');
+                const index = visibleOptions.indexOf(current);
+
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    open();
+                    setActive(visibleOptions[Math.min(index + 1, visibleOptions.length - 1)] || visibleOptions[0]);
+                } else if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    setActive(visibleOptions[Math.max(index - 1, 0)]);
+                } else if (event.key === 'Enter' && combobox.classList.contains('is-open')) {
+                    event.preventDefault();
+                    if (current) {
+                        select(current);
+                    }
+                } else if (event.key === 'Escape') {
+                    close();
+                }
+            });
+
+            document.addEventListener('click', (event) => {
+                if (!combobox.contains(event.target)) {
+                    close();
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-modo-form]').forEach((form) => {
+            const radios = Array.from(form.querySelectorAll('input[name="modo_resposta"]'));
+            const fields = Array.from(form.querySelectorAll('.cpe-modo-field'));
+
+            if (!radios.length || !fields.length) {
+                return;
+            }
+
+            const apply = () => {
+                const selected = radios.find((radio) => radio.checked)?.value ?? null;
+
+                fields.forEach((field) => {
+                    field.hidden = selected !== field.dataset.modo;
+                });
+            };
+
+            radios.forEach((radio) => radio.addEventListener('change', apply));
+            apply();
+        });
+
+        let printFrame = null;
+        document.querySelectorAll('[data-print-src]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const src = button.dataset.printSrc;
+                if (!src) {
+                    return;
+                }
+
+                if (printFrame) {
+                    printFrame.remove();
+                }
+
+                printFrame = document.createElement('iframe');
+                printFrame.setAttribute('aria-hidden', 'true');
+                Object.assign(printFrame.style, {
+                    position: 'fixed',
+                    right: '0',
+                    bottom: '0',
+                    width: '0',
+                    height: '0',
+                    border: '0',
+                });
+
+                printFrame.addEventListener('load', () => {
+                    // O plugin de PDF precisa montar antes de imprimir.
+                    setTimeout(() => {
+                        try {
+                            printFrame.contentWindow.focus();
+                            printFrame.contentWindow.print();
+                        } catch (error) {
+                            window.open(src, '_blank');
+                        }
+                    }, 300);
+                });
+
+                printFrame.src = src;
+                document.body.appendChild(printFrame);
+            });
+        });
+
         document.querySelectorAll('.cpe-floating-user').forEach((menu) => {
             const trigger = menu.querySelector('.cpe-user-trigger');
             trigger?.addEventListener('click', (event) => {

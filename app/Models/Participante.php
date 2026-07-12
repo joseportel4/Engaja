@@ -4,14 +4,16 @@ namespace App\Models;
 
 use App\Models\Cartas\Carta;
 use App\Models\Cartas\CartaMensagem;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Participante extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     public const TAG_REDE_ENSINO = 'Rede de Ensino';
+
     public const TAG_MOVIMENTO_SOCIAL = 'Movimento Social';
 
     public const TAGS = [
@@ -96,6 +98,7 @@ class Participante extends Model
                 return false;
             }
         }
+
         return true;
     }
 }

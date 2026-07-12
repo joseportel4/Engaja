@@ -58,10 +58,16 @@
                                         @endif
                                     </a>
                                 </td>
-                                <td><button type="button" class="cpe-link" data-modal-open="respondCarta-{{ $carta->id }}">Responder</button></td>
+                                <td>
+                                    @if($carta->podeVoluntarioEnviar())
+                                        <button type="button" class="cpe-link" data-modal-open="respondCarta-{{ $carta->id }}">Responder</button>
+                                    @else
+                                        <span class="cpe-link cpe-link--disabled" title="{{ $carta->temMensagemPendente() ? 'Sua resposta está em verificação pela gestão.' : 'Aguarde a próxima carta para responder novamente.' }}">Responder</span>
+                                    @endif
+                                </td>
                                 <td>
                                     @if($primeira?->anexo_original_path)
-                                        <a href="{{ route('cartas.mensagens.download', $primeira) }}" class="cpe-link">Imprimir</a>
+                                        <button type="button" class="cpe-link" data-print-src="{{ route('cartas.mensagens.preview', $primeira) }}">Imprimir</button>
                                     @else
                                         <button type="button" class="cpe-link">Imprimir</button>
                                     @endif
@@ -99,7 +105,7 @@
                             @if(str_starts_with((string) $primeiraMime, 'image/'))
                                 <img src="{{ route('cartas.mensagens.preview', $primeira) }}" alt="Carta enviada por {{ $carta->educando?->user?->name ?? 'Remetente' }}">
                             @elseif($primeiraMime === 'application/pdf')
-                                <iframe src="{{ route('cartas.mensagens.preview', $primeira) }}" title="Carta enviada por {{ $carta->educando?->user?->name ?? 'Remetente' }}"></iframe>
+                                <iframe src="{{ route('cartas.mensagens.preview', $primeira) }}#toolbar=0&navpanes=0" title="Carta enviada por {{ $carta->educando?->user?->name ?? 'Remetente' }}"></iframe>
                             @else
                                 <div class="cpe-file-placeholder">Arquivo anexado: {{ $primeira->anexo_original_nome }}</div>
                             @endif
@@ -110,7 +116,7 @@
                     <div class="cpe-modal-actions cpe-modal-actions--three">
                         <button type="button" class="cpe-button cpe-button--ghost" data-modal-close>Fechar</button>
                         @if($primeira?->anexo_original_path)
-                            <a class="cpe-button cpe-button--ghost" href="{{ route('cartas.mensagens.download', $primeira) }}">Imprimir</a>
+                            <button type="button" class="cpe-button cpe-button--ghost" data-print-src="{{ route('cartas.mensagens.preview', $primeira) }}">Imprimir</button>
                         @else
                             <button type="button" class="cpe-button cpe-button--ghost">Imprimir</button>
                         @endif
@@ -124,7 +130,7 @@
                 <div class="cpe-modal__dialog">
                     <h2>Enviar uma carta</h2>
                     <p>Anexe a foto da sua carta.</p>
-                    <form method="POST" action="{{ route('cartas.cartas.respond', $carta) }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ route('cartas.cartas.respond', $carta) }}" enctype="multipart/form-data" data-modo-form>
                         @csrf
                         <div class="cpe-option-grid">
                             <label class="cpe-choice">
@@ -142,14 +148,18 @@
                                 <input type="radio" name="modo_resposta" value="anexo_manuscrito" required>
                             </label>
                         </div>
-                        <textarea name="texto" class="cpe-textarea" placeholder="Digite sua carta aqui"></textarea>
-                        <label class="cpe-upload cpe-upload--compact">
-                            <input type="file" name="arquivo" accept=".pdf,image/*">
-                            <span>
-                                <span class="cpe-upload__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 9l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-                                <span class="cpe-upload__link">Clique para selecionar o arquivo</span>
-                            </span>
-                        </label>
+                        <div class="cpe-modo-field" data-modo="digitada" hidden>
+                            <textarea name="texto" class="cpe-textarea" placeholder="Digite sua carta aqui"></textarea>
+                        </div>
+                        <div class="cpe-modo-field" data-modo="anexo_manuscrito" hidden>
+                            <label class="cpe-upload cpe-upload--compact">
+                                <input type="file" name="arquivo" accept=".pdf,image/*">
+                                <span>
+                                    <span class="cpe-upload__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 9l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+                                    <span class="cpe-upload__link">Clique para selecionar o arquivo</span>
+                                </span>
+                            </label>
+                        </div>
                         <div class="cpe-modal-actions">
                             <button type="button" class="cpe-button cpe-button--ghost" data-modal-close>Fechar</button>
                             <button type="submit" class="cpe-button">Enviar</button>
@@ -277,6 +287,11 @@
             align-items: center;
             gap: 5px;
             white-space: nowrap;
+        }
+
+        .cpe-link--disabled {
+            color: #999;
+            cursor: not-allowed;
         }
 
         .cpe-unread-badge {

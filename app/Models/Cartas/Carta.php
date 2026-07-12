@@ -119,6 +119,48 @@ class Carta extends Model
         return $this->hasMany(CartaEvento::class)->latest('created_at');
     }
 
+    /**
+     * Uma mensagem ainda aguardando verificação ou ajuste bloqueia novos envios na conversa.
+     */
+    public function temMensagemPendente(): bool
+    {
+        return in_array($this->ultimaMensagem?->status, [
+            CartaMensagem::STATUS_AGUARDANDO_VERIFICACAO,
+            CartaMensagem::STATUS_AJUSTE_SOLICITADO,
+        ], true);
+    }
+
+    /**
+     * Lado que deve enviar a próxima mensagem, alternando educando/voluntário.
+     * Retorna null quando há mensagem pendente (ninguém pode enviar).
+     */
+    public function proximoTipoRemetente(): ?string
+    {
+        if ($this->temMensagemPendente()) {
+            return null;
+        }
+
+        $ultima = $this->ultimaMensagem;
+
+        if (! $ultima) {
+            return CartaMensagem::TIPO_REMETENTE_EDUCANDO;
+        }
+
+        return $ultima->tipo_remetente === CartaMensagem::TIPO_REMETENTE_EDUCANDO
+            ? CartaMensagem::TIPO_REMETENTE_VOLUNTARIO
+            : CartaMensagem::TIPO_REMETENTE_EDUCANDO;
+    }
+
+    public function podeEducandoEnviar(): bool
+    {
+        return $this->proximoTipoRemetente() === CartaMensagem::TIPO_REMETENTE_EDUCANDO;
+    }
+
+    public function podeVoluntarioEnviar(): bool
+    {
+        return $this->proximoTipoRemetente() === CartaMensagem::TIPO_REMETENTE_VOLUNTARIO;
+    }
+
     public function scopeDoVoluntario(Builder $query, User|int $user): Builder
     {
         $userId = $user instanceof User ? $user->id : $user;

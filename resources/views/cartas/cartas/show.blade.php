@@ -118,7 +118,7 @@
                                     @if(str_starts_with((string) $mensagemMime, 'image/'))
                                         <img src="{{ route('cartas.mensagens.preview', $mensagem) }}" alt="Carta enviada">
                                     @elseif($mensagemMime === 'application/pdf')
-                                        <iframe src="{{ route('cartas.mensagens.preview', $mensagem) }}" title="Carta enviada"></iframe>
+                                        <iframe src="{{ route('cartas.mensagens.preview', $mensagem) }}#toolbar=0&navpanes=0" title="Carta enviada"></iframe>
                                     @else
                                         <div class="cpe-file-placeholder">Arquivo anexado: {{ $mensagem->arquivo_final_nome ?: $mensagem->anexo_original_nome }}</div>
                                     @endif
@@ -130,7 +130,7 @@
                             <div class="cpe-modal-actions">
                                 <button type="button" class="cpe-button cpe-button--ghost" data-modal-close>Fechar</button>
                                 @if($mensagem->anexo_original_path || $mensagem->arquivo_final_path)
-                                    <a class="cpe-button cpe-button--ghost" href="{{ route('cartas.mensagens.download', $mensagem) }}">Imprimir</a>
+                                    <button type="button" class="cpe-button cpe-button--ghost" data-print-src="{{ route('cartas.mensagens.preview', $mensagem) }}">Imprimir</button>
                                 @else
                                     <button type="button" class="cpe-button cpe-button--ghost">Imprimir</button>
                                 @endif
@@ -181,7 +181,7 @@
                                         </div>
                                     @endif
 
-                                    <form method="POST" action="{{ route('cartas.mensagens.update-adjustment', $mensagem) }}" enctype="multipart/form-data">
+                                    <form method="POST" action="{{ route('cartas.mensagens.update-adjustment', $mensagem) }}" enctype="multipart/form-data" data-modo-form>
                                         @csrf
                                         @method('PUT')
 
@@ -202,20 +202,24 @@
                                             </label>
                                         </div>
 
-                                        <textarea name="texto" class="cpe-textarea" placeholder="Digite sua carta ajustada aqui">{{ old('texto', $mensagem->texto) }}</textarea>
+                                        <div class="cpe-modo-field" data-modo="digitada" hidden>
+                                            <textarea name="texto" class="cpe-textarea" placeholder="Digite sua carta ajustada aqui">{{ old('texto', $mensagem->texto) }}</textarea>
+                                        </div>
 
-                                        <label class="cpe-upload cpe-upload--compact">
-                                            <input type="file" name="arquivo" accept=".pdf,image/*">
-                                            <span>
-                                                <span class="cpe-upload__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 9l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-                                                <span class="cpe-upload__link">Clique para selecionar o arquivo</span>
-                                                <span class="cpe-upload__hint">PDF, PNG, JPG ou GIF (max. 10MB)</span>
-                                            </span>
-                                        </label>
+                                        <div class="cpe-modo-field" data-modo="anexo_manuscrito" hidden>
+                                            <label class="cpe-upload cpe-upload--compact">
+                                                <input type="file" name="arquivo" accept=".pdf,image/*">
+                                                <span>
+                                                    <span class="cpe-upload__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 9l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+                                                    <span class="cpe-upload__link">Clique para selecionar o arquivo</span>
+                                                    <span class="cpe-upload__hint">PDF, PNG, JPG ou GIF (max. 10MB)</span>
+                                                </span>
+                                            </label>
 
-                                        @if($mensagem->anexo_original_nome)
-                                            <p class="cpe-current-file">Arquivo atual: {{ $mensagem->anexo_original_nome }}</p>
-                                        @endif
+                                            @if($mensagem->anexo_original_nome)
+                                                <p class="cpe-current-file">Arquivo atual: {{ $mensagem->anexo_original_nome }}</p>
+                                            @endif
+                                        </div>
 
                                         <div class="cpe-modal-actions">
                                             <button type="button" class="cpe-button cpe-button--ghost" data-modal-close>Fechar</button>
@@ -229,9 +233,25 @@
                 @endif
 
                 @if($gestor)
-                    <button type="button" class="cpe-button cpe-conversation__wide-button" data-modal-open="addCartaModal">Adicionar carta</button>
+                    @if($carta->podeEducandoEnviar())
+                        <button type="button" class="cpe-button cpe-conversation__wide-button" data-modal-open="addCartaModal">Adicionar carta</button>
+                    @else
+                        <p class="cpe-turn-note">
+                            {{ $carta->temMensagemPendente()
+                                ? 'Há uma resposta aguardando verificação. Resolva-a antes de enviar uma nova carta.'
+                                : 'Aguardando a resposta do voluntário para enviar uma nova carta.' }}
+                        </p>
+                    @endif
                 @else
-                    <button type="button" class="cpe-button cpe-conversation__wide-button" data-modal-open="respondCartaModal">Responder {{ $remetentePrimeiroNome }}</button>
+                    @if($carta->podeVoluntarioEnviar())
+                        <button type="button" class="cpe-button cpe-conversation__wide-button" data-modal-open="respondCartaModal">Responder {{ $remetentePrimeiroNome }}</button>
+                    @else
+                        <p class="cpe-turn-note">
+                            {{ $carta->temMensagemPendente()
+                                ? 'Sua resposta está em verificação pela gestão.'
+                                : 'Aguardando a próxima carta de '.$remetentePrimeiroNome.' para responder novamente.' }}
+                        </p>
+                    @endif
                 @endif
                 <a href="{{ route('cartas.dashboard') }}" class="cpe-button cpe-button--ghost cpe-conversation__wide-button">Voltar</a>
             </div>
@@ -283,7 +303,7 @@
             <div class="cpe-modal__dialog">
                 <h2>Enviar uma carta</h2>
                 <p>Escolha como deseja responder.</p>
-                <form method="POST" action="{{ route('cartas.cartas.respond', $carta) }}" enctype="multipart/form-data">
+                <form method="POST" action="{{ route('cartas.cartas.respond', $carta) }}" enctype="multipart/form-data" data-modo-form>
                     @csrf
                     <div class="cpe-option-grid">
                         <label class="cpe-choice">
@@ -301,15 +321,19 @@
                             <input type="radio" name="modo_resposta" value="anexo_manuscrito" required>
                         </label>
                     </div>
-                    <textarea name="texto" class="cpe-textarea" placeholder="Digite sua carta aqui"></textarea>
-                    <label class="cpe-upload cpe-upload--compact">
-                        <input type="file" name="arquivo" accept=".pdf,image/*">
-                        <span>
-                            <span class="cpe-upload__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 9l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-                            <span class="cpe-upload__link">Clique para selecionar o arquivo</span>
-                            <span class="cpe-upload__hint">PDF, PNG, JPG ou GIF (max. 10MB)</span>
-                        </span>
-                    </label>
+                    <div class="cpe-modo-field" data-modo="digitada" hidden>
+                        <textarea name="texto" class="cpe-textarea" placeholder="Digite sua carta aqui"></textarea>
+                    </div>
+                    <div class="cpe-modo-field" data-modo="anexo_manuscrito" hidden>
+                        <label class="cpe-upload cpe-upload--compact">
+                            <input type="file" name="arquivo" accept=".pdf,image/*">
+                            <span>
+                                <span class="cpe-upload__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 9l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+                                <span class="cpe-upload__link">Clique para selecionar o arquivo</span>
+                                <span class="cpe-upload__hint">PDF, PNG, JPG ou GIF (max. 10MB)</span>
+                            </span>
+                        </label>
+                    </div>
                     <div class="cpe-modal-actions">
                         <button type="button" class="cpe-button cpe-button--ghost" data-modal-close>Fechar</button>
                         <button type="submit" class="cpe-button">Enviar</button>
@@ -345,6 +369,17 @@
 
         .cpe-conversation__wide-button {
             width: 100%;
+        }
+
+        .cpe-turn-note {
+            border: 1px solid #d7d0ca;
+            border-radius: 6px;
+            background: #fff;
+            padding: 12px 14px;
+            margin: 0;
+            color: #666;
+            font-size: 13px;
+            text-align: center;
         }
 
         .cpe-form-row {

@@ -61,6 +61,7 @@ class Evento extends Model
         'subacao',
         'nome',
         'tipo',
+        'is_cartas',
         'data_horario',
         'duracao',
         'data_inicio',
@@ -81,6 +82,7 @@ class Evento extends Model
     protected $casts = [
         'ods_selecionados' => 'array',
         'checklist_planejamento' => 'array',
+        'is_cartas' => 'boolean',
     ];
 
     public function eixo(): BelongsTo
