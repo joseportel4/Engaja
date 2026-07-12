@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             BiDimensaoSeeder::class,
             UpdateAnexosSeeder::class,
             CartasAdminSeeder::class,
+            CartasTestSeeder::class,
         ]);
 
         $administrador = User::factory()
