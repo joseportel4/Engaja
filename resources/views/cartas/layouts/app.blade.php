@@ -22,6 +22,9 @@
             font-family: 'Montserrat', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
             color: var(--cartas-text);
             background: var(--cartas-paper);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
         .cartas-auth-shell {
@@ -252,6 +255,7 @@
 </head>
 <body>
     @yield('body')
+    @include('cartas.layouts.footer')
     @stack('scripts')
 </body>
 </html>
