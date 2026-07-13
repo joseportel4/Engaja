@@ -5,10 +5,12 @@ namespace App\Models;
 use App\Models\Cartas\Carta;
 use App\Models\Cartas\CartaEvento;
 use App\Models\Cartas\CartaMensagem;
+use App\Notifications\Cartas\CartasVerifyEmailNotification;
 use App\Notifications\CartasResetPasswordNotification;
 use Database\Factories\UserFactory;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -88,6 +90,13 @@ class User extends Authenticatable
         $this->notify($this->isCartasUser()
             ? new CartasResetPasswordNotification($token)
             : new ResetPassword($token));
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify($this->isCartasUser()
+            ? new CartasVerifyEmailNotification
+            : new VerifyEmail);
     }
 
     public function participante()
