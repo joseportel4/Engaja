@@ -1,4 +1,4 @@
-﻿@extends('cartas.layouts.app')
+@extends('cartas.layouts.app')
 
 @section('title', 'Cartas entre pessoas - Cartas para Esperançar')
 
@@ -357,19 +357,20 @@
         }
 
         .cpe-conversation__main {
-            min-height: 100vh;
+            min-height: 100%;
             padding: 0 30px;
         }
 
         .cpe-conversation__content {
             margin-top: 70px;
+            padding-bottom: 56px;
             display: grid;
             gap: 22px;
         }
 
         .cpe-conversation__aside {
             background: var(--cpe-pink-panel);
-            min-height: 100vh;
+            min-height: 100%;
         }
 
         .cpe-conversation__wide-button {
