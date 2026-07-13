@@ -55,15 +55,16 @@
                                 $respostasExibidas++;
                             }
 
-                            $statusLabel = match ($mensagem->status) {
-                                'aprovada' => $loop->first
-                                    ? 'Enviada'
-                                    : ($respostasExibidas === 1 ? 'Respondida' : "Respondida {$respostasExibidas}x"),
-                                'aguardando_verificacao' => 'Em preparação',
-                                'ajuste_solicitado' => 'Ajuste solicitado',
-                                default => 'Enviada',
-                            };
-                            ?>
+                                    $isVoluntario = ! $gestor && $mensagem->tipo_remetente === 'educando';
+                                    $statusLabel = match ($mensagem->status) {
+                                        'aprovada' => $loop->first
+                                            ? ($isVoluntario ? 'Recebida' : 'Enviada')
+                                            : ($respostasExibidas === 1 ? 'Respondida' : "Respondida {$respostasExibidas}x"),
+                                        'aguardando_verificacao' => 'Em preparação',
+                                        'ajuste_solicitado' => 'Ajuste solicitado',
+                                        default => 'Enviada',
+                                    };
+                                ?>
                                 <tr>
                                     <td>
                                         <span class="cpe-pill {{ $statusClass }}">

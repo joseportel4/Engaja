@@ -99,8 +99,26 @@ class AuthController extends Controller
         } catch (\RuntimeException $exception) {
             throw ValidationException::withMessages(['municipio_ibge_id' => $exception->getMessage()]);
         }
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required', 'string', 'lowercase', 'email', 'max:255',
+                Rule::unique('users', 'email')->where('sistema_origem', User::SISTEMA_CARTAS),
+            ],
+            'password' => ['required', Rules\Password::defaults()],
+            'termos_aceitos' => ['accepted'],
+        ], [
+            'name.required' => 'Informe seu nome.',
+            'name.max' => 'O nome deve ter no máximo 255 caracteres.',
+            'email.required' => 'Informe seu e-mail.',
+            'email.email' => 'Informe um e-mail válido.',
+            'email.unique' => 'Este e-mail já está cadastrado no Cartas para Esperançar.',
+            'password.required' => 'Informe sua senha.',
+            'password.min' => 'A senha deve ter pelo menos :min caracteres.',
+            'termos_aceitos.accepted' => 'Você precisa aceitar os termos de uso para continuar.',
+        ]);
 
-        $request->session()->put(self::PENDING_REGISTRATION_SESSION_KEY, [
+        $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
@@ -109,9 +127,20 @@ class AuthController extends Controller
             'estado_nome' => $localidade['estado']['nome'],
             'estado_sigla' => $localidade['estado']['sigla'],
             'municipio_nome' => $localidade['municipio']['nome'],
+            'sistema_origem' => User::SISTEMA_CARTAS,
+            'cartas_terms_accepted_at' => now(),
         ]);
 
-        return redirect()->route('cartas.terms');
+        if ($role = Role::where('name', 'cartas_voluntario')->where('guard_name', 'web')->first()) {
+            $user->assignRole($role);
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        $user->sendEmailVerificationNotification();
+
+        return redirect()->route('cartas.verification.notice');
     }
 
     public function terms(Request $request): RedirectResponse|View

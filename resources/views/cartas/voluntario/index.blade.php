@@ -35,8 +35,27 @@
                     <tbody>
                         @forelse($cartas as $carta)
                             @php($primeira = $carta->mensagens->sortBy('rodada')->first())
+                            @php
+                                $statusLabel = match ($carta->status) {
+                                    'aguardando_voluntario' => 'Recebida',
+                                    'aguardando_verificacao' => 'Em verificação',
+                                    'aguardando_ajuste' => 'Ajuste solicitado',
+                                    'respondida' => 'Respondido',
+                                    'aguardando_educando' => 'Aguardando educando',
+                                    'encerrada' => 'Encerrada',
+                                    default => 'Recebida',
+                                };
+                                $statusClass = match ($carta->status) {
+                                    'aguardando_voluntario' => 'cpe-pill--green',
+                                    'aguardando_verificacao' => 'cpe-pill--yellow',
+                                    'aguardando_ajuste' => 'cpe-pill--blue',
+                                    'respondida' => 'cpe-pill--green',
+                                    'encerrada' => 'cpe-pill--blue',
+                                    default => 'cpe-pill--green',
+                                };
+                            @endphp
                             <tr>
-                                <td><span class="cpe-pill cpe-pill--green">Recebida</span></td>
+                                <td><span class="cpe-pill {{ $statusClass }}">{{ $statusLabel }}</span></td>
                                 <td>{{ optional($primeira?->created_at ?? $carta->created_at)->format('d/m/Y') }}</td>
                                 <td>
                                     <span class="cpe-truncate" title="{{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}">
