@@ -1,4 +1,4 @@
-﻿@extends('cartas.layouts.app')
+@extends('cartas.layouts.app')
 
 @section('title', 'Suas cartas - Cartas para Esperançar')
 
@@ -39,13 +39,13 @@
                                 <td><span class="cpe-pill cpe-pill--green">Recebida</span></td>
                                 <td>{{ optional($primeira?->created_at ?? $carta->created_at)->format('d/m/Y') }}</td>
                                 <td>
-                                    <span class="cpe-truncate" title="{{ $carta->educando?->user?->name ?? 'Remetente' }}">
-                                        {{ $carta->educando?->user?->name ?? 'Remetente' }}
+                                    <span class="cpe-truncate" title="{{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}">
+                                        {{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="cpe-truncate" title="{{ Auth::user()->name }}">
-                                        {{ Auth::user()->name }}
+                                    <span class="cpe-truncate" title="{{ Auth::user()->nome_com_localidade }}">
+                                        {{ Auth::user()->nome_com_localidade }}
                                     </span>
                                 </td>
                                 <td>
@@ -97,15 +97,15 @@
             <div class="cpe-modal" id="openCarta-{{ $carta->id }}">
                 <div class="cpe-modal__backdrop"></div>
                 <div class="cpe-modal__dialog cpe-modal__dialog--wide">
-                    <h2>Carta enviada por {{ $carta->educando?->user?->name ?? 'Remetente' }}</h2>
+                    <h2>Carta enviada por {{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}</h2>
                     <p>{{ optional($primeira?->created_at)->format('d/m/Y H:i') }}</p>
                     @if($primeira?->anexo_original_path)
                         @php($primeiraMime = $primeira->arquivo_final_mime ?: $primeira->anexo_original_mime)
                         <div class="cpe-letter-preview cpe-letter-preview--media">
                             @if(str_starts_with((string) $primeiraMime, 'image/'))
-                                <img src="{{ route('cartas.mensagens.preview', $primeira) }}" alt="Carta enviada por {{ $carta->educando?->user?->name ?? 'Remetente' }}">
+                                <img src="{{ route('cartas.mensagens.preview', $primeira) }}" alt="Carta enviada por {{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}">
                             @elseif($primeiraMime === 'application/pdf')
-                                <iframe src="{{ route('cartas.mensagens.preview', $primeira) }}#toolbar=0&navpanes=0" title="Carta enviada por {{ $carta->educando?->user?->name ?? 'Remetente' }}"></iframe>
+                                <iframe src="{{ route('cartas.mensagens.preview', $primeira) }}#toolbar=0&navpanes=0" title="Carta enviada por {{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}"></iframe>
                             @else
                                 <div class="cpe-file-placeholder">Arquivo anexado: {{ $primeira->anexo_original_nome }}</div>
                             @endif
@@ -188,7 +188,7 @@
                     <select name="destinatario_user_id" class="cpe-select" required>
                         <option value="">Destinatário</option>
                         @foreach($destinatarios as $destinatario)
-                            <option value="{{ $destinatario->id }}">{{ $destinatario->name }}</option>
+                            <option value="{{ $destinatario->id }}">{{ $destinatario->nome_com_localidade }}</option>
                         @endforeach
                     </select>
                     <div class="cpe-modal-actions">

@@ -150,6 +150,16 @@ class User extends Authenticatable
         return mb_strtoupper(mb_substr($name, 0, 1));
     }
 
+    public function getNomeComLocalidadeAttribute(): string
+    {
+        $estado = $this->participante?->municipio?->estado?->nome;
+        $municipio = $this->participante?->municipio?->nome;
+
+        return collect([$this->name, $estado, $municipio])
+            ->filter()
+            ->implode(' - ');
+    }
+
     protected static function booted(): void
     {
         static::created(function (User $user) {
