@@ -253,7 +253,7 @@
 
         .cpe-volunteer .cpe-table th:nth-child(1),
         .cpe-volunteer .cpe-table td:nth-child(1) {
-            width: 100px;
+            width: 150px;
         }
 
         .cpe-volunteer .cpe-table th:nth-child(2),
@@ -265,7 +265,7 @@
         .cpe-volunteer .cpe-table td:nth-child(3),
         .cpe-volunteer .cpe-table th:nth-child(4),
         .cpe-volunteer .cpe-table td:nth-child(4) {
-            width: 165px;
+            width: 140px;
         }
 
         .cpe-volunteer .cpe-table th:nth-child(5),

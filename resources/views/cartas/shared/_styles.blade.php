@@ -357,6 +357,7 @@
         padding: 0 9px;
         font-size: 11px;
         font-weight: 700;
+        white-space: nowrap;
     }
 
     .cpe-pill--blue {
