@@ -8,6 +8,7 @@ use App\Models\Cartas\CartaEvento;
 use App\Models\Cartas\CartaMensagem;
 use App\Models\User;
 use App\Notifications\Cartas\AjusteSolicitadoNotification;
+use App\Notifications\Cartas\CartaAguardandoVerificacaoNotification;
 use App\Notifications\Cartas\CartaRecebidaNotification;
 use App\Services\Cartas\CartaTimbradoService;
 use Illuminate\Http\RedirectResponse;
@@ -268,6 +269,9 @@ class CartaController extends Controller
             ]);
         });
 
+        $carta->loadMissing(['voluntario', 'educando.user']);
+        $this->notificarGestores(new CartaAguardandoVerificacaoNotification($carta));
+
         return redirect()->route('cartas.dashboard')->with('cartas_thanks', true);
     }
 
@@ -294,7 +298,7 @@ class CartaController extends Controller
 
         $file = $request->file('arquivo');
 
-        DB::transaction(function () use ($user, $destinatario, $file) {
+        $carta = DB::transaction(function () use ($user, $destinatario, $file) {
             $carta = Carta::create([
                 'codigo' => $this->nextCodigo(),
                 'educando_participante_id' => $destinatario->participante->id,
@@ -331,7 +335,12 @@ class CartaController extends Controller
                 'user_id' => $user->id,
                 'tipo' => CartaEvento::TIPO_MENSAGEM_ENVIADA,
             ]);
+
+            return $carta;
         });
+
+        $carta->loadMissing(['voluntario', 'educando.user']);
+        $this->notificarGestores(new CartaAguardandoVerificacaoNotification($carta));
 
         return redirect()->route('cartas.dashboard')->with('cartas_thanks', true);
     }
@@ -536,6 +545,9 @@ class CartaController extends Controller
             ]);
         });
 
+        $mensagem->carta->loadMissing(['voluntario', 'educando.user']);
+        $this->notificarGestores(new CartaAguardandoVerificacaoNotification($mensagem->carta));
+
         return redirect()
             ->route('cartas.cartas.show', $mensagem->carta)
             ->with('status', 'Ajuste enviado para verificação.');
@@ -649,6 +661,14 @@ class CartaController extends Controller
         return $user->hasAnyRole(['cartas_admin', 'cartas_gestao'])
             || $user->can('cartas.criar')
             || $user->can('cartas.verificar');
+    }
+
+    private function notificarGestores(object $notification): void
+    {
+        User::query()
+            ->where('sistema_origem', User::SISTEMA_CARTAS)
+            ->role(['cartas_admin', 'cartas_gestao'])
+            ->each(fn (User $gestor) => $gestor->notify($notification));
     }
 
     private function authorizeCartaAccess(Request $request, Carta $carta): void
