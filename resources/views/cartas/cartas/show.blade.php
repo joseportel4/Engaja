@@ -1,4 +1,4 @@
-@extends('cartas.layouts.app')
+﻿@extends('cartas.layouts.app')
 
 @section('title', 'Cartas entre pessoas - Cartas para Esperançar')
 
@@ -145,7 +145,7 @@
                                 <div class="cpe-verification-box">
                                     <form method="POST" class="cpe-adjustment-form">
                                         @csrf
-                                        <textarea name="parecer_verificacao" class="cpe-textarea" placeholder="Informe o ajuste solicitado ao voluntário"></textarea>
+                                        <textarea name="parecer_verificacao" class="cpe-textarea" placeholder="Informe o ajuste solicitado ao voluntário, caso seja necessário"></textarea>
                                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                                             <button type="submit" formaction="{{ route('cartas.mensagens.adjustment', $mensagem) }}" class="cpe-button cpe-button--ghost">Solicitar ajuste</button>
                                             <button type="submit" formaction="{{ route('cartas.mensagens.approve', $mensagem) }}" class="cpe-button">Aprovar resposta</button>
