@@ -6,9 +6,9 @@
     @include('cartas.shared._styles')
 
     <main class="cpe-page cpe-conversation">
-        <section class="cpe-conversation__main">
         @include('cartas.shared._logo')
 
+        <section class="cpe-conversation__main">
             <div class="cpe-conversation__content">
                 @php
                     $remetenteNome = $carta->educando?->user?->name ?? 'Remetente';
@@ -352,6 +352,10 @@
         .cpe-conversation {
             display: grid;
             grid-template-columns: minmax(560px, 1.08fr) .92fr;
+        }
+
+        .cpe-conversation > .cpe-logo-top {
+            grid-column: 1 / -1;
         }
 
         .cpe-conversation__main {

@@ -53,6 +53,11 @@
             align-items: center;
         }
 
+        .cartas-logo-link {
+            display: block;
+            text-align: center;
+        }
+
         .cartas-logo {
             width: 210px;
             max-width: 70%;

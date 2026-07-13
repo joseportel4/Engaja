@@ -5,7 +5,7 @@
         <aside class="cartas-auth-side" aria-hidden="true"></aside>
         <section class="cartas-auth-main">
             <div class="cartas-auth-content">
-                <a href="{{ Auth::check() ? route('cartas.dashboard') : route('cartas.login') }}" aria-label="Voltar para o início do Cartas">
+                <a href="{{ Auth::check() ? route('cartas.dashboard') : route('cartas.login') }}" aria-label="Voltar para o início do Cartas" class="cartas-logo-link">
                     <img
                         src="{{ asset('images/cartas/cartas-logo.png') }}"
                         alt="Cartas para Esperançar"
