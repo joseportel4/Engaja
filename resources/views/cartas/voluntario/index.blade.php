@@ -62,7 +62,7 @@
                                     @if($carta->podeVoluntarioEnviar())
                                         <button type="button" class="cpe-link" data-modal-open="respondCarta-{{ $carta->id }}">Responder</button>
                                     @else
-                                        <span class="cpe-link cpe-link--disabled" title="{{ 'Você poderá responder quando uma nova carta for recebida.' }}">Responder</span>
+                                        <span class="cpe-link cpe-link--disabled" title="{{ 'Você poderá responder quando uma nova carta for recebida.' }}">Respondido</span>
                                     @endif
                                 </td>
                                 <td>

@@ -145,7 +145,7 @@
                                 <div class="cpe-verification-box">
                                     <form method="POST" class="cpe-adjustment-form">
                                         @csrf
-                                        <textarea name="parecer_verificacao" class="cpe-textarea" placeholder="Informe o ajuste solicitado ao voluntário, caso seja necessário"></textarea>
+                                        <textarea name="parecer_verificacao" class="cpe-textarea" placeholder="Informe o ajuste solicitado ao voluntário, caso seja necessário."></textarea>
                                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                                             <button type="submit" formaction="{{ route('cartas.mensagens.adjustment', $mensagem) }}" class="cpe-button cpe-button--ghost">Solicitar ajuste</button>
                                             <button type="submit" formaction="{{ route('cartas.mensagens.approve', $mensagem) }}" class="cpe-button">Aprovar resposta</button>
@@ -206,7 +206,7 @@
                                         </div>
 
                                         <div class="cpe-modo-field" data-modo="digitada" hidden>
-                                            <textarea name="texto" class="cpe-textarea" placeholder="Digite sua carta ajustada aqui">{{ old('texto', $mensagem->texto) }}</textarea>
+                                            <textarea name="texto" class="cpe-textarea" placeholder="Digite sua carta ajustada aqui.">{{ old('texto', $mensagem->texto) }}</textarea>
                                         </div>
 
                                         <div class="cpe-modo-field" data-modo="anexo_manuscrito" hidden>
