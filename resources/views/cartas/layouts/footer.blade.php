@@ -33,7 +33,7 @@
 
 <style>
   .cpe-footer {
-    background: var(--cpe-blue, #008fbd);
+    background: var(--cpe-purple, #a900d9);
     color: #fff;
     margin-top: auto;
     padding-top: 48px;
