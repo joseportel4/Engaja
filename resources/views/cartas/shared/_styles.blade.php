@@ -110,7 +110,7 @@
     }
 
     .cpe-textarea {
-        min-height: 132px;
+        min-height: 370px;
         resize: vertical;
         padding: 12px;
     }
@@ -394,17 +394,17 @@
 
     .cpe-modal__dialog {
         position: relative;
-        width: min(100%, 430px);
+        width: min(100%, 600px);
         max-height: calc(100vh - 48px);
         overflow-y: auto;
         background: var(--cpe-bg);
-        border-radius: 8px;
-        padding: 22px;
+        border-radius: 10px;
+        padding: 32px;
         box-shadow: 0 22px 60px rgba(0, 0, 0, .32);
     }
 
     .cpe-modal__dialog--wide {
-        width: min(100%, 590px);
+        width: min(100%, 780px);
     }
 
     .cpe-modal h2 {
