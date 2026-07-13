@@ -34,13 +34,13 @@
                     </thead>
                     <tbody>
                         @forelse($cartas as $carta)
-                            @php($primeira = $carta->mensagens->sortBy('rodada')->first())
                             @php
+                                $primeira = $carta->mensagens->sortBy('rodada')->first();
                                 $statusLabel = match ($carta->status) {
                                     'aguardando_voluntario' => 'Recebida',
-                                    'aguardando_verificacao' => 'Em verificação',
+                                    'aguardando_verificacao' => 'Em preparação',
                                     'aguardando_ajuste' => 'Ajuste solicitado',
-                                    'respondida' => 'Respondido',
+                                    'respondida' => 'Respondida',
                                     'aguardando_educando' => 'Aguardando educando',
                                     'encerrada' => 'Encerrada',
                                     default => 'Recebida',
