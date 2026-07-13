@@ -39,12 +39,15 @@ class CartaController extends Controller
 
         $carta->load([
             'educando.user',
-            'voluntario',
+            'educando.municipio.estado',
+            'voluntario.participante.municipio.estado',
             'ultimaMensagem',
-            'mensagens.remetenteUsuario',
+            'mensagens.remetenteUsuario.participante.municipio.estado',
             'mensagens.remetenteParticipante.user',
-            'mensagens.destinatarioUsuario',
+            'mensagens.remetenteParticipante.municipio.estado',
+            'mensagens.destinatarioUsuario.participante.municipio.estado',
             'mensagens.destinatarioParticipante.user',
+            'mensagens.destinatarioParticipante.municipio.estado',
         ]);
 
         $gestor = $this->isGestor($request->user());
@@ -585,7 +588,7 @@ class CartaController extends Controller
     {
         $search = trim((string) $request->query('q', ''));
         $cartas = Carta::query()
-            ->with(['educando.user', 'voluntario', 'ultimaMensagem'])
+            ->with(['educando.user', 'educando.municipio.estado', 'voluntario.participante.municipio.estado', 'ultimaMensagem'])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($nested) use ($search) {
                     $nested->where('codigo', 'like', "%{$search}%")
@@ -607,7 +610,7 @@ class CartaController extends Controller
         $user = $request->user();
 
         $cartas = Carta::query()
-            ->with(['educando.user', 'mensagens' => fn ($q) => $q->latest('rodada'), 'ultimaMensagem'])
+            ->with(['educando.user', 'educando.municipio.estado', 'voluntario.participante.municipio.estado', 'mensagens' => fn ($q) => $q->latest('rodada'), 'ultimaMensagem'])
             ->withCount(['mensagens as mensagens_nao_lidas_count' => function ($query) use ($user) {
                 $query->where('destinatario_user_id', $user->id)
                     ->whereNull('lida_em');
@@ -626,7 +629,7 @@ class CartaController extends Controller
         return User::query()
             ->where('sistema_origem', User::SISTEMA_ENGAJA)
             ->whereHas('participante.eventos', fn ($q) => $q->where('is_cartas', true))
-            ->with('participante')
+            ->with('participante.municipio.estado')
             ->orderBy('name');
     }
 
@@ -635,6 +638,7 @@ class CartaController extends Controller
         return User::query()
             ->where('sistema_origem', User::SISTEMA_CARTAS)
             ->role('cartas_voluntario')
+            ->with('participante.municipio.estado')
             ->orderBy('name');
     }
 

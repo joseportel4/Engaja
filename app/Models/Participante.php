@@ -79,6 +79,17 @@ class Participante extends Model
         return $this->validaCpf($this->cpf);
     }
 
+    public function getNomeComLocalidadeAttribute(): string
+    {
+        $nome = $this->user?->name ?? 'Participante';
+        $estado = $this->municipio?->estado?->nome;
+        $municipio = $this->municipio?->nome;
+
+        return collect([$nome, $estado, $municipio])
+            ->filter()
+            ->implode(' - ');
+    }
+
     private function validaCpf($cpf)
     {
         // Aqui você coloca a regra de validação de CPF

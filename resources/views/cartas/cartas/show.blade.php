@@ -11,8 +11,8 @@
         <section class="cpe-conversation__main">
             <div class="cpe-conversation__content">
                 @php
-                    $remetenteNome = $carta->educando?->user?->name ?? 'Remetente';
-                    $voluntarioNome = $carta->voluntario?->name ?? 'Voluntário';
+                    $remetenteNome = $carta->educando?->nome_com_localidade ?? 'Remetente';
+                    $voluntarioNome = $carta->voluntario?->nome_com_localidade ?? 'Voluntário';
                     $remetentePrimeiroNome = str($remetenteNome)->trim()->before(' ')->toString();
                     $voluntarioPrimeiroNome = str($voluntarioNome)->trim()->before(' ')->toString();
                 @endphp
@@ -51,13 +51,14 @@
                                         default => 'cpe-pill--blue',
                                     };
 
-                                    if ($mensagem->status === 'aprovada' && ! $loop->first) {
-                                        $respostasExibidas++;
-                                    }
+                            if ($mensagem->status === 'aprovada' && ! $loop->first) {
+                                $respostasExibidas++;
+                            }
 
+                                    $isVoluntario = ! $gestor && $mensagem->tipo_remetente === 'educando';
                                     $statusLabel = match ($mensagem->status) {
                                         'aprovada' => $loop->first
-                                            ? 'Enviada'
+                                            ? ($isVoluntario ? 'Recebida' : 'Enviada')
                                             : ($respostasExibidas === 1 ? 'Respondida' : "Respondida {$respostasExibidas}x"),
                                         'aguardando_verificacao' => 'Em preparação',
                                         'ajuste_solicitado' => 'Ajuste solicitado',
@@ -72,13 +73,13 @@
                                     </td>
                                     <td>{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y') }}</td>
                                     <td>
-                                        {{ $mensagem->remetenteUsuario?->name
-                                            ?? $mensagem->remetenteParticipante?->user?->name
+                                        {{ $mensagem->remetenteUsuario?->nome_com_localidade
+                                            ?? $mensagem->remetenteParticipante?->nome_com_localidade
                                             ?? 'Remetente' }}
                                     </td>
                                     <td>
-                                        {{ $mensagem->destinatarioUsuario?->name
-                                            ?? $mensagem->destinatarioParticipante?->user?->name
+                                        {{ $mensagem->destinatarioUsuario?->nome_com_localidade
+                                            ?? $mensagem->destinatarioParticipante?->nome_com_localidade
                                             ?? 'Destinatário' }}
                                     </td>
                                     <td>
@@ -95,7 +96,7 @@
                                     <div class="cpe-modal" id="mensagem-{{ $mensagem->id }}">
                                         <div class="cpe-modal__backdrop"></div>
                                         <div class="cpe-modal__dialog cpe-modal__dialog--wide">
-                                            <h2>Carta enviada por {{ $mensagem->remetenteUsuario?->name ?? 'Voluntário' }}</h2>
+                                            <h2>Carta enviada por {{ $mensagem->remetenteUsuario?->nome_com_localidade ?? 'Voluntário' }}</h2>
                                             <p>{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y H:i') }}</p>
                                             <div class="cpe-letter-preview">{{ $mensagem->texto }}</div>
                                             <div class="cpe-modal-actions">
@@ -115,7 +116,7 @@
                     <div class="cpe-modal" id="mensagem-{{ $mensagem->id }}">
                         <div class="cpe-modal__backdrop"></div>
                         <div class="cpe-modal__dialog cpe-modal__dialog--wide">
-                            <h2>Carta enviada por {{ $mensagem->remetenteUsuario?->name ?? $mensagem->remetenteParticipante?->user?->name ?? 'Remetente' }}</h2>
+                            <h2>Carta enviada por {{ $mensagem->remetenteUsuario?->nome_com_localidade ?? $mensagem->remetenteParticipante?->nome_com_localidade ?? 'Remetente' }}</h2>
                             <p>{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y H:i') }}</p>
 
                             @if($mensagem->anexo_original_path || $mensagem->arquivo_final_path)
@@ -283,11 +284,11 @@
                     <div class="cpe-fixed-participants">
                         <div>
                             <span>Remetente</span>
-                            <strong>{{ $carta->educando?->user?->name ?? 'Remetente' }}</strong>
+                            <strong>{{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}</strong>
                         </div>
                         <div>
                             <span>Destinatário</span>
-                            <strong>{{ $carta->voluntario?->name ?? 'Voluntário' }}</strong>
+                            <strong>{{ $carta->voluntario?->nome_com_localidade ?? 'Voluntário' }}</strong>
                         </div>
                     </div>
 

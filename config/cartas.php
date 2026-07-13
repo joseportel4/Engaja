@@ -25,7 +25,7 @@ return [
         // Fonte manuscrita (Kalam) embutida via FPDF makefont (cp1252).
         'font_family' => 'Kalam',
         'font_dir' => resource_path('fonts/cartas'),
-        'font_file' => 'Kalam-Regular.json',
+        'font_file' => 'Kalam-Regular.php',
         'font_size' => 11.0,
     ],
 ];

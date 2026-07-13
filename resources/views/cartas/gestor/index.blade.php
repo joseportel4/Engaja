@@ -38,12 +38,12 @@
                         <input type="hidden" name="remetente_user_id" value="{{ old('remetente_user_id') }}" data-combobox-value>
                         <input type="text" class="cpe-field cpe-combobox__input" placeholder="Remetente"
                             autocomplete="off" role="combobox" aria-expanded="false"
-                            value="{{ $remetenteSelecionado?->name }}" data-combobox-input>
+                            value="{{ $remetenteSelecionado?->nome_com_localidade }}" data-combobox-input>
                         <ul class="cpe-combobox__list" role="listbox" data-combobox-list>
                             @foreach($engajaUsers as $engajaUser)
                                 <li class="cpe-combobox__option" role="option"
-                                    data-value="{{ $engajaUser->id }}" data-label="{{ $engajaUser->name }}">
-                                    {{ $engajaUser->name }}
+                                    data-value="{{ $engajaUser->id }}" data-label="{{ $engajaUser->nome_com_localidade }}">
+                                    {{ $engajaUser->nome_com_localidade }}
                                 </li>
                             @endforeach
                             <li class="cpe-combobox__empty" data-combobox-empty hidden>Nenhum participante encontrado.</li>
@@ -102,8 +102,8 @@
                                         {{ $statusLabel }}
                                     </span>
                                 </td>
-                                <td>{{ $carta->educando?->user?->name ?? 'Remetente' }}</td>
-                                <td>{{ $carta->voluntario?->name ?? 'Sem voluntário' }}</td>
+                                <td>{{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}</td>
+                                <td>{{ $carta->voluntario?->nome_com_localidade ?? 'Sem voluntário' }}</td>
                                 <td>{{ optional($carta->created_at)->format('d/m/Y') }}</td>
                                 <td><a href="{{ route('cartas.cartas.show', $carta) }}" class="cpe-link">Abrir</a></td>
                                 <td>
