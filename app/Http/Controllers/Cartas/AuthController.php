@@ -99,24 +99,7 @@ class AuthController extends Controller
         } catch (\RuntimeException $exception) {
             throw ValidationException::withMessages(['municipio_ibge_id' => $exception->getMessage()]);
         }
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => [
-                'required', 'string', 'lowercase', 'email', 'max:255',
-                Rule::unique('users', 'email')->where('sistema_origem', User::SISTEMA_CARTAS),
-            ],
-            'password' => ['required', Rules\Password::defaults()],
-            'termos_aceitos' => ['accepted'],
-        ], [
-            'name.required' => 'Informe seu nome.',
-            'name.max' => 'O nome deve ter no máximo 255 caracteres.',
-            'email.required' => 'Informe seu e-mail.',
-            'email.email' => 'Informe um e-mail válido.',
-            'email.unique' => 'Este e-mail já está cadastrado no Cartas para Esperançar.',
-            'password.required' => 'Informe sua senha.',
-            'password.min' => 'A senha deve ter pelo menos :min caracteres.',
-            'termos_aceitos.accepted' => 'Você precisa aceitar os termos de uso para continuar.',
-        ]);
+
 
         $user = User::create([
             'name' => $data['name'],
@@ -276,12 +259,14 @@ class AuthController extends Controller
             'telefone' => ['nullable', 'regex:/^\d{10,11}$/'],
             'estado_ibge_id' => ['required', 'integer', 'min:1'],
             'municipio_ibge_id' => ['required', 'integer', 'min:1'],
+            'termos_aceitos' => ['accepted'],
         ], [
             'cpf.required' => 'Informe seu CPF.',
             'cpf.digits' => 'CPF deve conter 11 dígitos.',
             'telefone.regex' => 'Telefone deve ter DDD e 10 ou 11 dígitos.',
             'estado_ibge_id.required' => 'Selecione seu estado.',
             'municipio_ibge_id.required' => 'Selecione seu município.',
+            'termos_aceitos.accepted' => 'Você precisa aceitar os termos de uso para continuar.',
         ]);
 
         $validator->after(function ($validator) use ($data) {
