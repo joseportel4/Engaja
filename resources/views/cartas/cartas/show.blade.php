@@ -1,4 +1,4 @@
-﻿@extends('cartas.layouts.app')
+@extends('cartas.layouts.app')
 
 @section('title', 'Cartas entre pessoas - Cartas para Esperançar')
 
@@ -138,15 +138,13 @@
 
                             @if($gestor && $mensagem->status === 'aguardando_verificacao')
                                 <div class="cpe-verification-box">
-                                    <form method="POST" action="{{ route('cartas.mensagens.approve', $mensagem) }}">
-                                        @csrf
-                                        <button type="submit" class="cpe-button">Aprovar resposta</button>
-                                    </form>
-
-                                    <form method="POST" action="{{ route('cartas.mensagens.adjustment', $mensagem) }}" class="cpe-adjustment-form">
+                                    <form method="POST" class="cpe-adjustment-form">
                                         @csrf
                                         <textarea name="parecer_verificacao" class="cpe-textarea" placeholder="Informe o ajuste solicitado ao voluntário"></textarea>
-                                        <button type="submit" class="cpe-button cpe-button--ghost">Solicitar ajuste</button>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                            <button type="submit" formaction="{{ route('cartas.mensagens.adjustment', $mensagem) }}" class="cpe-button cpe-button--ghost">Solicitar ajuste</button>
+                                            <button type="submit" formaction="{{ route('cartas.mensagens.approve', $mensagem) }}" class="cpe-button">Aprovar resposta</button>
+                                        </div>
                                     </form>
                                 </div>
                             @elseif($mensagem->status === 'ajuste_solicitado')
