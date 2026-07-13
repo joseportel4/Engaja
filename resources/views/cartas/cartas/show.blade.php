@@ -82,7 +82,12 @@
                                             ?? 'Destinatário' }}
                                     </td>
                                     <td>
-                                        <button class="cpe-link" type="button" data-modal-open="mensagem-{{ $mensagem->id }}">Abrir</button>
+                                        <div style="display: flex; gap: 16px; align-items: center;">
+                                            <button class="cpe-link" type="button" data-modal-open="mensagem-{{ $mensagem->id }}">Abrir</button>
+                                            @if($gestor)
+                                                <a href="{{ route('cartas.mensagens.download', $mensagem) }}" class="cpe-link" download>Baixar</a>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
 
