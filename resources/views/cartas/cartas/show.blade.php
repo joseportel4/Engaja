@@ -59,7 +59,7 @@
                                         'aprovada' => $loop->first
                                             ? 'Enviada'
                                             : ($respostasExibidas === 1 ? 'Respondida' : "Respondida {$respostasExibidas}x"),
-                                        'aguardando_verificacao' => 'Em verificação',
+                                        'aguardando_verificacao' => 'Em preparação',
                                         'ajuste_solicitado' => 'Ajuste solicitado',
                                         default => 'Enviada',
                                     };
@@ -250,9 +250,7 @@
                         <button type="button" class="cpe-button cpe-conversation__wide-button" data-modal-open="respondCartaModal">Responder {{ $remetentePrimeiroNome }}</button>
                     @else
                         <p class="cpe-turn-note">
-                            {{ $carta->temMensagemPendente()
-                                ? 'Sua resposta está em verificação pela gestão.'
-                                : 'Aguardando a próxima carta de '.$remetentePrimeiroNome.' para responder novamente.' }}
+                            {{ 'Você poderá responder quando uma nova carta for recebida.' }}
                         </p>
                     @endif
                 @endif

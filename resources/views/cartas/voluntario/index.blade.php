@@ -50,7 +50,7 @@
                                 </td>
                                 <td>
                                     <a href="{{ route('cartas.cartas.show', $carta) }}" class="cpe-link cpe-conversation-link">
-                                        Abrir conversa
+                                        Abrir carta
                                         @if(($carta->mensagens_nao_lidas_count ?? 0) > 0)
                                             <span class="cpe-unread-badge" aria-label="{{ $carta->mensagens_nao_lidas_count }} mensagem não lida">
                                                 {{ $carta->mensagens_nao_lidas_count }}
@@ -62,7 +62,7 @@
                                     @if($carta->podeVoluntarioEnviar())
                                         <button type="button" class="cpe-link" data-modal-open="respondCarta-{{ $carta->id }}">Responder</button>
                                     @else
-                                        <span class="cpe-link cpe-link--disabled" title="{{ $carta->temMensagemPendente() ? 'Sua resposta está em verificação pela gestão.' : 'Aguarde a próxima carta para responder novamente.' }}">Responder</span>
+                                        <span class="cpe-link cpe-link--disabled" title="{{ 'Você poderá responder quando uma nova carta for recebida.' }}">Responder</span>
                                     @endif
                                 </td>
                                 <td>
