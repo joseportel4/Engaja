@@ -56,7 +56,7 @@
 @push('styles')
     <style>
         .cartas-dashboard {
-            min-height: 100vh;
+            flex: 1;
             background: #fff;
             position: relative;
         }
