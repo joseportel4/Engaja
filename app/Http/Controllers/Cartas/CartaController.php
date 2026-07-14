@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -551,29 +552,31 @@ class CartaController extends Controller
 
     public function download(Request $request, CartaMensagem $mensagem)
     {
-        $mensagem->load('carta');
+        $mensagem->load('carta.voluntario', 'carta.educando.user', 'carta.educando.municipio');
         $this->authorizeCartaAccess($request, $mensagem->carta);
 
         $path = $mensagem->arquivo_final_path ?: $mensagem->anexo_original_path;
         abort_unless($path && Storage::disk('local')->exists($path), 404);
 
-        return Storage::disk('local')->download($path, $mensagem->arquivo_final_nome ?: $mensagem->anexo_original_nome);
+        $filename = $this->gerarNomeArquivo($mensagem, $path);
+
+        return Storage::disk('local')->download($path, $filename);
     }
 
     public function preview(Request $request, CartaMensagem $mensagem)
     {
-        $mensagem->load('carta');
+        $mensagem->load('carta.voluntario', 'carta.educando.user', 'carta.educando.municipio');
         $this->authorizeCartaAccess($request, $mensagem->carta);
 
         $path = $mensagem->arquivo_final_path ?: $mensagem->anexo_original_path;
         abort_unless($path && Storage::disk('local')->exists($path), 404);
 
-        $name = $mensagem->arquivo_final_nome ?: $mensagem->anexo_original_nome ?: 'carta';
+        $filename = $this->gerarNomeArquivo($mensagem, $path);
         $mime = $mensagem->arquivo_final_mime ?: $mensagem->anexo_original_mime ?: Storage::disk('local')->mimeType($path);
 
         return response()->file(Storage::disk('local')->path($path), [
             'Content-Type' => $mime,
-            'Content-Disposition' => 'inline; filename="'.str_replace('"', '', $name).'"',
+            'Content-Disposition' => 'inline; filename="'.str_replace('"', '', $filename).'"',
         ]);
     }
 
@@ -678,5 +681,42 @@ class CartaController extends Controller
             ->where('destinatario_user_id', $user->id)
             ->whereNull('lida_em')
             ->update(['lida_em' => now()]);
+    }
+
+    private function gerarNomeArquivo(CartaMensagem $mensagem, string $path): string
+    {
+        $carta = $mensagem->carta;
+        $voluntario = $carta->voluntario;
+        
+        $educandoParticipante = $carta->educando;
+        $educandoUser = $educandoParticipante?->user;
+
+        $cidade = $educandoParticipante?->municipio?->nome ?? 'Cidade';
+
+        if ($mensagem->tipo_remetente === CartaMensagem::TIPO_REMETENTE_VOLUNTARIO) {
+            $remetenteNome = $voluntario?->name ?? 'Voluntario';
+            $destinatarioNome = $educandoUser?->name ?? 'Educando';
+        } else {
+            $remetenteNome = $educandoUser?->name ?? 'Educando';
+            $destinatarioNome = $voluntario?->name ?? 'Voluntario';
+        }
+
+        $sanitize = function ($string) {
+            $string = Str::ascii((string)$string);
+            $string = preg_replace('/[^a-zA-Z0-9]/', '_', $string);
+            return trim((string)preg_replace('/_+/', '_', $string), '_');
+        };
+
+        $cidadeSanitized = $sanitize($cidade);
+        $remetenteSanitized = $sanitize($remetenteNome);
+        $destinatarioSanitized = $sanitize($destinatarioNome);
+
+        $extension = pathinfo($path, PATHINFO_EXTENSION);
+        if (!$extension) {
+            $originalName = $mensagem->arquivo_final_nome ?: $mensagem->anexo_original_nome;
+            $extension = pathinfo((string)$originalName, PATHINFO_EXTENSION) ?: 'pdf';
+        }
+
+        return "PAEB_{$cidadeSanitized}_DE_{$remetenteSanitized}_PARA_{$destinatarioSanitized}.{$extension}";
     }
 }
