@@ -8,7 +8,6 @@ use App\Models\Cartas\CartaEvento;
 use App\Models\Cartas\CartaMensagem;
 use App\Models\User;
 use App\Notifications\Cartas\AjusteSolicitadoNotification;
-use App\Notifications\Cartas\CartaAguardandoVerificacaoNotification;
 use App\Notifications\Cartas\CartaRecebidaNotification;
 use App\Services\Cartas\CartaTimbradoService;
 use Illuminate\Http\RedirectResponse;
@@ -272,8 +271,6 @@ class CartaController extends Controller
             ]);
         });
 
-        $carta->loadMissing(['voluntario', 'educando.user']);
-        $this->notificarGestores(new CartaAguardandoVerificacaoNotification($carta));
 
         return redirect()->route('cartas.dashboard')->with('cartas_thanks', true);
     }
@@ -342,8 +339,6 @@ class CartaController extends Controller
             return $carta;
         });
 
-        $carta->loadMissing(['voluntario', 'educando.user']);
-        $this->notificarGestores(new CartaAguardandoVerificacaoNotification($carta));
 
         return redirect()->route('cartas.dashboard')->with('cartas_thanks', true);
     }
@@ -548,8 +543,6 @@ class CartaController extends Controller
             ]);
         });
 
-        $mensagem->carta->loadMissing(['voluntario', 'educando.user']);
-        $this->notificarGestores(new CartaAguardandoVerificacaoNotification($mensagem->carta));
 
         return redirect()
             ->route('cartas.cartas.show', $mensagem->carta)
@@ -667,13 +660,6 @@ class CartaController extends Controller
             || $user->can('cartas.verificar');
     }
 
-    private function notificarGestores(object $notification): void
-    {
-        User::query()
-            ->where('sistema_origem', User::SISTEMA_CARTAS)
-            ->role(['cartas_admin', 'cartas_gestao'])
-            ->each(fn (User $gestor) => $gestor->notify($notification));
-    }
 
     private function authorizeCartaAccess(Request $request, Carta $carta): void
     {
