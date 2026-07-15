@@ -103,11 +103,14 @@
                                         | <strong>Enviado em:</strong> {{ $resposta['atualizado_em']->format('d/m/Y') }}
                                     @endif
                                 </div>
-                                {!! nl2br(e($resposta['resposta'])) !!}
+                                <div>{!! $resposta['resposta'] !!}</div>
                             </div>
                         @endforeach
                     @endif
                 </div>
+                @if(!$loop->last)
+                    <div class="separator"></div>
+                @endif
             @endforeach
         </div>
     </div>
