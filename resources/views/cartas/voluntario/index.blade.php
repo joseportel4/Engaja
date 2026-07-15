@@ -148,7 +148,7 @@
                 <div class="cpe-modal__backdrop"></div>
                 <div class="cpe-modal__dialog">
                     <h2>Enviar uma carta</h2>
-                    <p>Anexe a foto da sua carta.</p>
+                    <p>Anexe o arquivo PDF da sua carta.</p>
                     <form method="POST" action="{{ route('cartas.cartas.respond', $carta) }}" enctype="multipart/form-data" data-modo-form>
                         @csrf
                         <div class="cpe-option-grid">
@@ -163,7 +163,7 @@
                                         <path d="M21 12.5l-8.8 8.8a6 6 0 0 1-8.5-8.5l9.5-9.5a4 4 0 0 1 5.7 5.7l-9.6 9.6a2 2 0 1 1-2.8-2.8l8.8-8.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                     </svg>
                                 </span>
-                                <span>Anexar carta manuscrita</span>
+                                <span>Anexar carta em PDF</span>
                                 <input type="radio" name="modo_resposta" value="anexo_manuscrito" required>
                             </label>
                         </div>
@@ -172,7 +172,7 @@
                         </div>
                         <div class="cpe-modo-field" data-modo="anexo_manuscrito" hidden>
                             <label class="cpe-upload cpe-upload--compact">
-                                <input type="file" name="arquivo" accept=".pdf,image/*">
+                                <input type="file" name="arquivo" accept=".pdf,application/pdf">
                                 <span>
                                     <span class="cpe-upload__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 9l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
                                     <span class="cpe-upload__link">Clique para selecionar o arquivo</span>
@@ -192,15 +192,15 @@
             <div class="cpe-modal__backdrop"></div>
             <div class="cpe-modal__dialog">
                 <h2>Enviar uma carta</h2>
-                <p>Anexe a foto da sua carta.</p>
+                <p>Anexe o arquivo PDF da sua carta.</p>
                 <form method="POST" action="{{ route('cartas.voluntario.cartas.store') }}" enctype="multipart/form-data">
                     @csrf
                     <label class="cpe-upload">
-                        <input type="file" name="arquivo" required accept=".pdf,image/*">
+                        <input type="file" name="arquivo" required accept=".pdf,application/pdf">
                         <span>
                             <span class="cpe-upload__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 9l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
                             <span class="cpe-upload__link">Clique para selecionar o arquivo</span>
-                            <span class="cpe-upload__hint">SVG, PNG, JPG ou GIF (max. 10MB)</span>
+                            <span class="cpe-upload__hint">PDF (máx. 10MB)</span>
                         </span>
                     </label>
                     <label style="font-size:12px;font-weight:600;margin-top:14px;display:block;">Selecione um destinatário</label>

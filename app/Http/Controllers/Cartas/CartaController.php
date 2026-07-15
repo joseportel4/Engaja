@@ -71,11 +71,11 @@ class CartaController extends Controller
                 'required',
                 Rule::exists('users', 'id')->where('sistema_origem', User::SISTEMA_ENGAJA),
             ],
-            'arquivo' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:10240'],
+            'arquivo' => ['required', 'file', 'mimes:pdf', 'max:10240'],
         ], [
             'remetente_user_id.required' => 'Selecione o remetente.',
             'arquivo.required' => 'Selecione o arquivo da carta.',
-            'arquivo.mimes' => 'Envie um arquivo PDF ou imagem.',
+            'arquivo.mimes' => 'Envie um arquivo em PDF.',
         ]);
 
         $remetente = User::with('participante')->findOrFail($data['remetente_user_id']);
@@ -150,10 +150,10 @@ class CartaController extends Controller
         abort_unless($this->isGestor($request->user()), 403);
 
         $request->validate([
-            'arquivo' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:10240'],
+            'arquivo' => ['required', 'file', 'mimes:pdf', 'max:10240'],
         ], [
             'arquivo.required' => 'Selecione o arquivo da carta.',
-            'arquivo.mimes' => 'Envie um arquivo PDF ou imagem.',
+            'arquivo.mimes' => 'Envie um arquivo em PDF.',
         ]);
 
         $carta->loadMissing(['educando.user', 'voluntario', 'ultimaMensagem']);
@@ -220,11 +220,12 @@ class CartaController extends Controller
         $data = $request->validate([
             'modo_resposta' => ['required', Rule::in(['digitada', 'anexo_manuscrito'])],
             'texto' => ['nullable', 'required_if:modo_resposta,digitada', 'string', 'max:12000'],
-            'arquivo' => ['nullable', 'required_if:modo_resposta,anexo_manuscrito', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:10240'],
+            'arquivo' => ['nullable', 'required_if:modo_resposta,anexo_manuscrito', 'file', 'mimes:pdf', 'max:10240'],
         ], [
             'modo_resposta.required' => 'Selecione como deseja responder.',
             'texto.required_if' => 'Digite a carta antes de enviar.',
-            'arquivo.required_if' => 'Anexe a carta manuscrita antes de enviar.',
+            'arquivo.required_if' => 'Anexe a carta em PDF antes de enviar.',
+            'arquivo.mimes' => 'Envie um arquivo em PDF.',
         ]);
 
         DB::transaction(function () use ($request, $carta, $data) {
@@ -272,7 +273,6 @@ class CartaController extends Controller
             ]);
         });
 
-
         return redirect()->route('cartas.dashboard')->with('cartas_thanks', true);
     }
 
@@ -286,10 +286,11 @@ class CartaController extends Controller
                 'required',
                 Rule::exists('users', 'id')->where('sistema_origem', User::SISTEMA_ENGAJA),
             ],
-            'arquivo' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:10240'],
+            'arquivo' => ['required', 'file', 'mimes:pdf', 'max:10240'],
         ], [
             'destinatario_user_id.required' => 'Selecione o destinatario.',
             'arquivo.required' => 'Selecione o arquivo da carta.',
+            'arquivo.mimes' => 'Envie um arquivo em PDF.',
         ]);
 
         $destinatario = User::with('participante')->findOrFail($data['destinatario_user_id']);
@@ -339,7 +340,6 @@ class CartaController extends Controller
 
             return $carta;
         });
-
 
         return redirect()->route('cartas.dashboard')->with('cartas_thanks', true);
     }
@@ -458,12 +458,12 @@ class CartaController extends Controller
         $data = $request->validate([
             'modo_resposta' => ['required', Rule::in(['digitada', 'anexo_manuscrito'])],
             'texto' => ['nullable', 'required_if:modo_resposta,digitada', 'string', 'max:12000'],
-            'arquivo' => ['nullable', 'required_if:modo_resposta,anexo_manuscrito', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp', 'max:10240'],
+            'arquivo' => ['nullable', 'required_if:modo_resposta,anexo_manuscrito', 'file', 'mimes:pdf', 'max:10240'],
         ], [
             'modo_resposta.required' => 'Selecione como deseja ajustar a resposta.',
             'texto.required_if' => 'Digite a carta ajustada antes de enviar.',
             'arquivo.required_if' => 'Anexe a carta ajustada antes de enviar.',
-            'arquivo.mimes' => 'Envie um arquivo PDF ou imagem.',
+            'arquivo.mimes' => 'Envie um arquivo em PDF.',
         ]);
 
         DB::transaction(function () use ($request, $mensagem, $data) {
@@ -543,7 +543,6 @@ class CartaController extends Controller
                 ],
             ]);
         });
-
 
         return redirect()
             ->route('cartas.cartas.show', $mensagem->carta)
@@ -663,7 +662,6 @@ class CartaController extends Controller
             || $user->can('cartas.verificar');
     }
 
-
     private function authorizeCartaAccess(Request $request, Carta $carta): void
     {
         $user = $request->user();
@@ -687,7 +685,7 @@ class CartaController extends Controller
     {
         $carta = $mensagem->carta;
         $voluntario = $carta->voluntario;
-        
+
         $educandoParticipante = $carta->educando;
         $educandoUser = $educandoParticipante?->user;
 
@@ -702,9 +700,10 @@ class CartaController extends Controller
         }
 
         $sanitize = function ($string) {
-            $string = Str::ascii((string)$string);
+            $string = Str::ascii((string) $string);
             $string = preg_replace('/[^a-zA-Z0-9]/', '_', $string);
-            return trim((string)preg_replace('/_+/', '_', $string), '_');
+
+            return trim((string) preg_replace('/_+/', '_', $string), '_');
         };
 
         $cidadeSanitized = $sanitize($cidade);
@@ -712,9 +711,9 @@ class CartaController extends Controller
         $destinatarioSanitized = $sanitize($destinatarioNome);
 
         $extension = pathinfo($path, PATHINFO_EXTENSION);
-        if (!$extension) {
+        if (! $extension) {
             $originalName = $mensagem->arquivo_final_nome ?: $mensagem->anexo_original_nome;
-            $extension = pathinfo((string)$originalName, PATHINFO_EXTENSION) ?: 'pdf';
+            $extension = pathinfo((string) $originalName, PATHINFO_EXTENSION) ?: 'pdf';
         }
 
         return "PAEB_{$cidadeSanitized}_DE_{$remetenteSanitized}_PARA_{$destinatarioSanitized}.{$extension}";

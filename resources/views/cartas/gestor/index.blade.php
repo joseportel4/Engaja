@@ -23,11 +23,11 @@
                 <form method="POST" action="{{ route('cartas.cartas.store') }}" enctype="multipart/form-data" class="cpe-manager-form">
                     @csrf
                     <label class="cpe-upload">
-                        <input type="file" name="arquivo" required accept=".pdf,image/*">
+                        <input type="file" name="arquivo" required accept=".pdf,application/pdf">
                         <span>
                             <span class="cpe-upload__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 9l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
                             <span class="cpe-upload__link">Clique para selecionar o arquivo</span>
-                            <span class="cpe-upload__hint">PDF, PNG, JPG ou GIF (max. 10MB)</span>
+                            <span class="cpe-upload__hint">PDF (máx. 10MB)</span>
                         </span>
                     </label>
 
