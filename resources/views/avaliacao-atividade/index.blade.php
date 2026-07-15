@@ -106,7 +106,6 @@
                                 <i class="bi bi-gear me-1"></i> Ações
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="acoesDropdown" style="border-radius: 0.5rem; min-width: 200px;">
-                                <li><h6 class="dropdown-header text-engaja">Exportar Todos (Filtro)</h6></li>
                                 <li>
                                     <button type="submit" formaction="{{ route('avaliacao-atividade.download-consolidated') }}" class="dropdown-item d-flex align-items-center py-2" title="Baixar PDF consolidado">
                                         <i class="bi bi-file-earmark-pdf text-danger me-2 fs-5"></i> 
