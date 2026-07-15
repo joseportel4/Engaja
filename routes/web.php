@@ -274,6 +274,9 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
     Route::get('/relatorios-avaliacao', [AvaliacaoAtividadeController::class, 'index'])
         ->name('avaliacao-atividade.index');
 
+    Route::get('/relatorios-avaliacao/pdf-consolidado-geral', [AvaliacaoAtividadeController::class, 'baixarConsolidadoFiltro'])
+        ->name('avaliacao-atividade.download-consolidated');
+
     Route::get('/relatorios-avaliacao/{relatorio}', [AvaliacaoAtividadeController::class, 'show'])
         ->name('avaliacao-atividade.show');
 

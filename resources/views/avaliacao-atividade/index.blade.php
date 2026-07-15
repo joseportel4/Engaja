@@ -95,9 +95,26 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-auto">
+                <div class="col-auto d-flex align-items-center gap-2">
                     <button type="submit" class="btn btn-engaja" style="background-color:#421944; color:white;">Aplicar</button>
-                    <a href="{{ route('avaliacao-atividade.index') }}" class="btn btn-outline-secondary ms-1">Limpar</a>
+                    <a href="{{ route('avaliacao-atividade.index') }}" class="btn btn-outline-secondary">Limpar</a>
+                    
+                    @if(auth()->user()?->hasAnyRole(['administrador', 'gerente', 'eq_pedagogica']) && !$acoesAgrupadas->isEmpty())
+                        <div class="vr mx-1"></div>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="acoesDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border-color: #cbd5e1; font-weight: 500;">
+                                <i class="bi bi-gear me-1"></i> Ações
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="acoesDropdown" style="border-radius: 0.5rem; min-width: 200px;">
+                                <li>
+                                    <button type="submit" formaction="{{ route('avaliacao-atividade.download-consolidated') }}" class="dropdown-item d-flex align-items-center py-2" title="Baixar PDF consolidado">
+                                        <i class="bi bi-file-earmark-pdf text-danger me-2 fs-5"></i> 
+                                        <span>Exportar PDF Geral</span>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    @endif
                 </div>
             </form>
         </div>
