@@ -95,9 +95,16 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-auto">
+                <div class="col-auto d-flex align-items-center gap-2">
                     <button type="submit" class="btn btn-engaja" style="background-color:#421944; color:white;">Aplicar</button>
-                    <a href="{{ route('avaliacao-atividade.index') }}" class="btn btn-outline-secondary ms-1">Limpar</a>
+                    <a href="{{ route('avaliacao-atividade.index') }}" class="btn btn-outline-secondary">Limpar</a>
+                    
+                    @if(auth()->user()?->hasAnyRole(['administrador', 'gerente', 'eq_pedagogica']) && !$acoesAgrupadas->isEmpty())
+                        <div class="vr mx-1"></div>
+                        <button type="submit" formaction="{{ route('avaliacao-atividade.download-consolidated') }}" class="btn btn-pdf-geral" title="Baixar PDF consolidado de todos os momentos listados abaixo">
+                            <i class="bi bi-file-earmark-pdf me-1"></i> PDF Consolidado Geral
+                        </button>
+                    @endif
                 </div>
             </form>
         </div>

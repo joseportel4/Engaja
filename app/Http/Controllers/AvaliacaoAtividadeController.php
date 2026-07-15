@@ -32,7 +32,7 @@ class AvaliacaoAtividadeController extends Controller
             ->all();
     }
 
-    public function index(Request $request)
+    private function getFilteredRelatoriosQuery(Request $request): array
     {
         $acaoIds = $this->parseIntArray($request, 'acao_ids');
         $municipioIds = $this->parseIntArray($request, 'municipio_ids');
@@ -62,6 +62,22 @@ class AvaliacaoAtividadeController extends Controller
                     ->orWhereHas('municipios', fn ($m) => $m->whereIn('municipios.id', $municipioIds));
             });
         });
+
+        return [
+            'query' => $query,
+            'acaoIds' => $acaoIds,
+            'momentoIds' => $momentoIds,
+            'municipioIds' => $municipioIds,
+        ];
+    }
+
+    public function index(Request $request)
+    {
+        $filterData = $this->getFilteredRelatoriosQuery($request);
+        $query = $filterData['query'];
+        $acaoIds = $filterData['acaoIds'];
+        $momentoIds = $filterData['momentoIds'];
+        $municipioIds = $filterData['municipioIds'];
 
         $atividadesDisponiveis = Atividade::query()
             ->with('evento')
@@ -339,6 +355,62 @@ class AvaliacaoAtividadeController extends Controller
             'resumoPublico' => $resumoPublico,
             'camposPerguntas' => self::REPORT_QUESTION_FIELDS,
             'respostasPorPergunta' => $respostasPorPergunta,
+        ])
+            ->format('a4')
+            ->withAlfaEjaBrand()
+            ->download($nomeArquivo);
+    }
+
+    public function baixarConsolidadoFiltro(Request $request)
+    {
+        abort_unless(
+            auth()->user()?->hasAnyRole(self::REPORT_EDIT_ROLES),
+            403,
+            'Sem permissão para baixar relatórios consolidados.'
+        );
+
+        $filterData = $this->getFilteredRelatoriosQuery($request);
+        $query = $filterData['query'];
+        $relatorios = $query->orderBy('nome_educador')->get();
+
+        abort_if($relatorios->isEmpty(), 404, 'Nenhum relatório encontrado para este filtro.');
+
+        $atividadesRelatorios = $relatorios->groupBy('atividade_id')->map(function ($relatoriosDoMomento) {
+            $atividade = $relatoriosDoMomento->first()->atividade;
+            $resumoPublico = $this->calcularResumoPublico($atividade, $relatoriosDoMomento->first());
+            
+            $respostasPorPergunta = collect(self::REPORT_QUESTION_FIELDS)->map(function ($pergunta, $campo) use ($relatoriosDoMomento) {
+                return [
+                    'pergunta' => $pergunta,
+                    'respostas' => $relatoriosDoMomento
+                        ->map(function (AvaliacaoAtividade $relatorio) use ($campo) {
+                            $resposta = trim((string) ($relatorio->{$campo} ?? ''));
+                            if ($resposta === '') return null;
+                            $nomeResponsavel = $relatorio->user->name ?? $relatorio->nome_educador ?? 'Usuário não identificado';
+                            return [
+                                'responsavel_id' => $relatorio->user_id ?? '—',
+                                'responsavel_nome' => $nomeResponsavel,
+                                'resposta' => $resposta,
+                                'atualizado_em' => $relatorio->updated_at,
+                            ];
+                        })
+                        ->filter()
+                        ->values(),
+                ];
+            })->values();
+
+            return [
+                'atividade' => $atividade,
+                'resumoPublico' => $resumoPublico,
+                'respostasPorPergunta' => $respostasPorPergunta,
+            ];
+        })->values();
+
+        $nomeArquivo = 'relatorios-consolidado-filtro-'.now()->format('Ymd_His').'.pdf';
+
+        return Pdf::view('avaliacao-atividade.pdf-consolidado-geral', [
+            'dadosPorAtividade' => $atividadesRelatorios,
+            'camposPerguntas' => self::REPORT_QUESTION_FIELDS,
         ])
             ->format('a4')
             ->withAlfaEjaBrand()
