@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Browsershot\Browsershot;
 use Spatie\LaravelPdf\Facades\Pdf;
@@ -24,6 +26,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+
+        Event::listen(Verified::class, function (Verified $event) {
+            if ($event->user instanceof \App\Models\User && $event->user->isCartasUser()) {
+                $event->user->notify(new \App\Notifications\Cartas\CadastroRealizadoComSucessoNotification);
+            }
+        });
 
         $this->registerPdfMacros();
         $this->configureRemotePdfRendering();

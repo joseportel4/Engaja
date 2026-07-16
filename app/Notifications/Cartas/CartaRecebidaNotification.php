@@ -28,11 +28,15 @@ class CartaRecebidaNotification extends Notification implements ShouldQueue
 
         $remetenteNome = $this->carta->educando?->user?->name ?? 'um educando';
 
-        $primeiraMensagem = $this->carta->mensagens->first();
-        $isPrimeiraVez = $primeiraMensagem?->rodada === 1;
+        $ultimaMensagem = $this->carta->mensagens->last() ?? $this->carta->ultimaMensagem;
+        $isPrimeiraVez = $ultimaMensagem ? $ultimaMensagem->rodada === 1 : $this->carta->mensagens->count() <= 1;
+
+        $subject = $isPrimeiraVez
+            ? 'Chegou uma carta para você!'
+            : 'Sua carta foi respondida';
 
         return (new MailMessage)
-            ->subject('Você recebeu uma carta — Cartas para Esperançar')
+            ->subject($subject)
             ->view('emails.cartas.carta-recebida', [
                 'voluntarioNome' => $notifiable->name,
                 'remetenteNome'  => $remetenteNome,

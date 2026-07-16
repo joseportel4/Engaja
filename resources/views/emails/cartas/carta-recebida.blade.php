@@ -65,6 +65,16 @@
       font-size: 15px;
       margin: 8px 0 20px;
     }
+    ul {
+      color: #374151;
+      font-size: 15px;
+      line-height: 1.65;
+      margin: 0 0 16px;
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 8px;
+    }
     .muted {
       font-size: 13px;
       color: #6b7280;
@@ -86,40 +96,74 @@
     </div>
 
     <div class="card">
-      <div class="card-header">
-        <span class="label">Nova carta</span>
-        <h1>
-          @if($isPrimeiraVez)
-            Você recebeu uma carta de {{ $remetenteNome }}
-          @else
-            {{ $remetenteNome }} respondeu à sua carta
-          @endif
-        </h1>
-      </div>
-
-      <p>Olá, {{ $voluntarioNome }}.</p>
-
       @if($isPrimeiraVez)
+        <div class="card-header">
+          <span class="label">Chegou uma carta</span>
+          <h1>Chegou uma carta para você!</h1>
+        </div>
+
+        <p>Olá!</p>
+
         <p>
-          Uma nova carta chegou para você no <strong>Cartas para Esperançar</strong>.
-          Acesse a plataforma para ler a mensagem e enviar sua resposta quando estiver pronto(a).
+          Uma carta acabou de chegar na plataforma <strong>Cartas para Esperançar</strong>. Ela foi escrita por um educando ou educanda da EJA e agora está esperando sua resposta!
+        </p>
+
+        <p>
+          <a class="btn" href="{{ $url }}">ACESSAR MINHA CARTA</a>
+        </p>
+
+        <p><strong>Antes de responder, algumas orientações:</strong></p>
+        <ul>
+          <li>Escreva direto na Plataforma. Tem um campo para isso ou escreva à mão, com letra cursiva ou de forma;</li>
+          <li>Assine seu nome. Quem escreveu para você não sabe quem vai ler; ao se identificar, você fecha essa ponte;</li>
+          <li>Conte um pouco de você: seu trabalho, sua história, o que a leitura despertou;</li>
+          <li>Dialogue com o que leu. A carta que você recebeu tem perguntas, histórias e afetos. Responda a eles;</li>
+          <li>Se escrever à mão, fotografe ou digitalize sua resposta e anexe em formato PDF na plataforma.</li>
+        </ul>
+
+        <p>
+          Sua resposta será impressa, colocada em um envelope e entregue pessoalmente ao educando ou educanda, em um momento de celebração na sala de aula.
+        </p>
+
+        <p>
+          Boa leitura e boa escrita.<br>
+          <strong>Projeto ALFA-EJA Brasil | Cartas para Esperançar</strong>
         </p>
       @else
+        <div class="card-header">
+          <span class="label">Resposta recebida</span>
+          <h1>Sua carta foi respondida</h1>
+        </div>
+
+        <p>Olá!</p>
+
         <p>
-          <strong>{{ $remetenteNome }}</strong> enviou uma nova carta na conversa de vocês.
-          Acesse a plataforma para continuar essa troca de mensagens.
+          A conversa continua: chegou uma resposta à carta que você enviou pelo <strong>Cartas para Esperançar</strong>.
+        </p>
+
+        <p>
+          <a class="btn" href="{{ $url }}">LER A RESPOSTA</a>
+        </p>
+
+        <p>
+          Do outro lado dessa correspondência há alguém que leu suas palavras com atenção e decidiu escrever de volta. Cada troca aprofunda o vínculo e transforma duas realidades distintas em um território comum.
+        </p>
+
+        <p>
+          Se quiser seguir a conversa, é só escrever uma nova carta à mão, digitalizar em PDF e anexar na plataforma.
+        </p>
+
+        <p style="margin-top: 24px;">
+          Atenciosamente,<br>
+          <strong>Projeto ALFA-EJA Brasil | Cartas para Esperançar</strong>
         </p>
       @endif
 
-      <p>
-        <a class="btn" href="{{ $url }}">Ver a carta</a>
-      </p>
       <p class="muted">Se o botão não funcionar, copie e cole este link no navegador:<br>{{ $url }}</p>
-      <p class="muted">Esta é uma mensagem automática. Não responda este e-mail.</p>
     </div>
 
     <div class="footer">
-      Projeto ALFA-EJA Brasil · Cartas para Esperançar
+      Projeto ALFA-EJA Brasil | Cartas para Esperançar
     </div>
   </div>
 </body>
