@@ -15,10 +15,10 @@
         @csrf
         <input type="hidden" name="token" value="{{ $token }}">
         <div class="cartas-field-wrap">
-            <input class="cartas-field" type="email" name="email" value="{{ old('email', $request->email) }}" placeholder="E-mail" required autofocus>
+            <input class="cartas-field" type="email" name="email" value="{{ old('email', $request->email) }}" placeholder="E-mail" required readonly>
         </div>
         <div class="cartas-field-wrap">
-            <input class="cartas-field" type="password" name="password" placeholder="Nova senha" required>
+            <input class="cartas-field" type="password" name="password" placeholder="Nova senha" required autofocus>
         </div>
         <div class="cartas-field-wrap">
             <input class="cartas-field" type="password" name="password_confirmation" placeholder="Confirmar senha" required>
