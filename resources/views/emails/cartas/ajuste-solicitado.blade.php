@@ -156,7 +156,8 @@
       </p>
 
       <p style="margin-top: 24px;">
-        Qualquer dúvida, é só responder este e-mail.
+        Qualquer dúvida, é só responder este e-mail.<br>
+        <strong>Projeto ALFA-EJA Brasil | Cartas para Esperançar</strong>
       </p>
 
       <p class="muted">Se o botão não funcionar, copie e cole este link no navegador:<br>{{ $url }}</p>

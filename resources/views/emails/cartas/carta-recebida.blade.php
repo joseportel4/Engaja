@@ -126,7 +126,8 @@
         </p>
 
         <p>
-          Boa leitura e boa escrita.
+          Boa leitura e boa escrita.<br>
+          <strong>Projeto ALFA-EJA Brasil | Cartas para Esperançar</strong>
         </p>
       @else
         <div class="card-header">
@@ -153,7 +154,8 @@
         </p>
 
         <p style="margin-top: 24px;">
-          Atenciosamente,
+          Atenciosamente,<br>
+          <strong>Projeto ALFA-EJA Brasil | Cartas para Esperançar</strong>
         </p>
       @endif
 

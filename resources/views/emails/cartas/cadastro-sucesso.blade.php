@@ -102,7 +102,8 @@
       </p>
 
       <p style="margin-top: 24px;">
-        Obrigado por esperançar com a gente.
+        Obrigado por esperançar com a gente.<br>
+        <strong>Projeto ALFA-EJA Brasil | Cartas para Esperançar</strong>
       </p>
     </div>
 
