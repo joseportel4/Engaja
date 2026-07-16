@@ -84,7 +84,7 @@
                                     </td>
                                     <td>
                                         <div style="display: flex; gap: 8px; align-items: center;">
-                                            <button class="cpe-icon-button" type="button" data-modal-open="mensagem-{{ $mensagem->id }}" aria-label="Abrir mensagem">
+                                            <button class="cpe-icon-button" type="button" data-aside-open="aside-mensagem-{{ $mensagem->id }}" aria-label="Abrir mensagem">
                                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                                     <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -102,150 +102,10 @@
                                         </div>
                                     </td>
                                 </tr>
-
-                                @if(false)
-                                    <div class="cpe-modal" id="mensagem-{{ $mensagem->id }}">
-                                        <div class="cpe-modal__backdrop"></div>
-                                        <div class="cpe-modal__dialog cpe-modal__dialog--wide">
-                                            <h2>Carta enviada por {{ $mensagem->remetenteUsuario?->nome_com_localidade ?? 'Voluntário' }}</h2>
-                                            <p>{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y H:i') }}</p>
-                                            <div class="cpe-letter-preview">{{ $mensagem->texto }}</div>
-                                            <div class="cpe-modal-actions">
-                                                <button type="button" class="cpe-button cpe-button--ghost" data-modal-close>Fechar</button>
-                                                <button type="button" class="cpe-button cpe-button--ghost">Imprimir</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endif
                             @endforeach
                         </tbody>
                     </table>
                 </div>
-
-                @foreach($carta->mensagens as $mensagem)
-                    @php($mensagemMime = $mensagem->arquivo_final_mime ?: $mensagem->anexo_original_mime)
-                    <div class="cpe-modal" id="mensagem-{{ $mensagem->id }}">
-                        <div class="cpe-modal__backdrop"></div>
-                        <div class="cpe-modal__dialog cpe-modal__dialog--wide">
-                            <h2>Carta enviada por {{ $mensagem->remetenteUsuario?->nome_com_localidade ?? $mensagem->remetenteParticipante?->nome_com_localidade ?? 'Remetente' }}</h2>
-                            <p>{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y H:i') }}</p>
-
-                            @if($mensagem->anexo_original_path || $mensagem->arquivo_final_path)
-                                <div class="cpe-letter-preview cpe-letter-preview--media">
-                                    @if(str_starts_with((string) $mensagemMime, 'image/'))
-                                        <img src="{{ route('cartas.mensagens.preview', $mensagem) }}" alt="Carta enviada">
-                                    @elseif($mensagemMime === 'application/pdf')
-                                        <iframe src="{{ route('cartas.mensagens.preview', $mensagem) }}#toolbar=0&navpanes=0" title="Carta enviada"></iframe>
-                                    @else
-                                        <div class="cpe-file-placeholder">Arquivo anexado: {{ $mensagem->arquivo_final_nome ?: $mensagem->anexo_original_nome }}</div>
-                                    @endif
-                                </div>
-                            @else
-                                <div class="cpe-letter-preview">{{ $mensagem->texto ?? 'Carta sem visualização disponível.' }}</div>
-                            @endif
-
-                            <div class="cpe-modal-actions">
-                                <button type="button" class="cpe-button cpe-button--ghost" data-modal-close>Fechar</button>
-                                @if($mensagem->anexo_original_path || $mensagem->arquivo_final_path)
-                                    <button type="button" class="cpe-button cpe-button--ghost" data-print-src="{{ route('cartas.mensagens.preview', $mensagem) }}">Imprimir</button>
-                                @else
-                                    <button type="button" class="cpe-button cpe-button--ghost">Imprimir</button>
-                                @endif
-                            </div>
-
-                            @if($gestor && $mensagem->status === 'aguardando_verificacao')
-                                <div class="cpe-verification-box">
-                                    <form method="POST" class="cpe-adjustment-form">
-                                        @csrf
-                                        <textarea name="parecer_verificacao" class="cpe-textarea" placeholder="Informe o ajuste solicitado ao voluntário, caso seja necessário."></textarea>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                                            <button type="submit" formaction="{{ route('cartas.mensagens.adjustment', $mensagem) }}" class="cpe-button cpe-button--ghost">Solicitar ajuste</button>
-                                            <button type="submit" formaction="{{ route('cartas.mensagens.approve', $mensagem) }}" class="cpe-button">Aprovar resposta</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            @elseif($mensagem->status === 'ajuste_solicitado')
-                                <div class="cpe-verification-note">
-                                    <strong>Ajuste solicitado:</strong>
-                                    <span>{{ $mensagem->parecer_verificacao ?: 'Revise sua resposta e envie novamente para verificação.' }}</span>
-
-                                    @if(! $gestor && $mensagem->isEditavelPor(Auth::user()))
-                                        <button type="button" class="cpe-button" data-modal-close data-modal-open="adjustMensagem-{{ $mensagem->id }}">
-                                            Realizar ajuste
-                                        </button>
-                                    @endif
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                @endforeach
-
-                @if(! $gestor)
-                    @foreach($carta->mensagens as $mensagem)
-                        @if($mensagem->status === 'ajuste_solicitado' && $mensagem->isEditavelPor(Auth::user()))
-                            <div class="cpe-modal" id="adjustMensagem-{{ $mensagem->id }}">
-                                <div class="cpe-modal__backdrop"></div>
-                                <div class="cpe-modal__dialog">
-                                    <h2>Realizar ajuste</h2>
-                                    <p>Atualize sua resposta conforme a solicitação recebida.</p>
-
-                                    @if($mensagem->parecer_verificacao)
-                                        <div class="cpe-verification-note cpe-verification-note--compact">
-                                            <strong>Ajuste solicitado:</strong>
-                                            <span>{{ $mensagem->parecer_verificacao }}</span>
-                                        </div>
-                                    @endif
-
-                                    <form method="POST" action="{{ route('cartas.mensagens.update-adjustment', $mensagem) }}" enctype="multipart/form-data" data-modo-form>
-                                        @csrf
-                                        @method('PUT')
-
-                                        <div class="cpe-option-grid">
-                                            <label class="cpe-choice">
-                                                <span class="cpe-choice__icon">T</span>
-                                                <span>Digitar uma carta</span>
-                                                <input type="radio" name="modo_resposta" value="digitada" @checked($mensagem->canal_entrada === 'digitada') required>
-                                            </label>
-                                            <label class="cpe-choice">
-                                                <span class="cpe-choice__icon" aria-hidden="true">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                                        <path d="M21 12.5l-8.8 8.8a6 6 0 0 1-8.5-8.5l9.5-9.5a4 4 0 0 1 5.7 5.7l-9.6 9.6a2 2 0 1 1-2.8-2.8l8.8-8.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                    </svg>
-                                                </span>
-                                                <span>Anexar carta em PDF</span>
-                                                <input type="radio" name="modo_resposta" value="anexo_manuscrito" @checked($mensagem->canal_entrada === 'anexo_manuscrito') required>
-                                            </label>
-                                        </div>
-
-                                        <div class="cpe-modo-field" data-modo="digitada" hidden>
-                                            <textarea name="texto" class="cpe-textarea" placeholder="Digite sua carta ajustada aqui.">{{ old('texto', $mensagem->texto) }}</textarea>
-                                        </div>
-
-                                        <div class="cpe-modo-field" data-modo="anexo_manuscrito" hidden>
-                                            <label class="cpe-upload cpe-upload--compact">
-                                                <input type="file" name="arquivo" accept=".pdf,application/pdf">
-                                                <span>
-                                                    <span class="cpe-upload__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 9l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-                                                    <span class="cpe-upload__link">Clique para selecionar o arquivo</span>
-                                                    <span class="cpe-upload__hint">PDF (máx. 10MB)</span>
-                                                </span>
-                                            </label>
-
-                                            @if($mensagem->anexo_original_nome)
-                                                <p class="cpe-current-file">Arquivo atual: {{ $mensagem->anexo_original_nome }}</p>
-                                            @endif
-                                        </div>
-
-                                        <div class="cpe-modal-actions">
-                                            <button type="button" class="cpe-button cpe-button--ghost" data-modal-close>Fechar</button>
-                                            <button type="submit" class="cpe-button">Enviar ajuste</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        @endif
-                    @endforeach
-                @endif
 
                 @if($gestor)
                     @if($carta->podeEducandoEnviar())
@@ -262,7 +122,9 @@
                         <button type="button" class="cpe-button cpe-conversation__wide-button" data-modal-open="respondCartaModal">Responder {{ $remetentePrimeiroNome }}</button>
                     @else
                         <p class="cpe-turn-note">
-                            {{ 'Você poderá responder quando uma nova carta for recebida.' }}
+                            {{ $carta->ultimaMensagem?->status === 'ajuste_solicitado'
+                                ? 'Uma solicitação de ajuste foi recebida. Abra a carta para verificar e realizar o ajuste.'
+                                : 'Você poderá responder quando uma nova carta for recebida.' }}
                         </p>
                     @endif
                 @endif
@@ -270,7 +132,131 @@
             </div>
         </section>
 
-        <aside class="cpe-conversation__aside" aria-hidden="true"></aside>
+        <aside class="cpe-conversation__aside">
+            <div class="cpe-aside-panel cpe-aside-panel--default" id="asideDefault"></div>
+
+            @foreach($carta->mensagens as $mensagem)
+                @php($mensagemMime = $mensagem->arquivo_final_mime ?: $mensagem->anexo_original_mime)
+                <div class="cpe-aside-panel" id="aside-mensagem-{{ $mensagem->id }}" hidden>
+                    <h2>Carta enviada por {{ $mensagem->remetenteUsuario?->nome_com_localidade ?? $mensagem->remetenteParticipante?->nome_com_localidade ?? 'Remetente' }}</h2>
+                    <p class="cpe-aside-date">{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y H:i') }}</p>
+
+                    @if($mensagem->anexo_original_path || $mensagem->arquivo_final_path)
+                        <div class="cpe-letter-preview cpe-letter-preview--media cpe-aside-preview">
+                            @if(str_starts_with((string) $mensagemMime, 'image/'))
+                                <img src="{{ route('cartas.mensagens.preview', $mensagem) }}" alt="Carta enviada">
+                            @elseif($mensagemMime === 'application/pdf')
+                                <iframe src="{{ route('cartas.mensagens.preview', $mensagem) }}#toolbar=0&navpanes=0" title="Carta enviada"></iframe>
+                            @else
+                                <div class="cpe-file-placeholder">Arquivo anexado: {{ $mensagem->arquivo_final_nome ?: $mensagem->anexo_original_nome }}</div>
+                            @endif
+                        </div>
+                    @else
+                        <div class="cpe-letter-preview cpe-aside-preview">{{ $mensagem->texto ?? 'Carta sem visualização disponível.' }}</div>
+                    @endif
+
+                    @if(! ($gestor && $mensagem->status === 'aguardando_verificacao'))
+                        <div class="cpe-modal-actions">
+                            <button type="button" class="cpe-button cpe-button--ghost" data-aside-close>Fechar</button>
+                            @if($mensagem->anexo_original_path || $mensagem->arquivo_final_path)
+                                <button type="button" class="cpe-button cpe-button--ghost" data-print-src="{{ route('cartas.mensagens.preview', $mensagem) }}">Imprimir</button>
+                            @else
+                                <button type="button" class="cpe-button cpe-button--ghost">Imprimir</button>
+                            @endif
+                        </div>
+                    @endif
+
+                    @if($gestor && $mensagem->status === 'aguardando_verificacao')
+                        <div class="cpe-verification-box">
+                            <form method="POST" class="cpe-adjustment-form">
+                                @csrf
+                                <textarea name="parecer_verificacao" class="cpe-textarea" placeholder="Informe o ajuste solicitado ao voluntário, caso seja necessário."></textarea>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                                    <button type="button" class="cpe-button cpe-button--ghost" data-aside-close>Fechar</button>
+                                    <button type="submit" formaction="{{ route('cartas.mensagens.adjustment', $mensagem) }}" class="cpe-button cpe-button--ghost">Solicitar ajuste</button>
+                                    <button type="submit" formaction="{{ route('cartas.mensagens.approve', $mensagem) }}" class="cpe-button">Aprovar resposta</button>
+                                </div>
+                            </form>
+                        </div>
+                    @elseif($mensagem->status === 'ajuste_solicitado')
+                        <div class="cpe-verification-note">
+                            <strong>Ajuste solicitado:</strong>
+                            <span>{{ $mensagem->parecer_verificacao ?: 'Revise sua resposta e envie novamente para verificação.' }}</span>
+
+                            @if(! $gestor && $mensagem->isEditavelPor(Auth::user()))
+                                <button type="button" class="cpe-button" data-aside-open="aside-adjustMensagem-{{ $mensagem->id }}">
+                                    Realizar ajuste
+                                </button>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+            @endforeach
+
+            @if(! $gestor)
+                @foreach($carta->mensagens as $mensagem)
+                    @if($mensagem->status === 'ajuste_solicitado' && $mensagem->isEditavelPor(Auth::user()))
+                        <div class="cpe-aside-panel" id="aside-adjustMensagem-{{ $mensagem->id }}" hidden>
+                            <h2>Realizar ajuste</h2>
+                            <p class="cpe-aside-date">Atualize sua resposta conforme a solicitação recebida.</p>
+
+                            @if($mensagem->parecer_verificacao)
+                                <div class="cpe-verification-note cpe-verification-note--compact">
+                                    <strong>Ajuste solicitado:</strong>
+                                    <span>{{ $mensagem->parecer_verificacao }}</span>
+                                </div>
+                            @endif
+
+                            <form method="POST" action="{{ route('cartas.mensagens.update-adjustment', $mensagem) }}" enctype="multipart/form-data" data-modo-form>
+                                @csrf
+                                @method('PUT')
+
+                                <div class="cpe-option-grid">
+                                    <label class="cpe-choice">
+                                        <span class="cpe-choice__icon">T</span>
+                                        <span>Digitar uma carta</span>
+                                        <input type="radio" name="modo_resposta" value="digitada" @checked($mensagem->canal_entrada === 'digitada') required>
+                                    </label>
+                                    <label class="cpe-choice">
+                                        <span class="cpe-choice__icon" aria-hidden="true">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                                <path d="M21 12.5l-8.8 8.8a6 6 0 0 1-8.5-8.5l9.5-9.5a4 4 0 0 1 5.7 5.7l-9.6 9.6a2 2 0 1 1-2.8-2.8l8.8-8.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                        </span>
+                                        <span>Anexar carta em PDF</span>
+                                        <input type="radio" name="modo_resposta" value="anexo_manuscrito" @checked($mensagem->canal_entrada === 'anexo_manuscrito') required>
+                                    </label>
+                                </div>
+
+                                <div class="cpe-modo-field" data-modo="digitada" hidden>
+                                    <textarea name="texto" class="cpe-textarea" placeholder="Digite sua carta ajustada aqui.">{{ old('texto', $mensagem->texto) }}</textarea>
+                                </div>
+
+                                <div class="cpe-modo-field" data-modo="anexo_manuscrito" hidden>
+                                    <label class="cpe-upload cpe-upload--compact">
+                                        <input type="file" name="arquivo" accept=".pdf,application/pdf">
+                                        <span>
+                                            <span class="cpe-upload__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 9l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+                                            <span class="cpe-upload__link">Clique para selecionar o arquivo</span>
+                                            <span class="cpe-upload__hint">PDF (máx. 10MB)</span>
+                                        </span>
+                                    </label>
+
+                                    @if($mensagem->anexo_original_nome)
+                                        <p class="cpe-current-file">Arquivo atual: {{ $mensagem->anexo_original_nome }}</p>
+                                    @endif
+                                </div>
+
+                                <div class="cpe-modal-actions">
+                                    <button type="button" class="cpe-button cpe-button--ghost" data-aside-close>Fechar</button>
+                                    <button type="submit" class="cpe-button">Enviar ajuste</button>
+                                </div>
+                            </form>
+                        </div>
+                    @endif
+                @endforeach
+            @endif
+        </aside>
 
         @include('cartas.shared._user-menu')
     </main>
@@ -382,7 +368,44 @@
 
         .cpe-conversation__aside {
             background: var(--cpe-pink-panel);
+            min-height: calc(100vh - 120px);
+            border-left: 1px solid var(--cpe-line);
+        }
+
+        .cpe-aside-panel[hidden] {
+            display: none !important;
+        }
+
+        .cpe-aside-panel--default {
             min-height: 100%;
+            width: 100%;
+        }
+
+        .cpe-aside-panel:not(.cpe-aside-panel--default) {
+            background: #fff;
+            min-height: 100%;
+            padding: 36px 32px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .cpe-aside-panel:not(.cpe-aside-panel--default) h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .cpe-aside-date {
+            margin: -8px 0 8px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .cpe-aside-preview {
+            max-height: calc(100vh - 280px);
+            min-height: 240px;
         }
 
         .cpe-conversation__wide-button {
@@ -458,7 +481,7 @@
         }
 
         .cpe-adjustment-form .cpe-textarea {
-            min-height: 86px;
+            min-height: 110px;
         }
 
         .cpe-current-file {
@@ -469,15 +492,13 @@
         }
 
         .cpe-verification-note {
-            border: 1px solid #d7d0ca;
-            border-radius: 6px;
-            background: #fff;
+            border: 1px solid #dfd8d3;
+            border-radius: 8px;
+            background: #faf8f6;
+            padding: 16px;
             display: grid;
-            gap: 6px;
-            margin-top: 18px;
-            padding: 12px;
-            color: #555;
-            font-size: 13px;
+            gap: 10px;
+            margin: 14px 0;
         }
 
         .cpe-verification-note .cpe-button {
@@ -494,8 +515,17 @@
                 grid-template-columns: 1fr;
             }
 
-            .cpe-conversation__aside {
+            .cpe-conversation__aside:has(#asideDefault:not([hidden])) {
                 display: none;
+            }
+
+            .cpe-conversation__aside:has(#asideDefault[hidden]) {
+                display: block;
+                position: fixed;
+                inset: 0;
+                z-index: 1100;
+                overflow-y: auto;
+                background: #fff;
             }
 
             .cpe-form-row {
