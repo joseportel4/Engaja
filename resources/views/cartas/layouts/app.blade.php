@@ -108,6 +108,11 @@
             outline: none;
         }
 
+        .cartas-field::placeholder {
+            color: var(--cartas-text);
+            opacity: 1;
+        }
+
         .cartas-field + .cartas-field,
         .cartas-field-wrap + .cartas-field-wrap {
             margin-top: 8px;

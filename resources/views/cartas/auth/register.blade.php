@@ -236,15 +236,15 @@
 
         .cartas-terms-modal__dialog {
             position: relative;
-            width: min(100%, 462px);
-            max-height: min(520px, calc(100vh - 48px));
+            width: min(100%, 650px);
+            max-height: min(700px, calc(100vh - 48px));
             display: flex;
             flex-direction: column;
             border-radius: 8px;
             background: #f1eeeb;
-            padding: 17px;
+            padding: 24px;
             box-shadow: 0 22px 60px rgba(0, 0, 0, .32);
-            color: #262626;
+            color: #111;
         }
 
         .cartas-terms-modal__brand {
@@ -263,8 +263,8 @@
         }
 
         .cartas-terms-modal h1 {
-            margin: 0 0 10px;
-            font-size: 15px;
+            margin: 0 0 14px;
+            font-size: 20px;
             line-height: 1.25;
             font-weight: 800;
         }
@@ -273,17 +273,19 @@
             flex: 1;
             overflow-y: auto;
             min-height: 0;
+            padding-right: 8px; /* space for scrollbar */
         }
 
         .cartas-terms-modal__content p {
-            margin: 0 0 12px;
-            font-size: 11px;
-            line-height: 1.45;
-            color: #5a5a5a;
+            margin: 0 0 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333;
         }
 
         .cartas-terms-modal__content strong {
-            color: #262626;
+            color: #000;
+            font-size: 15px;
         }
 
 
