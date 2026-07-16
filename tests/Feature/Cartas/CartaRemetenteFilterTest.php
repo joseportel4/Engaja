@@ -19,27 +19,20 @@ class CartaRemetenteFilterTest extends TestCase
         $user = User::factory()->create(['sistema_origem' => User::SISTEMA_ENGAJA]);
         $participante = Participante::factory()->create(['user_id' => $user->id]);
 
-        if ($inscrito) {
-            $evento = Evento::factory()->create(['is_cartas' => true]);
-            Inscricao::create([
-                'evento_id' => $evento->id,
-                'participante_id' => $participante->id,
-            ]);
-        } else {
-            $evento = Evento::factory()->create(['is_cartas' => false]);
-            Inscricao::create([
-                'evento_id' => $evento->id,
-                'participante_id' => $participante->id,
-            ]);
-        }
+        $evento = Evento::factory()->create(['is_cartas' => $inscrito]);
+        Inscricao::create([
+            'evento_id' => $evento->id,
+            'participante_id' => $participante->id,
+        ]);
 
         return $participante;
     }
 
-    public function test_lista_de_remetentes_traz_apenas_participantes_da_acao_cartas(): void
+    public function test_lista_de_remetentes_traz_todos_os_usuarios_sem_filtro(): void
     {
         $inscrito = $this->participanteInscrito(true);
         $foraDaAcao = $this->participanteInscrito(false);
+        $semParticipante = User::factory()->create(['sistema_origem' => User::SISTEMA_CARTAS]);
 
         Role::findOrCreate('cartas_gestao', 'web');
         $gestor = User::factory()->create([
@@ -55,6 +48,7 @@ class CartaRemetenteFilterTest extends TestCase
         $ids = collect($response->viewData('engajaUsers'))->pluck('id');
 
         $this->assertTrue($ids->contains($inscrito->user_id));
-        $this->assertFalse($ids->contains($foraDaAcao->user_id));
+        $this->assertTrue($ids->contains($foraDaAcao->user_id));
+        $this->assertTrue($ids->contains($semParticipante->id));
     }
 }

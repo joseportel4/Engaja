@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Cartas\Carta;
 use App\Models\Cartas\CartaEvento;
 use App\Models\Cartas\CartaMensagem;
+use App\Models\Evento;
+use App\Models\Inscricao;
 use App\Models\User;
 use App\Notifications\Cartas\AjusteSolicitadoNotification;
 use App\Notifications\Cartas\CartaRecebidaNotification;
@@ -67,10 +69,7 @@ class CartaController extends Controller
         abort_unless($this->isGestor($request->user()), 403);
 
         $data = $request->validate([
-            'remetente_user_id' => [
-                'required',
-                Rule::exists('users', 'id')->where('sistema_origem', User::SISTEMA_ENGAJA),
-            ],
+            'remetente_user_id' => ['required', 'exists:users,id'],
             'arquivo' => ['required', 'file', 'mimes:pdf', 'max:10240'],
         ], [
             'remetente_user_id.required' => 'Selecione o remetente.',
@@ -85,6 +84,14 @@ class CartaController extends Controller
             return back()->withErrors(['remetente_user_id' => 'O remetente selecionado nao possui participante vinculado.'])->withInput();
         }
 
+        $eventosCartas = Evento::where('is_cartas', true)->get();
+        abort_if($eventosCartas->count() > 1, 500, 'Configuracao invalida: mais de uma acao de cartas esta marcada como ativa.');
+        $eventoCartas = $eventosCartas->first();
+
+        if (! $eventoCartas) {
+            return back()->withErrors(['remetente_user_id' => 'Nenhuma acao de cartas esta configurada.'])->withInput();
+        }
+
         $voluntario = $this->selectVoluntario();
         if (! $voluntario) {
             return back()->withErrors(['destinatario' => 'Nao ha voluntarios disponiveis para receber a carta.'])->withInput();
@@ -92,7 +99,14 @@ class CartaController extends Controller
 
         $file = $request->file('arquivo');
 
-        $carta = DB::transaction(function () use ($request, $participante, $voluntario, $file) {
+        $carta = DB::transaction(function () use ($request, $participante, $voluntario, $file, $eventoCartas) {
+            if (! $participante->inscricoes()->where('evento_id', $eventoCartas->id)->exists()) {
+                Inscricao::create([
+                    'evento_id' => $eventoCartas->id,
+                    'participante_id' => $participante->id,
+                ]);
+            }
+
             $codigo = $this->nextCodigo();
 
             $carta = Carta::create([
@@ -595,7 +609,7 @@ class CartaController extends Controller
             ->paginate(9)
             ->withQueryString();
 
-        $engajaUsers = $this->engajaUsersQuery()->get();
+        $engajaUsers = $this->remetenteCandidatosQuery()->get();
 
         return view('cartas.gestor.index', compact('cartas', 'engajaUsers', 'search'));
     }
@@ -624,6 +638,13 @@ class CartaController extends Controller
         return User::query()
             ->where('sistema_origem', User::SISTEMA_ENGAJA)
             ->whereHas('participante.eventos', fn ($q) => $q->where('is_cartas', true))
+            ->with('participante.municipio.estado')
+            ->orderBy('name');
+    }
+
+    private function remetenteCandidatosQuery()
+    {
+        return User::query()
             ->with('participante.municipio.estado')
             ->orderBy('name');
     }

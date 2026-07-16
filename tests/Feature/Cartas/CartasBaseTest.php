@@ -4,8 +4,11 @@ namespace Tests\Feature\Cartas;
 
 use App\Models\Cartas\Carta;
 use App\Models\Cartas\CartaMensagem;
+use App\Models\Estado;
+use App\Models\Evento;
 use App\Models\Municipio;
 use App\Models\Participante;
+use App\Models\Regiao;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -18,10 +21,16 @@ abstract class CartasBaseTest extends TestCase
     use RefreshDatabase;
 
     protected User $gestor;
+
     protected User $voluntario;
+
     protected User $voluntario2;
+
     protected User $remetente;
+
     protected Participante $educando;
+
+    protected Evento $eventoCartas;
 
     protected function setUp(): void
     {
@@ -71,8 +80,8 @@ abstract class CartasBaseTest extends TestCase
         ]);
         $this->voluntario2->assignRole('cartas_voluntario');
 
-        $regiao = \App\Models\Regiao::create(['nome' => 'Sudeste']);
-        $estado = \App\Models\Estado::create(['nome' => 'São Paulo', 'sigla' => 'SP', 'regiao_id' => $regiao->id]);
+        $regiao = Regiao::create(['nome' => 'Sudeste']);
+        $estado = Estado::create(['nome' => 'São Paulo', 'sigla' => 'SP', 'regiao_id' => $regiao->id]);
         $municipio = Municipio::create([
             'nome' => 'São Paulo',
             'estado_id' => $estado->id,
@@ -89,6 +98,8 @@ abstract class CartasBaseTest extends TestCase
             'cpf' => '12345678901',
             'telefone' => '11999999999',
         ]);
+
+        $this->eventoCartas = Evento::factory()->create(['is_cartas' => true]);
     }
 
     protected function criarCartaParaVoluntario(): Carta
