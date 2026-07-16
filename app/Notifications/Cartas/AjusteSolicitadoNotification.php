@@ -27,7 +27,7 @@ class AjusteSolicitadoNotification extends Notification implements ShouldQueue
         $url = route('cartas.cartas.show', $this->mensagem->carta_id);
 
         return (new MailMessage)
-            ->subject('Ajuste solicitado na sua resposta — Cartas para Esperançar')
+            ->subject('Precisamos de um ajuste no seu envio')
             ->view('emails.cartas.ajuste-solicitado', [
                 'voluntarioNome'      => $notifiable->name,
                 'parecerVerificacao'  => $this->mensagem->parecer_verificacao,

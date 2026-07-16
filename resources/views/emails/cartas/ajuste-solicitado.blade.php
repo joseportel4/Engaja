@@ -83,6 +83,16 @@
       font-size: 15px;
       margin: 8px 0 20px;
     }
+    ul, ol {
+      color: #374151;
+      font-size: 15px;
+      line-height: 1.65;
+      margin: 0 0 16px;
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 8px;
+    }
     .muted {
       font-size: 13px;
       color: #6b7280;
@@ -106,36 +116,54 @@
     <div class="card">
       <div class="card-header">
         <span class="label">Ajuste solicitado</span>
-        <h1>Sua resposta precisa de um ajuste</h1>
+        <h1>Precisamos de um ajuste no seu envio</h1>
       </div>
 
-      <p>Olá, {{ $voluntarioNome }}.</p>
+      <p>Olá!</p>
 
       <p>
-        A equipe de gestão revisou sua resposta e identificou um ponto que precisa ser corrigido
-        antes de ser enviado ao educando.
+        Recebemos seu envio no <strong>Cartas para Esperançar</strong>, mas identificamos um ponto que precisa ser corrigido antes que a carta siga para o educando ou educanda:
       </p>
 
       @if($parecerVerificacao)
         <div class="parecer-box">
-          <strong>Observação da gestão</strong>
+          <strong>Motivo do ajuste</strong>
           {{ $parecerVerificacao }}
         </div>
       @endif
 
-      <p>
-        Acesse a conversa, leia o feedback acima e envie a versão corrigida da sua carta.
-      </p>
+      <p><strong>O que fazer agora:</strong></p>
+      <ol>
+        <li>Acesse a plataforma pelo botão abaixo;</li>
+        <li>Localize a carta com o status "Ajuste solicitado";</li>
+        <li>Faça um novo upload do arquivo correto, em formato PDF;</li>
+        <li>Confirme o envio.</li>
+      </ol>
 
       <p>
-        <a class="btn" href="{{ $url }}">Acessar a conversa</a>
+        <a class="btn" href="{{ $url }}">FAZER O AJUSTE</a>
       </p>
+
+      <p><strong>Antes de enviar, confira:</strong></p>
+      <ul>
+        <li>O arquivo é a foto ou digitalização da <strong>sua carta manuscrita</strong> (e não outro documento);</li>
+        <li>Está em <strong>PDF</strong>;</li>
+        <li>As páginas estão legíveis, completas e na ordem certa.</li>
+      </ul>
+
+      <p>
+        Fique tranquilo(a), estamos aqui para garantir que a sua carta chegue do jeito que você escreveu.
+      </p>
+
+      <p style="margin-top: 24px;">
+        Qualquer dúvida, é só responder este e-mail.
+      </p>
+
       <p class="muted">Se o botão não funcionar, copie e cole este link no navegador:<br>{{ $url }}</p>
-      <p class="muted">Esta é uma mensagem automática. Não responda este e-mail.</p>
     </div>
 
     <div class="footer">
-      Projeto ALFA-EJA Brasil · Cartas para Esperançar
+      Projeto ALFA-EJA Brasil | Cartas para Esperançar
     </div>
   </div>
 </body>
