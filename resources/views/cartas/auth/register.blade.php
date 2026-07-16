@@ -1,6 +1,7 @@
 @extends('cartas.auth._shell')
 
 @section('title', 'Criar conta - Cartas para Esperançar')
+@section('auth-bg-style', "background-image: url('" . asset('images/cartas/bg-cadastro.png') . "');")
 
 @section('auth-content')
     <h1 class="cartas-title">Crie sua conta</h1>

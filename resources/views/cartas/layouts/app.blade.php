@@ -35,8 +35,11 @@
         }
 
         .cartas-auth-side {
-            background: var(--cartas-blue);
+            background-color: var(--cartas-blue);
             min-height: 100vh;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
 
         .cartas-auth-main {
