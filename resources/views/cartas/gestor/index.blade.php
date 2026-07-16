@@ -56,15 +56,43 @@
         </section>
 
         <section class="cpe-manager__right">
-            <div class="cpe-manager__header">
-                <div class="cpe-manager__titleline">
-                    <h2>Todas as cartas</h2>
-                    <span>{{ $cartas->total() }} cartas</span>
+            <div class="cpe-manager__header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+                <div class="cpe-manager__titleline" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <h2 style="margin: 0; padding: 0; font-size: 24px; font-weight: 600; color: #111;">Todas as cartas</h2>
+                    <span style="margin: 0; font-size: 15px; color: #666;">({{ $cartas->total() }} cartas)</span>
                 </div>
 
-                <form method="GET" action="{{ route('cartas.dashboard') }}" class="cpe-search">
-                    <input type="search" name="q" value="{{ $search }}" placeholder="Pesquisar">
-                    <button type="submit" aria-label="Pesquisar">⌕</button>
+                <form id="filterForm" method="GET" action="{{ route('cartas.dashboard') }}" style="display: flex; gap: 24px; align-items: stretch; flex-wrap: wrap; background: #fff; padding: 16px 20px; border-radius: 8px; border: 1px solid #eaeaea; box-shadow: 0 2px 4px rgba(0,0,0,0.02); width: 100%; justify-content: space-between;">
+                    
+                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; max-width: 300px;">
+                        <label for="municipio_id" style="font-size: 13px; font-weight: 600; color: #111;">Município do Educando:</label>
+                        <select id="municipio_id" name="municipio_id" style="height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #333;" onchange="document.getElementById('filterForm').submit()">
+                            <option value="">Todos os municípios</option>
+                            @foreach($municipios as $mun)
+                                <option value="{{ $mun->id }}" @selected($municipioId == $mun->id)>{{ $mun->nome }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 2; min-width: 250px;">
+                        <label for="search_input" style="font-size: 13px; font-weight: 600; color: #111;">Pesquisa de Remetente ou Destinatário:</label>
+                        <div style="position: relative; height: 40px; display: flex; align-items: center;">
+                            <input id="search_input" type="search" name="q" value="{{ $search }}" placeholder="Digite o nome..." style="height: 100%; width: 100%; box-sizing: border-box; padding: 0 36px 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none;">
+                            <button type="submit" aria-label="Pesquisar" style="position: absolute; right: 8px; background: none; border: none; color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 100%;">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </button>
+                        </div>
+                        <span style="font-size: 11px; color: #666;">Instantâneo (digite 2 letras)</span>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; justify-content: flex-start;">
+                        <label style="font-size: 13px; font-weight: 600; color: #111;">Ações:</label>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="{{ route('cartas.download-batch', ['q' => $search, 'municipio_id' => $municipioId]) }}" style="display: flex; align-items: center; justify-content: center; white-space: nowrap; padding: 0 16px; border-radius: 6px; height: 40px; box-sizing: border-box; text-decoration: none; background-color: var(--cartas-purple, #6a1b9a); color: white; font-weight: 500; font-size: 14px; border: none; cursor: pointer; transition: opacity 0.2s;">
+                                Exportar Cartas
+                            </a>
+                        </div>
+                    </div>
                 </form>
             </div>
 
@@ -77,8 +105,7 @@
                             <th>Remetente</th>
                             <th>Destinatário</th>
                             <th>Data</th>
-                            <th></th>
-                            <th></th>
+                            <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -106,27 +133,27 @@
                                 <td>{{ $carta->voluntario?->nome_com_localidade ?? 'Sem voluntário' }}</td>
                                 <td>{{ optional($carta->created_at)->format('d/m/Y') }}</td>
                                 <td>
-                                    <a href="{{ route('cartas.cartas.show', $carta) }}" class="cpe-icon-button" aria-label="Abrir carta">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                    </a>
-                                </td>
-                                <td>
-                                    <button type="button" class="cpe-trash-button" aria-label="Remover carta" data-modal-open="deleteCarta-{{ $carta->id }}">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                            <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                            <path d="M8 6V4h8v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            <path d="M6 6l1 15h10l1-15" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                                            <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                        </svg>
-                                    </button>
+                                    <div style="display: flex; gap: 8px;">
+                                        <a href="{{ route('cartas.cartas.show', $carta) }}" class="cpe-icon-button" aria-label="Abrir carta" title="Visualizar">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                        </a>
+                                        <button type="button" class="cpe-trash-button" aria-label="Remover carta" title="Excluir" data-modal-open="deleteCarta-{{ $carta->id }}">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                <path d="M8 6V4h8v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M6 6l1 15h10l1-15" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                                <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="cpe-empty">Nenhuma carta cadastrada.</td>
+                                <td colspan="6" class="cpe-empty">Nenhuma carta cadastrada.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -318,4 +345,31 @@
             }
         }
     </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('search_input');
+            const filterForm = document.getElementById('filterForm');
+            let debounceTimer;
+
+            if (searchInput && filterForm) {
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(debounceTimer);
+                    
+                    debounceTimer = setTimeout(function() {
+                        const val = searchInput.value.trim();
+                        // If empty (e.g. user clicked the 'x' to clear), submit immediately to show all
+                        if (val === '') {
+                            filterForm.submit();
+                        }
+                        // If typed 2 or more characters, submit to filter
+                        else if (val.length >= 2) {
+                            filterForm.submit();
+                        }
+                        // if length is 1, wait for them to type more, don't submit yet
+                    }, 500); // 500ms delay
+                });
+            }
+        });
+    </script>
 @endsection

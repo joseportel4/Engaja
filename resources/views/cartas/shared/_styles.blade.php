@@ -388,18 +388,18 @@
     }
 
     .cpe-pill--blue {
-        color: #1458ff;
-        background: #eaf2ff;
+        color: #0b45d0;
+        background: #eef4ff;
     }
 
     .cpe-pill--green {
-        color: #13873c;
-        background: #e8f8ec;
+        color: #106f31;
+        background: #eefdf2;
     }
 
     .cpe-pill--yellow {
-        color: #856100;
-        background: #fff4cf;
+        color: #715200;
+        background: #fff7e0;
     }
 
     .cpe-modal {

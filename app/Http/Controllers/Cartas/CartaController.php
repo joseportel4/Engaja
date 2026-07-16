@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Spatie\LaravelPdf\Facades\Pdf;
+use setasign\Fpdi\Fpdi;
 
 class CartaController extends Controller
 {
@@ -593,16 +595,120 @@ class CartaController extends Controller
         ]);
     }
 
+    public function downloadBatch(Request $request)
+    {
+        abort_unless($this->isGestor($request->user()), 403);
+
+        $search = trim((string) $request->query('q', ''));
+        $municipioId = $request->query('municipio_id');
+
+        $cartas = Carta::query()
+            ->with([
+                'educando.user', 
+                'educando.municipio.estado', 
+                'voluntario', 
+                'mensagens' => function($q) {
+                    $q->orderBy('rodada', 'asc');
+                }
+            ])
+            ->when($search !== '', function ($query) use ($search) {
+                $searchLower = mb_strtolower($search, 'UTF-8');
+                $query->where(function ($nested) use ($searchLower) {
+                    $nested->whereRaw('LOWER(codigo) LIKE ?', ["%{$searchLower}%"])
+                        ->orWhereHas('educando.user', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]))
+                        ->orWhereHas('voluntario', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]));
+                });
+            })
+            ->when($municipioId, function ($query) use ($municipioId) {
+                $query->whereHas('educando', function ($q) use ($municipioId) {
+                    $q->where('municipio_id', $municipioId);
+                });
+            })
+            ->latest()
+            ->get();
+
+        $fpdi = new Fpdi();
+
+        foreach ($cartas as $carta) {
+            $tempPath = storage_path('app/temp_carta_' . $carta->id . '_' . uniqid() . '.pdf');
+            
+            // Generate HTML cover for this single letter
+            Pdf::view('cartas.cartas.pdf-batch', ['cartas' => collect([$carta])])
+                ->format('A4')
+                ->save($tempPath);
+
+            // Import the HTML cover pages
+            $pageCount = $fpdi->setSourceFile($tempPath);
+            for ($i = 1; $i <= $pageCount; $i++) {
+                $tplIdx = $fpdi->importPage($i);
+                $size = $fpdi->getTemplateSize($tplIdx);
+                $fpdi->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $fpdi->useTemplate($tplIdx);
+            }
+            
+            // Clean up temp cover
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+
+            // Append attached PDFs for this letter's messages
+            foreach ($carta->mensagens as $mensagem) {
+                $path = $mensagem->arquivo_final_path ?: $mensagem->anexo_original_path;
+                $mime = $mensagem->arquivo_final_mime ?: $mensagem->anexo_original_mime;
+                
+                if ($path && $mime === 'application/pdf' && Storage::disk('local')->exists($path)) {
+                    $pdfPath = Storage::disk('local')->path($path);
+                    try {
+                        $pages = $fpdi->setSourceFile($pdfPath);
+                        for ($i = 1; $i <= $pages; $i++) {
+                            $tplIdx = $fpdi->importPage($i);
+                            $size = $fpdi->getTemplateSize($tplIdx);
+                            $fpdi->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                            $fpdi->useTemplate($tplIdx);
+                        }
+                    } catch (\Exception $e) {
+                        // Ignore corrupt or incompatible PDFs
+                    }
+                }
+            }
+        }
+
+        // If no cartas, just output a blank generic cover
+        if ($cartas->isEmpty()) {
+            $tempPath = storage_path('app/temp_carta_empty_' . uniqid() . '.pdf');
+            Pdf::view('cartas.cartas.pdf-batch', ['cartas' => collect()])->format('A4')->save($tempPath);
+            $fpdi->setSourceFile($tempPath);
+            $fpdi->AddPage();
+            $fpdi->useTemplate($fpdi->importPage(1));
+            unlink($tempPath);
+        }
+
+        $output = $fpdi->Output('S');
+
+        return response($output, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="Cartas-Lote.pdf"',
+        ]);
+    }
+
     private function gestorDashboard(Request $request): View
     {
         $search = trim((string) $request->query('q', ''));
+        $municipioId = $request->query('municipio_id');
+
         $cartas = Carta::query()
             ->with(['educando.user', 'educando.municipio.estado', 'voluntario.participante.municipio.estado', 'ultimaMensagem'])
             ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($nested) use ($search) {
-                    $nested->where('codigo', 'like', "%{$search}%")
-                        ->orWhereHas('educando.user', fn ($q) => $q->where('name', 'like', "%{$search}%"))
-                        ->orWhereHas('voluntario', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+                $searchLower = mb_strtolower($search, 'UTF-8');
+                $query->where(function ($nested) use ($searchLower) {
+                    $nested->whereRaw('LOWER(codigo) LIKE ?', ["%{$searchLower}%"])
+                        ->orWhereHas('educando.user', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]))
+                        ->orWhereHas('voluntario', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]));
+                });
+            })
+            ->when($municipioId, function ($query) use ($municipioId) {
+                $query->whereHas('educando', function ($q) use ($municipioId) {
+                    $q->where('municipio_id', $municipioId);
                 });
             })
             ->latest()
@@ -610,8 +716,9 @@ class CartaController extends Controller
             ->withQueryString();
 
         $engajaUsers = $this->remetenteCandidatosQuery()->get();
+        $municipios = \App\Models\Municipio::orderBy('nome')->get();
 
-        return view('cartas.gestor.index', compact('cartas', 'engajaUsers', 'search'));
+        return view('cartas.gestor.index', compact('cartas', 'engajaUsers', 'search', 'municipioId', 'municipios'));
     }
 
     private function voluntarioDashboard(Request $request): View

@@ -69,6 +69,7 @@ Route::prefix('cartas')->name('cartas.')->group(function () {
             Route::put('/usuarios/{managedUser}', [CartasUserManagementController::class, 'update'])->name('usuarios.update');
             Route::post('/cartas', [CartasCartaController::class, 'store'])->name('cartas.store');
             Route::post('/voluntario/cartas', [CartasCartaController::class, 'storeVolunteerLetter'])->name('voluntario.cartas.store');
+            Route::get('/cartas/download-lote', [CartasCartaController::class, 'downloadBatch'])->name('download-batch');
             Route::get('/cartas/{carta}', [CartasCartaController::class, 'show'])->name('cartas.show');
             Route::post('/cartas/{carta}/mensagens', [CartasCartaController::class, 'storeMessage'])->name('cartas.mensagens.store');
             Route::post('/cartas/{carta}/responder', [CartasCartaController::class, 'respond'])->name('cartas.respond');
