@@ -256,13 +256,14 @@ class AuthController extends Controller
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->where('sistema_origem', User::SISTEMA_CARTAS)],
             'password' => ['required', Rules\Password::defaults()],
             'cpf' => ['required', 'digits:11'],
-            'telefone' => ['nullable', 'regex:/^\d{10,11}$/'],
+            'telefone' => ['required', 'regex:/^\d{10,11}$/'],
             'estado_ibge_id' => ['required', 'integer', 'min:1'],
             'municipio_ibge_id' => ['required', 'integer', 'min:1'],
             'termos_aceitos' => ['accepted'],
         ], [
             'cpf.required' => 'Informe seu CPF.',
             'cpf.digits' => 'CPF deve conter 11 dígitos.',
+            'telefone.required' => 'Informe seu telefone.',
             'telefone.regex' => 'Telefone deve ter DDD e 10 ou 11 dígitos.',
             'estado_ibge_id.required' => 'Selecione seu estado.',
             'municipio_ibge_id.required' => 'Selecione seu município.',
@@ -288,10 +289,13 @@ class AuthController extends Controller
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->where('sistema_origem', User::SISTEMA_CARTAS)],
             'password' => ['required', 'string'],
             'cpf' => ['required', 'digits:11'],
-            'telefone' => ['nullable', 'regex:/^\d{10,11}$/'],
+            'telefone' => ['required', 'regex:/^\d{10,11}$/'],
             'estado_nome' => ['required', 'string', 'max:255'],
             'estado_sigla' => ['required', 'string', 'size:2'],
             'municipio_nome' => ['required', 'string', 'max:255'],
+        ], [
+            'telefone.required' => 'Informe seu telefone.',
+            'telefone.regex' => 'Telefone deve ter DDD e 10 ou 11 dígitos.',
         ])->after(function ($validator) use ($pendingRegistration) {
             $cpf = $pendingRegistration['cpf'] ?? '';
             if (! $this->isValidCpf($cpf)) {
