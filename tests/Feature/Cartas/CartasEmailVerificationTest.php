@@ -92,4 +92,27 @@ class CartasEmailVerificationTest extends TestCase
         $this->assertStringNotContainsString('Engaja', $html);
         $this->assertStringNotContainsString('engaja-favicon.png', $html);
     }
+
+    public function test_cartas_user_email_verification_triggers_cadastro_realizado_notification(): void
+    {
+        Notification::fake();
+
+        $user = $this->cartasUser();
+
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1($user->email)]
+        );
+
+        $this->actingAs($user)->get($verificationUrl);
+
+        Notification::assertSentTo($user, \App\Notifications\Cartas\CadastroRealizadoComSucessoNotification::class);
+
+        $mail = (new \App\Notifications\Cartas\CadastroRealizadoComSucessoNotification)->toMail($user);
+        $html = $mail->render();
+
+        $this->assertStringContainsString('Seu cadastro no Cartas para Esperançar está confirmado', $html);
+        $this->assertStringNotContainsString('Engaja', $html);
+    }
 }
