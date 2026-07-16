@@ -118,6 +118,14 @@
             box-shadow: 0 0 0 3px rgba(168, 0, 214, .14);
         }
 
+        .cartas-field:disabled,
+        .cartas-field:read-only {
+            background: #f3f4f6;
+            color: #6b7280;
+            cursor: not-allowed;
+            border-color: #d1d5db;
+        }
+
         .cartas-button {
             width: 100%;
             height: 45px;

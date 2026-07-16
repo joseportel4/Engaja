@@ -21,7 +21,7 @@
             <input id="cpf" class="cartas-field" type="text" name="cpf" value="{{ old('cpf') }}" inputmode="numeric" maxlength="14" placeholder="Digite seu CPF." required>
         </div>
         <div class="cartas-field-wrap">
-            <input id="telefone" class="cartas-field" type="text" name="telefone" value="{{ old('telefone') }}" inputmode="numeric" maxlength="15" placeholder="Digite seu telefone.">
+            <input id="telefone" class="cartas-field" type="text" name="telefone" value="{{ old('telefone') }}" inputmode="numeric" maxlength="15" placeholder="Digite seu telefone." required>
         </div>
         <div class="cartas-field-wrap">
             <select id="estado_ibge_id" class="cartas-field" name="estado_ibge_id" required>

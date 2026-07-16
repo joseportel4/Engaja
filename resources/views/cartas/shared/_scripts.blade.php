@@ -12,6 +12,29 @@
             });
         });
 
+        document.querySelectorAll('[data-aside-open]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const targetId = button.dataset.asideOpen;
+                const aside = document.querySelector('.cpe-conversation__aside');
+                if (!aside) return;
+
+                aside.querySelectorAll('.cpe-aside-panel').forEach((panel) => {
+                    panel.hidden = panel.id !== targetId;
+                });
+            });
+        });
+
+        document.querySelectorAll('[data-aside-close]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const aside = button.closest('.cpe-conversation__aside');
+                if (!aside) return;
+
+                aside.querySelectorAll('.cpe-aside-panel').forEach((panel) => {
+                    panel.hidden = panel.id !== 'asideDefault';
+                });
+            });
+        });
+
         document.querySelectorAll('.cpe-modal__backdrop').forEach((backdrop) => {
             backdrop.addEventListener('click', () => {
                 backdrop.closest('.cpe-modal')?.classList.remove('is-open');

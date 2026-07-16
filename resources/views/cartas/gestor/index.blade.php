@@ -105,7 +105,14 @@
                                 <td>{{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}</td>
                                 <td>{{ $carta->voluntario?->nome_com_localidade ?? 'Sem voluntário' }}</td>
                                 <td>{{ optional($carta->created_at)->format('d/m/Y') }}</td>
-                                <td><a href="{{ route('cartas.cartas.show', $carta) }}" class="cpe-link">Abrir</a></td>
+                                <td>
+                                    <a href="{{ route('cartas.cartas.show', $carta) }}" class="cpe-icon-button" aria-label="Abrir carta">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </a>
+                                </td>
                                 <td>
                                     <button type="button" class="cpe-trash-button" aria-label="Remover carta" data-modal-open="deleteCarta-{{ $carta->id }}">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -253,6 +260,7 @@
             box-shadow: none;
         }
 
+        .cpe-icon-button,
         .cpe-trash-button {
             width: 28px;
             height: 28px;
@@ -264,6 +272,13 @@
             justify-content: center;
             padding: 0;
             cursor: pointer;
+            text-decoration: none;
+        }
+
+        .cpe-icon-button:hover,
+        .cpe-icon-button:focus {
+            color: var(--cartas-purple);
+            outline: none;
         }
 
         .cpe-trash-button:hover,
