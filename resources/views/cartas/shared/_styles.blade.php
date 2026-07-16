@@ -349,6 +349,33 @@
         font-size: 13px;
     }
 
+    .cpe-icon-button {
+        width: 28px;
+        height: 28px;
+        border: 0;
+        background: transparent;
+        color: #555;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .cpe-icon-button:hover,
+    .cpe-icon-button:focus {
+        color: var(--cpe-purple);
+        outline: none;
+    }
+
+    .cpe-icon-button--disabled {
+        color: #a0a0a0 !important;
+        cursor: not-allowed !important;
+        opacity: 0.65;
+        pointer-events: auto;
+    }
+
     .cpe-pill {
         display: inline-flex;
         align-items: center;

@@ -83,10 +83,21 @@
                                             ?? 'Destinatário' }}
                                     </td>
                                     <td>
-                                        <div style="display: flex; gap: 16px; align-items: center;">
-                                            <button class="cpe-link" type="button" data-modal-open="mensagem-{{ $mensagem->id }}">Abrir</button>
+                                        <div style="display: flex; gap: 8px; align-items: center;">
+                                            <button class="cpe-icon-button" type="button" data-modal-open="mensagem-{{ $mensagem->id }}" aria-label="Abrir mensagem">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </button>
                                             @if($gestor)
-                                                <a href="{{ route('cartas.mensagens.download', $mensagem) }}" class="cpe-link" download>Baixar</a>
+                                                <a href="{{ route('cartas.mensagens.download', $mensagem) }}" class="cpe-icon-button" aria-label="Baixar anexo" download>
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        <polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
+                                                </a>
                                             @endif
                                         </div>
                                     </td>

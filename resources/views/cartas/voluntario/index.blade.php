@@ -68,10 +68,13 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="{{ route('cartas.cartas.show', $carta) }}" class="cpe-link cpe-conversation-link">
-                                        Abrir carta
+                                    <a href="{{ route('cartas.cartas.show', $carta) }}" class="cpe-icon-button" style="position: relative;" aria-label="Abrir carta" title="Abrir carta">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
                                         @if(($carta->mensagens_nao_lidas_count ?? 0) > 0)
-                                            <span class="cpe-unread-badge" aria-label="{{ $carta->mensagens_nao_lidas_count }} mensagem não lida">
+                                            <span class="cpe-unread-badge" style="position: absolute; top: -4px; right: -4px;" aria-label="{{ $carta->mensagens_nao_lidas_count }} mensagem não lida">
                                                 {{ $carta->mensagens_nao_lidas_count }}
                                             </span>
                                         @endif
@@ -79,16 +82,38 @@
                                 </td>
                                 <td>
                                     @if($carta->podeVoluntarioEnviar())
-                                        <button type="button" class="cpe-link" data-modal-open="respondCarta-{{ $carta->id }}">Responder</button>
+                                        <button type="button" class="cpe-icon-button" data-modal-open="respondCarta-{{ $carta->id }}" aria-label="Responder carta" title="Responder carta">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <polyline points="9 17 4 12 9 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M20 18v-2a4 4 0 0 0-4-4H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                        </button>
                                     @else
-                                        <span class="cpe-link cpe-link--disabled" title="{{ 'Você poderá responder quando uma nova carta for recebida.' }}">Respondido</span>
+                                        <span class="cpe-icon-button cpe-icon-button--disabled" title="Respondido - Você poderá responder quando uma nova carta for recebida." aria-label="Respondido">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                        </span>
                                     @endif
                                 </td>
                                 <td>
                                     @if($primeira?->anexo_original_path)
-                                        <button type="button" class="cpe-link" data-print-src="{{ route('cartas.mensagens.preview', $primeira) }}">Imprimir</button>
+                                        <button type="button" class="cpe-icon-button" data-print-src="{{ route('cartas.mensagens.preview', $primeira) }}" aria-label="Imprimir carta" title="Imprimir carta">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <polyline points="6 9 6 2 18 2 18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <rect x="6" y="14" width="12" height="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                        </button>
                                     @else
-                                        <button type="button" class="cpe-link">Imprimir</button>
+                                        <button type="button" class="cpe-icon-button" aria-label="Imprimir carta" title="Imprimir carta">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <polyline points="6 9 6 2 18 2 18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <rect x="6" y="14" width="12" height="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                        </button>
                                     @endif
                                 </td>
                             </tr>
@@ -270,17 +295,17 @@
 
         .cpe-volunteer .cpe-table th:nth-child(5),
         .cpe-volunteer .cpe-table td:nth-child(5) {
-            width: 128px;
+            width: 70px;
         }
 
         .cpe-volunteer .cpe-table th:nth-child(6),
         .cpe-volunteer .cpe-table td:nth-child(6) {
-            width: 96px;
+            width: 70px;
         }
 
         .cpe-volunteer .cpe-table th:nth-child(7),
         .cpe-volunteer .cpe-table td:nth-child(7) {
-            width: 112px;
+            width: 70px;
         }
 
         .cpe-volunteer .cpe-table td:nth-child(5),
