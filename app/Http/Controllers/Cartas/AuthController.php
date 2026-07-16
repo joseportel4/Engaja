@@ -254,7 +254,7 @@ class AuthController extends Controller
         $validator = Validator::make($data, [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->where('sistema_origem', User::SISTEMA_CARTAS)],
-            'password' => ['required', Rules\Password::defaults()],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'cpf' => ['required', 'digits:11'],
             'telefone' => ['required', 'regex:/^\d{10,11}$/'],
             'estado_ibge_id' => ['required', 'integer', 'min:1'],

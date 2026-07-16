@@ -11,30 +11,63 @@
 
     <form method="POST" action="{{ route('cartas.register.store') }}" class="cartas-form" data-estados-url="{{ route('cartas.localidades.estados') }}" data-municipios-url="{{ route('cartas.localidades.municipios', ['estadoIbgeId' => '__ESTADO__']) }}">
         @csrf
-        <div class="cartas-field-wrap">
-            <input class="cartas-field" type="text" name="name" value="{{ old('name') }}" placeholder="Digite seu nome completo, sem abreviação." required autofocus>
+        
+        <div class="cartas-form-group">
+            <label class="cartas-label">Nome</label>
+            <input class="cartas-field-light" type="text" name="name" value="{{ old('name') }}" placeholder="Digite seu nome completo, sem abreviação." required autofocus>
         </div>
-        <div class="cartas-field-wrap">
-            <input class="cartas-field" type="email" name="email" value="{{ old('email') }}" placeholder="Digite seu e-mail." required>
+
+        <div class="cartas-form-group">
+            <label class="cartas-label">E-mail</label>
+            <input class="cartas-field-light" type="email" name="email" value="{{ old('email') }}" placeholder="Digite seu e-mail." required>
         </div>
-        <div class="cartas-field-wrap">
-            <input id="cpf" class="cartas-field" type="text" name="cpf" value="{{ old('cpf') }}" inputmode="numeric" maxlength="14" placeholder="Digite seu CPF." required>
+
+        <div class="cartas-form-group">
+            <label class="cartas-label">Senha</label>
+            <div class="cartas-password-wrap">
+                <input id="passwordInput" class="cartas-field-light" type="password" name="password" placeholder="Senha" required>
+                <button type="button" class="cartas-password-toggle" onclick="togglePassword('passwordInput', this)" title="Mostrar/Ocultar senha">
+                    <i class="bi bi-eye"></i>
+                </button>
+            </div>
         </div>
-        <div class="cartas-field-wrap">
-            <input id="telefone" class="cartas-field" type="text" name="telefone" value="{{ old('telefone') }}" inputmode="numeric" maxlength="15" placeholder="Digite seu telefone." required>
+
+        <div class="cartas-form-group">
+            <label class="cartas-label">Confirmar senha</label>
+            <div class="cartas-password-wrap">
+                <input id="passwordConfirmInput" class="cartas-field-light" type="password" name="password_confirmation" placeholder="Confirmar senha" required>
+                <button type="button" class="cartas-password-toggle" onclick="togglePassword('passwordConfirmInput', this)" title="Mostrar/Ocultar senha">
+                    <i class="bi bi-eye"></i>
+                </button>
+            </div>
         </div>
-        <div class="cartas-field-wrap">
-            <select id="estado_ibge_id" class="cartas-field" name="estado_ibge_id" required>
-                <option value="">Selecione seu estado</option>
-            </select>
-        </div>
-        <div id="municipio-wrap" class="cartas-field-wrap" hidden>
-            <select id="municipio_ibge_id" class="cartas-field" name="municipio_ibge_id" disabled required>
-                <option value="">Selecione seu município</option>
-            </select>
-        </div>
-        <div class="cartas-field-wrap">
-            <input class="cartas-field" type="password" name="password" placeholder="Senha" required>
+
+        <div class="cartas-section">
+            <div class="cartas-grid-2">
+                <div class="cartas-form-group">
+                    <label class="cartas-label">CPF</label>
+                    <input id="cpf" class="cartas-field-light" type="text" name="cpf" value="{{ old('cpf') }}" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" required>
+                </div>
+                <div class="cartas-form-group">
+                    <label class="cartas-label">Telefone</label>
+                    <input id="telefone" class="cartas-field-light" type="text" name="telefone" value="{{ old('telefone') }}" inputmode="numeric" maxlength="15" placeholder="(99) 99999-9999" required>
+                </div>
+            </div>
+
+            <div class="cartas-grid-2">
+                <div class="cartas-form-group">
+                    <label class="cartas-label">Estado</label>
+                    <select id="estado_ibge_id" class="cartas-field-light" name="estado_ibge_id" required>
+                        <option value="">Selecione...</option>
+                    </select>
+                </div>
+                <div class="cartas-form-group" id="municipio-wrap" hidden>
+                    <label class="cartas-label">Município</label>
+                    <select id="municipio_ibge_id" class="cartas-field-light" name="municipio_ibge_id" disabled required>
+                        <option value="">Selecione...</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
         <div class="cartas-terms-check">
@@ -50,6 +83,18 @@
     <a href="{{ route('cartas.login') }}" class="cartas-link" style="margin-top:28px;font-weight:700;">Já tenho uma conta</a>
 
     <script>
+        const togglePassword = (inputId, btn) => {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        };
+
         const onlyDigits = value => (value || '').replace(/\D+/g, '');
         const maskCpf = value => {
             const digits = onlyDigits(value).slice(0, 11);
@@ -174,6 +219,102 @@
 
 @push('styles')
     <style>
+        .cartas-form-group {
+            margin-bottom: 18px;
+            width: 100%;
+        }
+
+        .cartas-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 6px;
+        }
+
+        .cartas-password-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .cartas-password-toggle {
+            position: absolute;
+            right: 12px;
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cartas-password-toggle:hover {
+            color: #111;
+        }
+
+        .cartas-field-light {
+            width: 100%;
+            height: 42px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: #fff;
+            padding: 0 14px;
+            font-size: 15px;
+            font-weight: 500;
+            outline: none;
+            color: #111;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .cartas-field-light::placeholder {
+            color: #111;
+            opacity: 1;
+        }
+
+        select.cartas-field-light {
+            padding-right: 36px;
+            appearance: auto; /* Ensure dropdown arrow is visible */
+            color: #111;
+        }
+
+        select.cartas-field-light option {
+            color: #111;
+        }
+
+        .cartas-field-light:focus {
+            border-color: var(--cartas-purple);
+            box-shadow: 0 0 0 3px rgba(168, 0, 214, .14);
+        }
+
+        .cartas-field-light:disabled,
+        .cartas-field-light:read-only {
+            background: #f8fafc;
+            color: #111;
+            cursor: not-allowed;
+            border-color: #cbd5e1;
+        }
+
+        .cartas-section {
+            background: transparent;
+            padding: 0;
+            margin: 0;
+        }
+
+        .cartas-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0 16px;
+        }
+
+        @media (min-width: 480px) {
+            .cartas-grid-2 {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
         .cartas-terms-check {
             width: 100%;
             margin: 4px 0 8px;

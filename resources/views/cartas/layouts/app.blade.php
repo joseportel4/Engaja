@@ -65,11 +65,11 @@
             width: 210px;
             max-width: 70%;
             height: auto;
-            margin-bottom: 110px;
+            margin-bottom: 48px;
         }
 
         .cartas-logo--compact {
-            margin-bottom: 58px;
+            margin-bottom: 32px;
         }
 
         .cartas-title {
