@@ -5,15 +5,15 @@
         <div class="cpe-ft__inner">
             <h2 class="cpe-ft__social-title">Acesse mais conteúdos em:</h2>
             <div class="cpe-ft__social">
-                <a href="#" class="cpe-ft__social-item" aria-label="YouTube">
+                <a href="https://www.youtube.com/@alfaejabrasil" target="_blank" rel="noopener" class="cpe-ft__social-item" aria-label="YouTube">
                     <img src="{{ asset('images/cartas/youtube.svg') }}" alt="">
                     <span>alfaejabrasil</span>
                 </a>
-                <a href="#" class="cpe-ft__social-item" aria-label="Instagram">
+                <a href="https://www.instagram.com/alfaejabrasil" target="_blank" rel="noopener" class="cpe-ft__social-item" aria-label="Instagram">
                     <img src="{{ asset('images/cartas/instagram.svg') }}" alt="">
                     <span>@alfaejabrasil</span>
                 </a>
-                <a href="#" class="cpe-ft__social-item" aria-label="Facebook">
+                <a href="https://www.facebook.com/profile.php?id=61574396997436" target="_blank" rel="noopener" class="cpe-ft__social-item" aria-label="Facebook">
                     <img src="{{ asset('images/cartas/facebook.svg') }}" alt="">
                     <span>@alfaejabrasil</span>
                 </a>
@@ -43,18 +43,18 @@
 
                 {{-- Navegação --}}
                 <nav class="cpe-ft__nav">
-                    <a href="#">Início</a>
-                    <a href="#">Blog</a>
-                    <a href="#">Podcast</a>
+                    <a href="https://alfaejabrasil.org.br/home" target="_blank" rel="noopener">Início</a>
+                    <a href="https://alfaejabrasil.org.br/blogs" target="_blank" rel="noopener">Blog</a>
+                    <a href="https://alfaejabrasil.org.br/podcast" target="_blank" rel="noopener">Podcast</a>
                     <a href="#">Materiais</a>
                     <a href="#">EAD</a>
                 </nav>
 
                 <nav class="cpe-ft__nav">
-                    <a href="#">O projeto ALFA-EJA Brasil</a>
-                    <a href="#">Política de privacidade</a>
-                    <a href="#">Termos de uso</a>
-                    <a href="#">Contato</a>
+                    <a href="https://alfaejabrasil.org.br/alfa-eja-brasil-o-que-e-e-quais-sao-seus-principais-objetivos" target="_blank" rel="noopener">O projeto ALFA-EJA Brasil</a>
+                    <a href="https://alfaejabrasil.org.br/politica-de-privacidade" target="_blank" rel="noopener">Política de privacidade</a>
+                    <a href="https://alfaejabrasil.org.br/termos-de-uso" target="_blank" rel="noopener">Termos de uso</a>
+                    <a href="https://alfaejabrasil.org.br/contato" target="_blank" rel="noopener">Contato</a>
                 </nav>
             </div>
 
