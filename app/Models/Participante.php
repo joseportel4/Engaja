@@ -90,6 +90,25 @@ class Participante extends Model
             ->implode(' - ');
     }
 
+    public function getNomeAttribute(): string
+    {
+        return $this->user?->name ?? 'Participante';
+    }
+
+    public function getMunicipioEstadoAttribute(): string
+    {
+        if (! $this->municipio) {
+            return 'Não informado';
+        }
+
+        $municipio = $this->municipio->nome;
+        $estado = $this->municipio->estado?->nome ?? $this->municipio->estado?->sigla ?? '';
+
+        return collect([$municipio, $estado])
+            ->filter()
+            ->implode(' - ');
+    }
+
     private function validaCpf($cpf)
     {
         // Aqui você coloca a regra de validação de CPF

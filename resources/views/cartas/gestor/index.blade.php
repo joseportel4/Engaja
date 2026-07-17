@@ -103,6 +103,7 @@
                             <th>ID</th>
                             <th>Status</th>
                             <th>Remetente</th>
+                            <th>Município do Remetente</th>
                             <th>Destinatário</th>
                             <th>Data</th>
                             <th>Ações</th>
@@ -129,8 +130,9 @@
                                         {{ $statusLabel }}
                                     </span>
                                 </td>
-                                <td>{{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}</td>
-                                <td>{{ $carta->voluntario?->nome_com_localidade ?? 'Sem voluntário' }}</td>
+                                <td>{{ $carta->educando?->nome ?? 'Remetente' }}</td>
+                                <td>{{ $carta->educando?->municipio_estado ?? 'Não informado' }}</td>
+                                <td>{{ $carta->voluntario?->nome ?? 'Sem voluntário' }}</td>
                                 <td>{{ optional($carta->created_at)->format('d/m/Y') }}</td>
                                 <td>
                                     <div style="display: flex; gap: 8px;">
@@ -153,7 +155,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="cpe-empty">Nenhuma carta cadastrada.</td>
+                                <td colspan="7" class="cpe-empty">Nenhuma carta cadastrada.</td>
                             </tr>
                         @endforelse
                     </tbody>

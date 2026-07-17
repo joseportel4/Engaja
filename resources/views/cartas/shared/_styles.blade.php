@@ -340,6 +340,14 @@
         border-bottom: 0;
     }
 
+    .cpe-truncate {
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     .cpe-link {
         color: var(--cpe-blue);
         border: 0;
