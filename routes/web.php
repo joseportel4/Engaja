@@ -47,9 +47,10 @@ Route::prefix('cartas')->name('cartas.')->group(function () {
     Route::get('/termos', [CartasAuthController::class, 'terms'])->name('terms');
     Route::post('/termos', [CartasAuthController::class, 'acceptTerms'])->name('terms.accept');
 
+    Route::get('/', [CartasAuthController::class, 'apresentacao'])->name('apresentacao');
+
     Route::middleware('guest')->group(function () {
-        Route::get('/', [CartasAuthController::class, 'login'])->name('login');
-        Route::get('/login', [CartasAuthController::class, 'login'])->name('login.form');
+        Route::get('/login', [CartasAuthController::class, 'login'])->name('login');
         Route::post('/login', [CartasAuthController::class, 'authenticate'])->name('login.store');
         Route::get('/cadastro', [CartasAuthController::class, 'register'])->name('register');
         Route::post('/cadastro', [CartasAuthController::class, 'storeRegister'])->name('register.store');

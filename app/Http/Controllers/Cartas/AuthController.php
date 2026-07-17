@@ -30,6 +30,11 @@ class AuthController extends Controller
 
     public function __construct(private readonly IbgeLocalidadesService $ibgeLocalidades) {}
 
+    public function apresentacao(): View
+    {
+        return view('cartas.apresentacao');
+    }
+
     public function login(): View
     {
         return view('cartas.auth.login');
@@ -99,7 +104,6 @@ class AuthController extends Controller
         } catch (\RuntimeException $exception) {
             throw ValidationException::withMessages(['municipio_ibge_id' => $exception->getMessage()]);
         }
-
 
         $user = User::create([
             'name' => $data['name'],
