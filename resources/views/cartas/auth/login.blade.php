@@ -19,14 +19,28 @@
     <form method="POST" action="{{ route('cartas.login.store') }}" class="cartas-form">
         @csrf
         <div class="cartas-field-wrap">
-            <input class="cartas-field" type="email" name="email" value="{{ old('email') }}" placeholder="Email" required autofocus>
+            <label class="cartas-label">E-mail</label>
+            <input class="cartas-field" type="email" name="email" value="{{ old('email') }}" placeholder="Digite seu e-mail." required autofocus>
         </div>
-        <div class="cartas-field-wrap">
-            <input class="cartas-field" type="password" name="password" placeholder="Senha" required>
+        <div class="cartas-field-wrap" style="margin-top: 14px;">
+            <label class="cartas-label">Senha</label>
+            <input class="cartas-field" type="password" name="password" placeholder="Digite sua senha." required>
         </div>
 
-        <button type="submit" class="cartas-button">Entrar</button>
+        <button type="submit" class="cartas-button" style="margin-top: 18px;">Entrar</button>
     </form>
+
+@push('styles')
+    <style>
+        .cartas-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 6px;
+        }
+    </style>
+@endpush
 
     <div class="cartas-links">
         <a href="{{ route('cartas.register') }}" class="cartas-link">Criar conta</a>
