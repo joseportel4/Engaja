@@ -627,68 +627,49 @@ class CartaController extends Controller
             ->latest()
             ->get();
 
-        $fpdi = new Fpdi();
+        $zipFile = storage_path('app/temp_cartas_lote_' . uniqid() . '.zip');
+        $zip = new \ZipArchive();
+        $hasFiles = false;
 
-        foreach ($cartas as $carta) {
-            $tempPath = storage_path('app/temp_carta_' . $carta->id . '_' . uniqid() . '.pdf');
+        if ($zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+            $addedFiles = [];
             
-            // Generate HTML cover for this single letter
-            Pdf::view('cartas.cartas.pdf-batch', ['cartas' => collect([$carta])])
-                ->format('A4')
-                ->save($tempPath);
-
-            // Import the HTML cover pages
-            $pageCount = $fpdi->setSourceFile($tempPath);
-            for ($i = 1; $i <= $pageCount; $i++) {
-                $tplIdx = $fpdi->importPage($i);
-                $size = $fpdi->getTemplateSize($tplIdx);
-                $fpdi->AddPage($size['orientation'], [$size['width'], $size['height']]);
-                $fpdi->useTemplate($tplIdx);
-            }
-            
-            // Clean up temp cover
-            if (file_exists($tempPath)) {
-                unlink($tempPath);
-            }
-
-            // Append attached PDFs for this letter's messages
-            foreach ($carta->mensagens as $mensagem) {
-                $path = $mensagem->arquivo_final_path ?: $mensagem->anexo_original_path;
-                $mime = $mensagem->arquivo_final_mime ?: $mensagem->anexo_original_mime;
-                
-                if ($path && $mime === 'application/pdf' && Storage::disk('local')->exists($path)) {
-                    $pdfPath = Storage::disk('local')->path($path);
-                    try {
-                        $pages = $fpdi->setSourceFile($pdfPath);
-                        for ($i = 1; $i <= $pages; $i++) {
-                            $tplIdx = $fpdi->importPage($i);
-                            $size = $fpdi->getTemplateSize($tplIdx);
-                            $fpdi->AddPage($size['orientation'], [$size['width'], $size['height']]);
-                            $fpdi->useTemplate($tplIdx);
+            foreach ($cartas as $carta) {
+                foreach ($carta->mensagens as $mensagem) {
+                    $path = $mensagem->arquivo_final_path ?: $mensagem->anexo_original_path;
+                    
+                    if ($path && Storage::disk('local')->exists($path)) {
+                        $filename = $this->gerarNomeArquivo($mensagem, $path);
+                        
+                        // Evita conflito de nomes idênticos no ZIP
+                        $nameWithoutExt = pathinfo($filename, PATHINFO_FILENAME);
+                        $ext = pathinfo($filename, PATHINFO_EXTENSION);
+                        
+                        $uniqueName = $filename;
+                        $counter = 1;
+                        while (in_array($uniqueName, $addedFiles)) {
+                            $uniqueName = "{$nameWithoutExt}_" . str_pad((string)$counter, 2, '0', STR_PAD_LEFT) . ".{$ext}";
+                            $counter++;
                         }
-                    } catch (\Exception $e) {
-                        // Ignore corrupt or incompatible PDFs
+                        
+                        $addedFiles[] = $uniqueName;
+                        $zip->addFile(Storage::disk('local')->path($path), $uniqueName);
+                        $hasFiles = true;
                     }
                 }
             }
+            
+            $zip->close();
         }
 
-        // If no cartas, just output a blank generic cover
-        if ($cartas->isEmpty()) {
-            $tempPath = storage_path('app/temp_carta_empty_' . uniqid() . '.pdf');
-            Pdf::view('cartas.cartas.pdf-batch', ['cartas' => collect()])->format('A4')->save($tempPath);
-            $fpdi->setSourceFile($tempPath);
-            $fpdi->AddPage();
-            $fpdi->useTemplate($fpdi->importPage(1));
-            unlink($tempPath);
+        if (! $hasFiles || ! file_exists($zipFile)) {
+            if (file_exists($zipFile)) {
+                @unlink($zipFile);
+            }
+            return redirect()->back()->with('status', 'Nenhuma carta com anexo/PDF foi encontrada para gerar o lote.');
         }
 
-        $output = $fpdi->Output('S');
-
-        return response($output, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="Cartas-Lote.pdf"',
-        ]);
+        return response()->download($zipFile, 'Cartas-Lote.zip')->deleteFileAfterSend(true);
     }
 
     private function gestorDashboard(Request $request): View

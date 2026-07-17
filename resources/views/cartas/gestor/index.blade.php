@@ -88,9 +88,9 @@
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; justify-content: flex-start;">
                         <label style="font-size: 13px; font-weight: 600; color: #111;">Ações:</label>
                         <div style="display: flex; gap: 8px;">
-                            <a href="{{ route('cartas.download-batch', ['q' => $search, 'municipio_id' => $municipioId]) }}" style="display: flex; align-items: center; justify-content: center; white-space: nowrap; padding: 0 16px; border-radius: 6px; height: 40px; box-sizing: border-box; text-decoration: none; background-color: var(--cartas-purple, #6a1b9a); color: white; font-weight: 500; font-size: 14px; border: none; cursor: pointer; transition: opacity 0.2s;">
-                                Exportar Cartas
-                            </a>
+                            <button type="submit" form="filterForm" formaction="{{ route('cartas.download-batch') }}" style="display: flex; align-items: center; justify-content: center; white-space: nowrap; padding: 0 16px; border-radius: 6px; height: 40px; box-sizing: border-box; text-decoration: none; background-color: var(--cartas-purple, #6a1b9a); color: white; font-weight: 500; font-size: 14px; border: none; cursor: pointer; transition: opacity 0.2s;">
+                                Baixar Cartas PDF
+                            </button>
                         </div>
                     </div>
                 </form>
