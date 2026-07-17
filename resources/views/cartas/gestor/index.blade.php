@@ -289,6 +289,16 @@
             box-shadow: none;
         }
 
+        .cpe-manager-table .cpe-table th,
+        .cpe-manager-table .cpe-table td {
+            color: #333;
+        }
+
+        .cpe-combobox__input::placeholder {
+            color: #333;
+            opacity: 1;
+        }
+
         .cpe-icon-button,
         .cpe-trash-button {
             width: 28px;

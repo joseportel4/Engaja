@@ -333,7 +333,7 @@
                         </label>
                     </div>
                     <div class="cpe-modo-field" data-modo="digitada" hidden>
-                        <textarea name="texto" class="cpe-textarea" placeholder="Digite sua carta aqui"></textarea>
+                        <textarea name="texto" class="cpe-textarea" placeholder="Escreva aqui sua resposta de forma respeitosa e acolhedora."></textarea>
                     </div>
                     <div class="cpe-modo-field" data-modo="anexo_manuscrito" hidden>
                         <label class="cpe-upload cpe-upload--compact">
@@ -365,6 +365,11 @@
         .cpe-conversation .cpe-table {
             table-layout: fixed;
             width: 100%;
+        }
+
+        .cpe-conversation .cpe-table th,
+        .cpe-conversation .cpe-table td {
+            color: #333;
         }
 
         .cpe-conversation .cpe-table th:nth-child(1),
@@ -447,7 +452,7 @@
 
         .cpe-aside-date {
             margin: -8px 0 8px;
-            color: #666;
+            color: #333;
             font-size: 14px;
         }
 
@@ -466,7 +471,7 @@
             background: #fff;
             padding: 12px 14px;
             margin: 0;
-            color: #666;
+            color: #333;
             font-size: 13px;
             text-align: center;
         }
@@ -528,12 +533,20 @@
             gap: 10px;
         }
 
-        .cpe-adjustment-form .cpe-textarea {
+        .cpe-adjustment-form .cpe-textarea,
+        .cpe-aside-panel .cpe-textarea {
             min-height: 110px;
+            color: #222;
+        }
+
+        .cpe-adjustment-form .cpe-textarea::placeholder,
+        .cpe-aside-panel .cpe-textarea::placeholder {
+            color: #333;
+            opacity: 1;
         }
 
         .cpe-current-file {
-            color: #666;
+            color: #333;
             font-size: 12px;
             font-weight: 700;
             margin: 10px 0 0;
