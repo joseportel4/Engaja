@@ -169,6 +169,25 @@ class User extends Authenticatable
             ->implode(' - ');
     }
 
+    public function getNomeAttribute(): string
+    {
+        return $this->name ?? 'Usuário';
+    }
+
+    public function getMunicipioEstadoAttribute(): string
+    {
+        if (! $this->participante?->municipio) {
+            return 'Não informado';
+        }
+
+        $municipio = $this->participante->municipio->nome;
+        $estado = $this->participante->municipio->estado?->nome ?? $this->participante->municipio->estado?->sigla ?? '';
+
+        return collect([$municipio, $estado])
+            ->filter()
+            ->implode(' - ');
+    }
+
     protected static function booted(): void
     {
         static::created(function (User $user) {

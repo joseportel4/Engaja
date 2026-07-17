@@ -26,6 +26,7 @@
                             <th>Status</th>
                             <th>Data</th>
                             <th>Remetente</th>
+                            <th>Município do Remetente</th>
                             <th>Destinatário</th>
                             <th></th>
                             <th></th>
@@ -58,13 +59,18 @@
                                 <td><span class="cpe-pill {{ $statusClass }}">{{ $statusLabel }}</span></td>
                                 <td>{{ optional($primeira?->created_at ?? $carta->created_at)->format('d/m/Y') }}</td>
                                 <td>
-                                    <span class="cpe-truncate" title="{{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}">
-                                        {{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}
+                                    <span class="cpe-truncate" title="{{ $carta->educando?->nome ?? 'Remetente' }}">
+                                        {{ $carta->educando?->nome ?? 'Remetente' }}
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="cpe-truncate" title="{{ Auth::user()->nome_com_localidade }}">
-                                        {{ Auth::user()->nome_com_localidade }}
+                                    <span class="cpe-truncate" title="{{ $carta->educando?->municipio_estado ?? 'Não informado' }}">
+                                        {{ $carta->educando?->municipio_estado ?? 'Não informado' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="cpe-truncate" title="{{ Auth::user()->name }}">
+                                        {{ Auth::user()->name }}
                                     </span>
                                 </td>
                                 <td>
@@ -119,7 +125,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7">
+                                <td colspan="8">
                                     <div class="cpe-volunteer-empty">
                                         <strong>Você ainda não recebeu nenhuma carta.</strong>
                                         <span>Assim que alguém enviar uma carta para você, enviaremos uma notificação para seu e-mail cadastrado.</span>
@@ -141,15 +147,15 @@
             <div class="cpe-modal" id="openCarta-{{ $carta->id }}">
                 <div class="cpe-modal__backdrop"></div>
                 <div class="cpe-modal__dialog cpe-modal__dialog--wide">
-                    <h2>Carta enviada por {{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}</h2>
+                    <h2>Carta enviada por {{ $carta->educando?->nome ?? 'Remetente' }}</h2>
                     <p>{{ optional($primeira?->created_at)->format('d/m/Y H:i') }}</p>
                     @if($primeira?->anexo_original_path)
                         @php($primeiraMime = $primeira->arquivo_final_mime ?: $primeira->anexo_original_mime)
                         <div class="cpe-letter-preview cpe-letter-preview--media">
                             @if(str_starts_with((string) $primeiraMime, 'image/'))
-                                <img src="{{ route('cartas.mensagens.preview', $primeira) }}" alt="Carta enviada por {{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}">
+                                <img src="{{ route('cartas.mensagens.preview', $primeira) }}" alt="Carta enviada por {{ $carta->educando?->nome ?? 'Remetente' }}">
                             @elseif($primeiraMime === 'application/pdf')
-                                <iframe src="{{ route('cartas.mensagens.preview', $primeira) }}#toolbar=0&navpanes=0" title="Carta enviada por {{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}"></iframe>
+                                <iframe src="{{ route('cartas.mensagens.preview', $primeira) }}#toolbar=0&navpanes=0" title="Carta enviada por {{ $carta->educando?->nome ?? 'Remetente' }}"></iframe>
                             @else
                                 <div class="cpe-file-placeholder">Arquivo anexado: {{ $primeira->anexo_original_nome }}</div>
                             @endif
@@ -278,51 +284,53 @@
 
         .cpe-volunteer .cpe-table th:nth-child(1),
         .cpe-volunteer .cpe-table td:nth-child(1) {
-            width: 150px;
+            width: 140px;
         }
 
         .cpe-volunteer .cpe-table th:nth-child(2),
         .cpe-volunteer .cpe-table td:nth-child(2) {
-            width: 110px;
+            width: 100px;
         }
 
         .cpe-volunteer .cpe-table th:nth-child(3),
-        .cpe-volunteer .cpe-table td:nth-child(3),
+        .cpe-volunteer .cpe-table td:nth-child(3) {
+            width: 150px;
+        }
+
         .cpe-volunteer .cpe-table th:nth-child(4),
         .cpe-volunteer .cpe-table td:nth-child(4) {
-            width: 140px;
+            width: 170px;
         }
 
         .cpe-volunteer .cpe-table th:nth-child(5),
         .cpe-volunteer .cpe-table td:nth-child(5) {
-            width: 70px;
+            width: 150px;
         }
 
         .cpe-volunteer .cpe-table th:nth-child(6),
-        .cpe-volunteer .cpe-table td:nth-child(6) {
-            width: 70px;
-        }
-
-        .cpe-volunteer .cpe-table th:nth-child(7),
-        .cpe-volunteer .cpe-table td:nth-child(7) {
-            width: 70px;
-        }
-
-        .cpe-volunteer .cpe-table td:nth-child(5),
         .cpe-volunteer .cpe-table td:nth-child(6),
-        .cpe-volunteer .cpe-table td:nth-child(7) {
+        .cpe-volunteer .cpe-table th:nth-child(7),
+        .cpe-volunteer .cpe-table td:nth-child(7),
+        .cpe-volunteer .cpe-table th:nth-child(8),
+        .cpe-volunteer .cpe-table td:nth-child(8) {
+            width: 60px;
+        }
+
+        .cpe-volunteer .cpe-table td:nth-child(6),
+        .cpe-volunteer .cpe-table td:nth-child(7),
+        .cpe-volunteer .cpe-table td:nth-child(8) {
             white-space: nowrap;
             overflow: visible;
         }
 
-        .cpe-volunteer .cpe-table td:nth-child(5),
         .cpe-volunteer .cpe-table td:nth-child(6),
-        .cpe-volunteer .cpe-table td:nth-child(7) {
+        .cpe-volunteer .cpe-table td:nth-child(7),
+        .cpe-volunteer .cpe-table td:nth-child(8) {
             text-align: center;
         }
 
-        .cpe-volunteer .cpe-table th:nth-child(7),
-        .cpe-volunteer .cpe-table td:nth-child(7) {
+        .cpe-volunteer .cpe-table th:nth-child(8),
+        .cpe-volunteer .cpe-table td:nth-child(8) {
             padding-right: 18px;
         }
 

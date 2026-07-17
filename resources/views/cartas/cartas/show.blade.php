@@ -11,8 +11,8 @@
         <section class="cpe-conversation__main">
             <div class="cpe-conversation__content">
                 @php
-                    $remetenteNome = $carta->educando?->nome_com_localidade ?? 'Remetente';
-                    $voluntarioNome = $carta->voluntario?->nome_com_localidade ?? 'Voluntário';
+                    $remetenteNome = $carta->educando?->nome ?? 'Remetente';
+                    $voluntarioNome = $carta->voluntario?->nome ?? 'Voluntário';
                     $remetentePrimeiroNome = str($remetenteNome)->trim()->before(' ')->toString();
                     $voluntarioPrimeiroNome = str($voluntarioNome)->trim()->before(' ')->toString();
                 @endphp
@@ -36,6 +36,7 @@
                                 <th>Status</th>
                                 <th>Data</th>
                                 <th>Remetente</th>
+                                <th>Município do Remetente</th>
                                 <th>Destinatário</th>
                                 <th></th>
                             </tr>
@@ -73,14 +74,25 @@
                                     </td>
                                     <td>{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y') }}</td>
                                     <td>
-                                        {{ $mensagem->remetenteUsuario?->nome_com_localidade
-                                            ?? $mensagem->remetenteParticipante?->nome_com_localidade
-                                            ?? 'Remetente' }}
+                                        <span class="cpe-truncate" title="{{ $mensagem->remetenteUsuario?->nome ?? $mensagem->remetenteParticipante?->nome ?? 'Remetente' }}">
+                                            {{ $mensagem->remetenteUsuario?->nome
+                                                ?? $mensagem->remetenteParticipante?->nome
+                                                ?? 'Remetente' }}
+                                        </span>
                                     </td>
                                     <td>
-                                        {{ $mensagem->destinatarioUsuario?->nome_com_localidade
-                                            ?? $mensagem->destinatarioParticipante?->nome_com_localidade
-                                            ?? 'Destinatário' }}
+                                        <span class="cpe-truncate" title="{{ $mensagem->remetenteUsuario?->municipio_estado ?? $mensagem->remetenteParticipante?->municipio_estado ?? 'Não informado' }}">
+                                            {{ $mensagem->remetenteUsuario?->municipio_estado
+                                                ?? $mensagem->remetenteParticipante?->municipio_estado
+                                                ?? 'Não informado' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="cpe-truncate" title="{{ $mensagem->destinatarioUsuario?->nome ?? $mensagem->destinatarioParticipante?->nome ?? 'Destinatário' }}">
+                                            {{ $mensagem->destinatarioUsuario?->nome
+                                                ?? $mensagem->destinatarioParticipante?->nome
+                                                ?? 'Destinatário' }}
+                                        </span>
                                     </td>
                                     <td>
                                         <div style="display: flex; gap: 8px; align-items: center;">
@@ -138,7 +150,7 @@
             @foreach($carta->mensagens as $mensagem)
                 @php($mensagemMime = $mensagem->arquivo_final_mime ?: $mensagem->anexo_original_mime)
                 <div class="cpe-aside-panel" id="aside-mensagem-{{ $mensagem->id }}" hidden>
-                    <h2>Carta enviada por {{ $mensagem->remetenteUsuario?->nome_com_localidade ?? $mensagem->remetenteParticipante?->nome_com_localidade ?? 'Remetente' }}</h2>
+                    <h2>Carta enviada por {{ $mensagem->remetenteUsuario?->nome ?? $mensagem->remetenteParticipante?->nome ?? 'Remetente' }}</h2>
                     <p class="cpe-aside-date">{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y H:i') }}</p>
 
                     @if($mensagem->anexo_original_path || $mensagem->arquivo_final_path)
@@ -281,11 +293,11 @@
                     <div class="cpe-fixed-participants">
                         <div>
                             <span>Remetente</span>
-                            <strong>{{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}</strong>
+                            <strong>{{ $carta->educando?->nome ?? 'Remetente' }}</strong>
                         </div>
                         <div>
                             <span>Destinatário</span>
-                            <strong>{{ $carta->voluntario?->nome_com_localidade ?? 'Voluntário' }}</strong>
+                            <strong>{{ $carta->voluntario?->nome ?? 'Voluntário' }}</strong>
                         </div>
                     </div>
 
@@ -348,6 +360,42 @@
         .cpe-conversation {
             display: grid;
             grid-template-columns: minmax(560px, 1.08fr) .92fr;
+        }
+
+        .cpe-conversation .cpe-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .cpe-conversation .cpe-table th:nth-child(1),
+        .cpe-conversation .cpe-table td:nth-child(1) {
+            width: 125px;
+        }
+
+        .cpe-conversation .cpe-table th:nth-child(2),
+        .cpe-conversation .cpe-table td:nth-child(2) {
+            width: 95px;
+        }
+
+        .cpe-conversation .cpe-table th:nth-child(3),
+        .cpe-conversation .cpe-table td:nth-child(3) {
+            width: 130px;
+        }
+
+        .cpe-conversation .cpe-table th:nth-child(4),
+        .cpe-conversation .cpe-table td:nth-child(4) {
+            width: 155px;
+        }
+
+        .cpe-conversation .cpe-table th:nth-child(5),
+        .cpe-conversation .cpe-table td:nth-child(5) {
+            width: 130px;
+        }
+
+        .cpe-conversation .cpe-table th:nth-child(6),
+        .cpe-conversation .cpe-table td:nth-child(6) {
+            width: 75px;
+            text-align: center;
         }
 
         .cpe-conversation > .cpe-logo-top {
