@@ -711,7 +711,7 @@ class CartaController extends Controller
                     $q->where('municipio_id', $municipioId);
                 });
             })
-            ->latest()
+            ->latest('updated_at')
             ->paginate(9)
             ->withQueryString();
 

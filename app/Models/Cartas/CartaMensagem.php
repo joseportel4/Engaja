@@ -85,6 +85,8 @@ class CartaMensagem extends Model
         ];
     }
 
+    protected $touches = ['carta'];
+
     public function carta(): BelongsTo
     {
         return $this->belongsTo(Carta::class);

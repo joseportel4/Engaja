@@ -18,6 +18,7 @@
         background: var(--cpe-bg);
         color: var(--cpe-ink);
         font-family: 'Montserrat', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        position: relative;
     }
 
     .cpe-logo {
@@ -557,7 +558,7 @@
     }
 
     .cpe-floating-user {
-        position: fixed;
+        position: absolute;
         right: 28px;
         top: 22px;
         z-index: 500;
