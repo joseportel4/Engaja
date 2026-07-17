@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use App\Notifications\Cartas\CadastroRealizadoComSucessoNotification;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -28,10 +31,22 @@ class AppServiceProvider extends ServiceProvider
         Paginator::useBootstrapFive();
 
         Event::listen(Verified::class, function (Verified $event) {
-            if ($event->user instanceof \App\Models\User && $event->user->isCartasUser()) {
-                $event->user->notify(new \App\Notifications\Cartas\CadastroRealizadoComSucessoNotification);
+            if ($event->user instanceof User && $event->user->isCartasUser()) {
+                $event->user->notify(new CadastroRealizadoComSucessoNotification);
             }
         });
+
+        /*
+         * O middleware 'guest' padrão redireciona usuários já autenticados para
+         * route('dashboard') (a home do app principal). Um usuário do sistema
+         * Cartas já logado que acesse uma rota guest (ex: cartas.login,
+         * cartas.register via os links da apresentacao) cairia lá e seria
+         * barrado com 403 pelo EnsureSistemaAccess, por estar fora do prefixo
+         * /cartas. Redireciona para o dashboard correto conforme o sistema.
+         */
+        RedirectIfAuthenticated::redirectUsing(fn ($request) => $request->user()?->isCartasUser()
+            ? route('cartas.dashboard')
+            : route('dashboard'));
 
         $this->registerPdfMacros();
         $this->configureRemotePdfRendering();
