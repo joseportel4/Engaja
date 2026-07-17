@@ -88,9 +88,9 @@
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; justify-content: flex-start;">
                         <label style="font-size: 13px; font-weight: 600; color: #111;">Ações:</label>
                         <div style="display: flex; gap: 8px;">
-                            <a href="{{ route('cartas.download-batch', ['q' => $search, 'municipio_id' => $municipioId]) }}" style="display: flex; align-items: center; justify-content: center; white-space: nowrap; padding: 0 16px; border-radius: 6px; height: 40px; box-sizing: border-box; text-decoration: none; background-color: var(--cartas-purple, #6a1b9a); color: white; font-weight: 500; font-size: 14px; border: none; cursor: pointer; transition: opacity 0.2s;">
-                                Exportar Cartas
-                            </a>
+                            <button type="submit" form="filterForm" formaction="{{ route('cartas.download-batch') }}" style="display: flex; align-items: center; justify-content: center; white-space: nowrap; padding: 0 16px; border-radius: 6px; height: 40px; box-sizing: border-box; text-decoration: none; background-color: var(--cartas-purple, #6a1b9a); color: white; font-weight: 500; font-size: 14px; border: none; cursor: pointer; transition: opacity 0.2s;">
+                                Baixar Cartas PDF
+                            </button>
                         </div>
                     </div>
                 </form>
@@ -103,6 +103,7 @@
                             <th>ID</th>
                             <th>Status</th>
                             <th>Remetente</th>
+                            <th>Município do Remetente</th>
                             <th>Destinatário</th>
                             <th>Data</th>
                             <th>Ações</th>
@@ -129,8 +130,9 @@
                                         {{ $statusLabel }}
                                     </span>
                                 </td>
-                                <td>{{ $carta->educando?->nome_com_localidade ?? 'Remetente' }}</td>
-                                <td>{{ $carta->voluntario?->nome_com_localidade ?? 'Sem voluntário' }}</td>
+                                <td>{{ $carta->educando?->nome ?? 'Remetente' }}</td>
+                                <td>{{ $carta->educando?->municipio_estado ?? 'Não informado' }}</td>
+                                <td>{{ $carta->voluntario?->nome ?? 'Sem voluntário' }}</td>
                                 <td>{{ optional($carta->created_at)->format('d/m/Y') }}</td>
                                 <td>
                                     <div style="display: flex; gap: 8px;">
@@ -153,7 +155,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="cpe-empty">Nenhuma carta cadastrada.</td>
+                                <td colspan="7" class="cpe-empty">Nenhuma carta cadastrada.</td>
                             </tr>
                         @endforelse
                     </tbody>

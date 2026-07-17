@@ -12,7 +12,7 @@
 
     <form method="POST" action="{{ route('cartas.register.store') }}" class="cartas-form" data-estados-url="{{ route('cartas.localidades.estados') }}" data-municipios-url="{{ route('cartas.localidades.municipios', ['estadoIbgeId' => '__ESTADO__']) }}">
         @csrf
-        
+
         <div class="cartas-form-group">
             <label class="cartas-label">Nome</label>
             <input class="cartas-field-light" type="text" name="name" value="{{ old('name') }}" placeholder="Digite seu nome completo, sem abreviação." required autofocus>
@@ -26,7 +26,7 @@
         <div class="cartas-form-group">
             <label class="cartas-label">Senha</label>
             <div class="cartas-password-wrap">
-                <input id="passwordInput" class="cartas-field-light" type="password" name="password" placeholder="Senha" required>
+                <input id="passwordInput" class="cartas-field-light" type="password" name="password" placeholder="Digite uma senha." required>
                 <button type="button" class="cartas-password-toggle" onclick="togglePassword('passwordInput', this)" title="Mostrar/Ocultar senha">
                     <i class="bi bi-eye"></i>
                 </button>
@@ -36,7 +36,7 @@
         <div class="cartas-form-group">
             <label class="cartas-label">Confirmar senha</label>
             <div class="cartas-password-wrap">
-                <input id="passwordConfirmInput" class="cartas-field-light" type="password" name="password_confirmation" placeholder="Confirmar senha" required>
+                <input id="passwordConfirmInput" class="cartas-field-light" type="password" name="password_confirmation" placeholder="Confirmar senha." required>
                 <button type="button" class="cartas-password-toggle" onclick="togglePassword('passwordConfirmInput', this)" title="Mostrar/Ocultar senha">
                     <i class="bi bi-eye"></i>
                 </button>
@@ -280,6 +280,7 @@
             padding-right: 36px;
             appearance: auto; /* Ensure dropdown arrow is visible */
             color: #111;
+            cursor: pointer;
         }
 
         select.cartas-field-light option {
@@ -292,7 +293,8 @@
         }
 
         .cartas-field-light:disabled,
-        .cartas-field-light:read-only {
+        input.cartas-field-light:read-only,
+        textarea.cartas-field-light:read-only {
             background: #f8fafc;
             color: #111;
             cursor: not-allowed;
