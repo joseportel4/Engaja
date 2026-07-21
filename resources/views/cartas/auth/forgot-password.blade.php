@@ -1,7 +1,7 @@
 @extends('cartas.auth._shell')
 
 @section('title', 'Recuperar senha - Cartas para Esperançar')
-@section('auth-bg-style', "background-image: url('" . asset('images/cartas/bg-cadastro.png') . "');")
+@section('auth-bg-style', "background-image: url('" . asset('images/cartas/bg-recuperar-senha.png') . "');")
 
 @section('auth-content')
     <h1 class="cartas-title">Recuperar senha</h1>
@@ -16,10 +16,12 @@
         </div>
     @endif
 
+    <p class="card-text mb-4 text-center" >Enviaremos uma mensagem de recuperação de senha para o seu e-mail cadastrado.</p>
+
     <form method="POST" action="{{ route('cartas.password.email') }}" class="cartas-form">
         @csrf
         <div class="cartas-field-wrap">
-            <input class="cartas-field" type="email" name="email" value="{{ old('email') }}" placeholder="E-mail" required autofocus>
+            <input class="cartas-field" type="email" name="email" value="{{ old('email') }}" placeholder="Digite seu e-mail cadastrado." required autofocus>
         </div>
         <button type="submit" class="cartas-button">Enviar</button>
     </form>

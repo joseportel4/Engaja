@@ -163,7 +163,7 @@
             </div>
 
             <div class="cpe-pagination">
-                {{ $cartas->links() }}
+                {{ $cartas->links('cartas.gestor.pagination') }}
             </div>
         </section>
 
@@ -336,9 +336,120 @@
             padding: 42px !important;
         }
 
+        .cpe-table-card.cpe-manager-table {
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            box-shadow: none;
+            border-bottom: 0;
+        }
+
         .cpe-pagination {
-            padding: 12px 28px;
-            margin-top: auto;
+            background: #fff;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+            box-shadow: 0 1px 0 rgba(0, 0, 0, .05);
+            margin-top: 0;
+        }
+
+        .cpe-custom-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 16px 24px;
+            border-top: 1px solid #eaecf0;
+            gap: 12px;
+        }
+
+        .cpe-page-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 14px;
+            height: 38px;
+            border: 1px solid #d0d5dd;
+            border-radius: 8px;
+            background: #fff;
+            color: #344054;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 20px;
+            text-decoration: none;
+            transition: all 0.15s ease;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+            cursor: pointer;
+        }
+
+        .cpe-page-btn:hover:not(.cpe-page-btn--disabled) {
+            background: #f9fafb;
+            border-color: #d0d5dd;
+            color: #1d2939;
+        }
+
+        .cpe-page-btn--disabled {
+            opacity: 0.5;
+            cursor: default;
+            pointer-events: none;
+            background: #f9fafb;
+            color: #98a2b3;
+        }
+
+        .cpe-page-numbers {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .cpe-page-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 38px;
+            height: 38px;
+            padding: 0 8px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 20px;
+            color: #667085;
+            text-decoration: none;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+
+        a.cpe-page-num:hover {
+            background: #f9fafb;
+            color: #1d2939;
+        }
+
+        .cpe-page-num--active {
+            background: #f4ebfa;
+            color: #a800d6;
+            font-weight: 700;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .cpe-page-num--dots {
+            color: #667085;
+            cursor: default;
+            pointer-events: none;
+            min-width: 38px;
+            height: 38px;
+        }
+
+        @media (max-width: 640px) {
+            .cpe-custom-pagination {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .cpe-page-numbers {
+                order: -1;
+            }
         }
 
         @media (max-width: 980px) {
