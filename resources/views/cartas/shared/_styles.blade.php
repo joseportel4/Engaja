@@ -332,7 +332,7 @@
     .cpe-table td {
         padding: 18px 14px;
         border-bottom: 1px solid #e8e8e8;
-        color: #5d5d5d;
+        color: #0f0f0f;
         vertical-align: middle;
     }
 

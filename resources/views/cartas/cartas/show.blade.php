@@ -61,7 +61,7 @@
                                         'aprovada' => $loop->first
                                             ? ($isVoluntario ? 'Recebida' : 'Enviada')
                                             : ($respostasExibidas === 1 ? 'Respondida' : "Respondida {$respostasExibidas}x"),
-                                        'aguardando_verificacao' => 'Em preparação',
+                                        'aguardando_verificacao' => 'Pendente',
                                         'ajuste_solicitado' => 'Ajuste solicitado',
                                         default => 'Enviada',
                                     };
