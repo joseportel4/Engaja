@@ -226,7 +226,7 @@
                                 <div class="cpe-option-grid">
                                     <label class="cpe-choice">
                                         <span class="cpe-choice__icon">T</span>
-                                        <span>Digitar uma carta</span>
+                                        <span>Escreva sua carta direto na Plataforma</span>
                                         <input type="radio" name="modo_resposta" value="digitada" @checked($mensagem->canal_entrada === 'digitada') required>
                                     </label>
                                     <label class="cpe-choice">
@@ -235,7 +235,7 @@
                                                 <path d="M21 12.5l-8.8 8.8a6 6 0 0 1-8.5-8.5l9.5-9.5a4 4 0 0 1 5.7 5.7l-9.6 9.6a2 2 0 1 1-2.8-2.8l8.8-8.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                             </svg>
                                         </span>
-                                        <span>Anexar carta em PDF</span>
+                                        <span>Anexe sua carta em PDF aqui</span>
                                         <input type="radio" name="modo_resposta" value="anexo_manuscrito" @checked($mensagem->canal_entrada === 'anexo_manuscrito') required>
                                     </label>
                                 </div>
@@ -313,13 +313,13 @@
             <div class="cpe-modal__backdrop"></div>
             <div class="cpe-modal__dialog">
                 <h2>Enviar uma carta</h2>
-                <p>Escolha como deseja responder.</p>
+                <p>Digite a sua carta direto na plataforma ou escreva à mão, escaneie e anexe em PDF.</p>
                 <form method="POST" action="{{ route('cartas.cartas.respond', $carta) }}" enctype="multipart/form-data" data-modo-form>
                     @csrf
                     <div class="cpe-option-grid">
                         <label class="cpe-choice">
                             <span class="cpe-choice__icon">T</span>
-                            <span>Digitar uma carta</span>
+                            <span>Escreva sua carta direto na Plataforma</span>
                             <input type="radio" name="modo_resposta" value="digitada" required>
                         </label>
                         <label class="cpe-choice">
@@ -328,7 +328,7 @@
                                     <path d="M21 12.5l-8.8 8.8a6 6 0 0 1-8.5-8.5l9.5-9.5a4 4 0 0 1 5.7 5.7l-9.6 9.6a2 2 0 1 1-2.8-2.8l8.8-8.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
                             </span>
-                            <span>Anexar carta em PDF</span>
+                            <span>Anexe sua carta em PDF aqui</span>
                             <input type="radio" name="modo_resposta" value="anexo_manuscrito" required>
                         </label>
                     </div>
