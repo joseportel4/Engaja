@@ -407,6 +407,16 @@ class AuthController extends Controller
             ->exists();
     }
 
+    public function markWelcomeSeen(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if ($user && $user->isCartasUser() && is_null($user->cartas_welcome_seen_at)) {
+            $user->forceFill(['cartas_welcome_seen_at' => now()])->save();
+        }
+
+        return response()->json(['success' => true]);
+    }
+
     private function isValidCpf(string $cpf): bool
     {
         $cpf = preg_replace('/\D+/', '', $cpf);
