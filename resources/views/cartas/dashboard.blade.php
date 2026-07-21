@@ -31,25 +31,6 @@
         </header>
 
         <main class="cartas-dashboard__main" aria-label="Cartas para Esperançar"></main>
-
-        <div class="cartas-welcome-modal" id="cartasWelcomeModal" role="dialog" aria-modal="true" aria-labelledby="cartasWelcomeTitle">
-            <div class="cartas-welcome-modal__backdrop"></div>
-            <div class="cartas-welcome-modal__dialog">
-                <div class="cartas-welcome-modal__brand">
-                    <img src="{{ asset('images/cartas/cartas-logo.png') }}" alt="Cartas para Esperançar">
-                </div>
-
-                <h1 id="cartasWelcomeTitle">Bem-vindo(a)!</h1>
-
-                <p>Você está prestes a participar da ação pedagógica Cartas para Esperançar, uma iniciativa do Projeto ALFA-EJA Brasil, realizada pelo Instituto Paulo Freire em parceria com a Petrobras.</p>
-
-                <p>A proposta promove um encontro humano e dialógico entre educandos(as) da Educação de Jovens, Adultos e Idosos (EJAI) dos 15 municípios participantes do Projeto e funcionários(as) voluntários(as) da Petrobras, por meio da troca de cartas. Inspirada nos princípios da Educação Popular e da dialogicidade defendida por Paulo Freire, a ação busca fortalecer vínculos, compartilhar experiências de vida, valorizar diferentes saberes e construir pontes de esperança entre pessoas de diferentes territórios e trajetórias.</p>
-
-                <p>As cartas poderão ser escritas à mão ou produzidas por meio de outras formas de expressão, como desenhos, fotografias, colagens, poemas visuais, ilustrações ou linguagens artísticas diversas. Cada correspondência representa uma oportunidade de diálogo, escuta e reconhecimento mútuo.</p>
-
-                <button type="button" class="cartas-welcome-modal__button" id="cartasWelcomeClose">Fechar</button>
-            </div>
-        </div>
     </div>
 @endsection
 
@@ -165,86 +146,6 @@
             background: #fff;
         }
 
-        .cartas-welcome-modal {
-            position: fixed;
-            inset: 0;
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
-
-        .cartas-welcome-modal.is-hidden {
-            display: none;
-        }
-
-        .cartas-welcome-modal__backdrop {
-            position: absolute;
-            inset: 0;
-            background: rgba(0, 0, 0, .68);
-            backdrop-filter: blur(7px);
-        }
-
-        .cartas-welcome-modal__dialog {
-            position: relative;
-            width: min(100%, 462px);
-            max-height: calc(100vh - 48px);
-            overflow-y: auto;
-            border-radius: 8px;
-            background: #f1eeeb;
-            padding: 17px;
-            box-shadow: 0 22px 60px rgba(0, 0, 0, .32);
-            color: #262626;
-        }
-
-        .cartas-welcome-modal__brand {
-            height: 72px;
-            border-radius: 6px;
-            background: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 18px;
-        }
-
-        .cartas-welcome-modal__brand img {
-            width: 112px;
-            height: auto;
-        }
-
-        .cartas-welcome-modal h1 {
-            margin: 0 0 10px;
-            font-size: 15px;
-            line-height: 1.25;
-            font-weight: 800;
-        }
-
-        .cartas-welcome-modal p {
-            margin: 0 0 12px;
-            font-size: 11px;
-            line-height: 1.45;
-            color: #5a5a5a;
-        }
-
-        .cartas-welcome-modal__button {
-            width: 100%;
-            height: 32px;
-            border: 1px solid #d0d0d0;
-            border-radius: 5px;
-            background: #fff;
-            color: #333;
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .cartas-welcome-modal__button:hover,
-        .cartas-welcome-modal__button:focus {
-            border-color: #a800d6;
-            color: #8000a5;
-            outline: none;
-        }
-
         @media (max-width: 640px) {
             .cartas-dashboard__header {
                 height: auto;
@@ -272,16 +173,8 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const modal = document.getElementById('cartasWelcomeModal');
-            const close = document.getElementById('cartasWelcomeClose');
             const userMenu = document.getElementById('cartasUserMenu');
             const userMenuTrigger = userMenu?.querySelector('.cartas-user-menu__trigger');
-
-            close?.addEventListener('click', () => {
-                modal?.classList.add('is-hidden');
-            });
-
-            userMenuTrigger?.addEventListener('click', (event) => {
                 event.stopPropagation();
                 const isOpen = userMenu?.classList.toggle('is-open') ?? false;
                 userMenuTrigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
