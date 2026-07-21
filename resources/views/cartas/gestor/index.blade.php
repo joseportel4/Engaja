@@ -57,19 +57,19 @@
 
         <section class="cpe-manager__right">
             <div class="cpe-manager__header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
-                <div class="cpe-manager__titleline" style="margin: 0; display: flex; align-items: center; gap: 8px;">
-                    <h2 style="margin: 0; padding: 0; font-size: 24px; font-weight: 600; color: #111;">Todas as cartas</h2>
-                    <span style="margin: 0; font-size: 15px; color: #666;">({{ $cartas->total() }} cartas)</span>
+                <div class="cpe-manager__titleline" style="margin: 0; display: flex; align-items: center; gap: 12px;">
+                    <h2 style="margin: 0; padding: 0; font-size: 26px; font-weight: 600; color: #111;">Todas as cartas</h2>
+                    <span style="margin: 0; font-size: 16px; font-weight: 500; color: #222; background: #f4f4f4; padding: 4px 16px; border-radius: 999px;">{{ $cartas->total() }} cartas</span>
                 </div>
 
                 <form id="filterForm" method="GET" action="{{ route('cartas.dashboard') }}" style="display: flex; gap: 24px; align-items: stretch; flex-wrap: wrap; background: #fff; padding: 16px 20px; border-radius: 8px; border: 1px solid #eaeaea; box-shadow: 0 2px 4px rgba(0,0,0,0.02); width: 100%; justify-content: space-between;">
                     
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; max-width: 300px;">
                         <label for="municipio_id" style="font-size: 13px; font-weight: 600; color: #111;">Município do Educando:</label>
-                        <select id="municipio_id" name="municipio_id" style="height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #333;">
-                            <option value="">Todos os municípios</option>
+                        <select id="municipio_id" name="municipio_id" style="height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #111;">
+                            <option value="" style="color: #333;">Todos os municípios</option>
                             @foreach($municipios as $mun)
-                                <option value="{{ $mun->id }}" @selected($municipioId == $mun->id)>{{ $mun->nome }}</option>
+                                <option value="{{ $mun->id }}" style="color: #111;" @selected($municipioId == $mun->id)>{{ $mun->nome }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -77,7 +77,7 @@
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 2; min-width: 250px;">
                         <label for="search_input" style="font-size: 13px; font-weight: 600; color: #111;">Pesquisa de Remetente ou Destinatário:</label>
                         <div style="position: relative; height: 40px; display: flex; align-items: center;">
-                            <input id="search_input" type="search" name="q" value="{{ $search }}" placeholder="Digite o nome..." style="height: 100%; width: 100%; box-sizing: border-box; padding: 0 36px 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none;">
+                            <input id="search_input" type="search" name="q" value="{{ $search }}" placeholder="Digite o nome..." style="height: 100%; width: 100%; box-sizing: border-box; padding: 0 36px 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; color: #111;">
                             <button type="submit" aria-label="Pesquisar" style="position: absolute; right: 8px; background: none; border: none; color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 100%;">
                                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </button>
@@ -259,6 +259,11 @@
             color: #555;
         }
 
+        #search_input::placeholder {
+            color: #333;
+            opacity: 1;
+        }
+
         .cpe-search {
             width: min(260px, 100%);
             height: 38px;
@@ -291,7 +296,7 @@
 
         .cpe-manager-table .cpe-table th,
         .cpe-manager-table .cpe-table td {
-            color: #333;
+            color: #0f0f0f;
         }
 
         .cpe-combobox__input::placeholder {

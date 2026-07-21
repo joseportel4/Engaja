@@ -369,7 +369,7 @@
 
         .cpe-conversation .cpe-table th,
         .cpe-conversation .cpe-table td {
-            color: #333;
+            color: #0f0f0f;
         }
 
         .cpe-conversation .cpe-table th:nth-child(1),
@@ -539,8 +539,7 @@
             color: #222;
         }
 
-        .cpe-adjustment-form .cpe-textarea::placeholder,
-        .cpe-aside-panel .cpe-textarea::placeholder {
+        .cpe-textarea::placeholder {
             color: #333;
             opacity: 1;
         }
