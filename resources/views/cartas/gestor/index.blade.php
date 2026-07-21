@@ -20,7 +20,7 @@
                     <div class="cpe-alert">{{ session('status') }}</div>
                 @endif
 
-                <form method="POST" action="{{ route('cartas.cartas.store') }}" enctype="multipart/form-data" class="cpe-manager-form">
+                <form id="gestorCartaForm" method="POST" action="{{ route('cartas.cartas.store') }}" enctype="multipart/form-data" class="cpe-manager-form">
                     @csrf
                     <label class="cpe-upload">
                         <input type="file" name="arquivo" required accept=".pdf,application/pdf">
@@ -50,7 +50,7 @@
                         </ul>
                     </div>
 
-                    <button type="submit" class="cpe-button">Enviar carta</button>
+                    <button type="button" class="cpe-button" id="gestorCartaSubmitBtn">Enviar carta</button>
                 </form>
             </div>
         </section>
@@ -63,7 +63,7 @@
                 </div>
 
                 <form id="filterForm" method="GET" action="{{ route('cartas.dashboard') }}" style="display: flex; gap: 24px; align-items: stretch; flex-wrap: wrap; background: #fff; padding: 16px 20px; border-radius: 8px; border: 1px solid #eaeaea; box-shadow: 0 2px 4px rgba(0,0,0,0.02); width: 100%; justify-content: space-between;">
-                    
+
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; max-width: 300px;">
                         <label for="municipio_id" style="font-size: 13px; font-weight: 600; color: #111;">Município do Educando:</label>
                         <select id="municipio_id" name="municipio_id" style="height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #111;">
@@ -485,7 +485,7 @@
 
             function fetchResults(url) {
                 tableContainer.style.opacity = '0.5';
-                
+
                 fetch(url, {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest'
@@ -495,10 +495,10 @@
                 .then(html => {
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
-                    
+
                     tableContainer.innerHTML = doc.querySelector('.cpe-manager-table').innerHTML;
                     paginationContainer.innerHTML = doc.querySelector('.cpe-pagination').innerHTML;
-                    
+
                     tableContainer.style.opacity = '1';
                 })
                 .catch(error => {
@@ -516,14 +516,14 @@
                     }
 
                     e.preventDefault();
-                    
+
                     const url = new URL(filterForm.action);
                     const formData = new FormData(filterForm);
                     const searchParams = new URLSearchParams(formData);
-                    
+
                     url.search = searchParams.toString();
                     fetchResults(url);
-                    
+
                     window.history.pushState({}, '', url);
                 });
             }
@@ -531,7 +531,7 @@
             if (searchInput && filterForm) {
                 searchInput.addEventListener('input', function() {
                     clearTimeout(debounceTimer);
-                    
+
                     debounceTimer = setTimeout(function() {
                         const val = searchInput.value.trim();
                         if (val === '' || val.length >= 2) {
@@ -556,10 +556,48 @@
                     window.history.pushState({}, '', url);
                 }
             });
-            
+
             window.addEventListener('popstate', function() {
                 fetchResults(window.location.href);
             });
+            //logica do modal de confirmação do gestor
+            const gestorSubmitBtn = document.getElementById('gestorCartaSubmitBtn');
+            const gestorForm = document.getElementById('gestorCartaForm');
+            const gestorConfirmModal = document.getElementById('gestorConfirmModal');
+            const gestorConfirmOk = document.getElementById('gestorConfirmOk');
+            const gestorConfirmCancel = document.querySelectorAll('[data-gestor-confirm-close]');
+
+            if (gestorSubmitBtn && gestorForm && gestorConfirmModal) {
+                gestorSubmitBtn.addEventListener('click', function() {
+                    gestorConfirmModal.classList.add('is-open');
+                });
+
+                gestorConfirmOk.addEventListener('click', function() {
+                    gestorForm.submit();
+                });
+
+                gestorConfirmCancel.forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        gestorConfirmModal.classList.remove('is-open');
+                    });
+                });
+
+                gestorConfirmModal.querySelector('.cpe-modal__backdrop').addEventListener('click', function() {
+                    gestorConfirmModal.classList.remove('is-open');
+                });
+            }
         });
     </script>
+
+    <div class="cpe-modal" id="gestorConfirmModal">
+        <div class="cpe-modal__backdrop"></div>
+        <div class="cpe-modal__dialog">
+            <h2>Confirmar envio</h2>
+            <p>Você tem certeza que deseja enviar esta carta? Esta ação não poderá ser desfeita.</p>
+            <div class="cpe-modal-actions">
+                <button type="button" class="cpe-button cpe-button--ghost" data-gestor-confirm-close>Cancelar</button>
+                <button type="button" class="cpe-button" id="gestorConfirmOk">Confirmar envio</button>
+            </div>
+        </div>
+    </div>
 @endsection

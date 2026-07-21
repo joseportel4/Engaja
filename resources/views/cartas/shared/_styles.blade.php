@@ -454,7 +454,7 @@
     }
 
     .cpe-modal p {
-        color: #666;
+        color: #000000;
         font-size: 13px;
         margin: 0 0 16px;
     }
