@@ -66,7 +66,7 @@
                     
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; max-width: 300px;">
                         <label for="municipio_id" style="font-size: 13px; font-weight: 600; color: #111;">Município do Educando:</label>
-                        <select id="municipio_id" name="municipio_id" style="height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #333;" onchange="document.getElementById('filterForm').submit()">
+                        <select id="municipio_id" name="municipio_id" style="height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #333;">
                             <option value="">Todos os municípios</option>
                             @foreach($municipios as $mun)
                                 <option value="{{ $mun->id }}" @selected($municipioId == $mun->id)>{{ $mun->nome }}</option>
@@ -362,7 +362,55 @@
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('search_input');
             const filterForm = document.getElementById('filterForm');
+            const municipioSelect = document.getElementById('municipio_id');
+            const tableContainer = document.querySelector('.cpe-manager-table');
+            const paginationContainer = document.querySelector('.cpe-pagination');
             let debounceTimer;
+
+            function fetchResults(url) {
+                tableContainer.style.opacity = '0.5';
+                
+                fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    tableContainer.innerHTML = doc.querySelector('.cpe-manager-table').innerHTML;
+                    paginationContainer.innerHTML = doc.querySelector('.cpe-pagination').innerHTML;
+                    
+                    tableContainer.style.opacity = '1';
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar dados:', error);
+                    tableContainer.style.opacity = '1';
+                });
+            }
+
+            if (filterForm) {
+                filterForm.addEventListener('submit', function(e) {
+                    const submitter = e.submitter;
+                    // Ignora a submissão via botão de download de PDF
+                    if (submitter && submitter.getAttribute('formaction')) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    
+                    const url = new URL(filterForm.action);
+                    const formData = new FormData(filterForm);
+                    const searchParams = new URLSearchParams(formData);
+                    
+                    url.search = searchParams.toString();
+                    fetchResults(url);
+                    
+                    window.history.pushState({}, '', url);
+                });
+            }
 
             if (searchInput && filterForm) {
                 searchInput.addEventListener('input', function() {
@@ -370,18 +418,32 @@
                     
                     debounceTimer = setTimeout(function() {
                         const val = searchInput.value.trim();
-                        // If empty (e.g. user clicked the 'x' to clear), submit immediately to show all
-                        if (val === '') {
-                            filterForm.submit();
+                        if (val === '' || val.length >= 2) {
+                            filterForm.dispatchEvent(new Event('submit', { cancelable: true }));
                         }
-                        // If typed 2 or more characters, submit to filter
-                        else if (val.length >= 2) {
-                            filterForm.submit();
-                        }
-                        // if length is 1, wait for them to type more, don't submit yet
-                    }, 500); // 500ms delay
+                    }, 500);
                 });
             }
+
+            if (municipioSelect && filterForm) {
+                municipioSelect.addEventListener('change', function() {
+                    filterForm.dispatchEvent(new Event('submit', { cancelable: true }));
+                });
+            }
+
+            document.addEventListener('click', function(e) {
+                const paginationLink = e.target.closest('.cpe-pagination a');
+                if (paginationLink) {
+                    e.preventDefault();
+                    const url = paginationLink.href;
+                    fetchResults(url);
+                    window.history.pushState({}, '', url);
+                }
+            });
+            
+            window.addEventListener('popstate', function() {
+                fetchResults(window.location.href);
+            });
         });
     </script>
 @endsection
