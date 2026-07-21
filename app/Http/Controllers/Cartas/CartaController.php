@@ -8,6 +8,7 @@ use App\Models\Cartas\CartaEvento;
 use App\Models\Cartas\CartaMensagem;
 use App\Models\Evento;
 use App\Models\Inscricao;
+use App\Models\Municipio;
 use App\Models\User;
 use App\Notifications\Cartas\AjusteSolicitadoNotification;
 use App\Notifications\Cartas\CartaRecebidaNotification;
@@ -19,8 +20,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-use Spatie\LaravelPdf\Facades\Pdf;
-use setasign\Fpdi\Fpdi;
 
 class CartaController extends Controller
 {
@@ -633,32 +632,32 @@ class CartaController extends Controller
 
         if ($zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
             $addedFiles = [];
-            
+
             foreach ($cartas as $carta) {
                 foreach ($carta->mensagens as $mensagem) {
                     $path = $mensagem->arquivo_final_path ?: $mensagem->anexo_original_path;
-                    
+
                     if ($path && Storage::disk('local')->exists($path)) {
                         $filename = $this->gerarNomeArquivo($mensagem, $path);
-                        
+
                         // Evita conflito de nomes idênticos no ZIP
                         $nameWithoutExt = pathinfo($filename, PATHINFO_FILENAME);
                         $ext = pathinfo($filename, PATHINFO_EXTENSION);
-                        
+
                         $uniqueName = $filename;
                         $counter = 1;
                         while (in_array($uniqueName, $addedFiles)) {
                             $uniqueName = "{$nameWithoutExt}_" . str_pad((string)$counter, 2, '0', STR_PAD_LEFT) . ".{$ext}";
                             $counter++;
                         }
-                        
+
                         $addedFiles[] = $uniqueName;
                         $zip->addFile(Storage::disk('local')->path($path), $uniqueName);
                         $hasFiles = true;
                     }
                 }
             }
-            
+
             $zip->close();
         }
 
@@ -697,7 +696,7 @@ class CartaController extends Controller
             ->withQueryString();
 
         $engajaUsers = $this->remetenteCandidatosQuery()->get();
-        $municipios = \App\Models\Municipio::orderBy('nome')->get();
+        $municipios = Municipio::orderBy('nome')->get();
 
         return view('cartas.gestor.index', compact('cartas', 'engajaUsers', 'search', 'municipioId', 'municipios'));
     }
@@ -705,6 +704,7 @@ class CartaController extends Controller
     private function voluntarioDashboard(Request $request): View
     {
         $user = $request->user();
+        $user->loadMissing('participante.municipio.estado');
 
         $cartas = Carta::query()
             ->with(['educando.user', 'educando.municipio.estado', 'voluntario.participante.municipio.estado', 'mensagens' => fn ($q) => $q->latest('rodada'), 'ultimaMensagem'])

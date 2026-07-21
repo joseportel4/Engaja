@@ -105,22 +105,33 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['municipio_ibge_id' => $exception->getMessage()]);
         }
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'cpf' => $data['cpf'],
-            'telefone' => $data['telefone'] ?? null,
-            'estado_nome' => $localidade['estado']['nome'],
-            'estado_sigla' => $localidade['estado']['sigla'],
-            'municipio_nome' => $localidade['municipio']['nome'],
-            'sistema_origem' => User::SISTEMA_CARTAS,
-            'cartas_terms_accepted_at' => now(),
-        ]);
+        $user = DB::transaction(function () use ($data, $localidade) {
+            $municipio = $this->createOrFindMunicipio([
+                'estado_nome' => $localidade['estado']['nome'],
+                'estado_sigla' => $localidade['estado']['sigla'],
+                'municipio_nome' => $localidade['municipio']['nome'],
+            ]);
 
-        if ($role = Role::where('name', 'cartas_voluntario')->where('guard_name', 'web')->first()) {
-            $user->assignRole($role);
-        }
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'sistema_origem' => User::SISTEMA_CARTAS,
+                'cartas_terms_accepted_at' => now(),
+            ]);
+
+            $user->participante()->updateOrCreate(['user_id' => $user->id], [
+                'cpf' => $data['cpf'],
+                'telefone' => $data['telefone'],
+                'municipio_id' => $municipio->id,
+            ]);
+
+            if ($role = Role::where('name', 'cartas_voluntario')->where('guard_name', 'web')->first()) {
+                $user->assignRole($role);
+            }
+
+            return $user;
+        });
 
         Auth::login($user);
         $request->session()->regenerate();
