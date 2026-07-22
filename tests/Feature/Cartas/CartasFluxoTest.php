@@ -5,14 +5,13 @@ namespace Tests\Feature\Cartas;
 use App\Models\Cartas\Carta;
 use App\Models\Cartas\CartaMensagem;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
 
 class CartasFluxoTest extends CartasBaseTest
 {
     public function test_ciclo_completo_carta(): void
     {
         // 1. Gestor cadastra carta (aguardando_voluntario / aguardando_verificacao? Nao, vai direto para voluntário)
-        $file1 = UploadedFile::fake()->create('carta1.pdf', 100, 'application/pdf');
+        $file1 = $this->pdfFalsoValido('carta1.pdf');
 
         $this->actingAs($this->gestor)
             ->post(route('cartas.cartas.store'), [

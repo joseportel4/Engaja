@@ -29,151 +29,128 @@
                     <div class="cpe-alert cpe-alert--error">{{ $errors->first() }}</div>
                 @endif
 
-                <div class="cpe-table-card">
-                    <table class="cpe-table">
-                        <thead>
-                            <tr>
-                                <th>Status</th>
-                                <th>Data</th>
-                                <th>Remetente</th>
-                                <th>Município do Remetente</th>
-                                <th>Destinatário</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php $respostasExibidas = 0; ?>
-                            @foreach($carta->mensagens as $mensagem)
-                                <?php
-                                    $statusClass = match ($mensagem->status) {
-                                        'aprovada' => 'cpe-pill--green',
-                                        'aguardando_verificacao' => 'cpe-pill--yellow',
-                                        'ajuste_solicitado' => 'cpe-pill--blue',
-                                        default => 'cpe-pill--blue',
-                                    };
+                <div class="cpe-msg-list">
+                    <?php $respostasExibidas = 0; ?>
+                    @foreach($carta->mensagens as $mensagem)
+                        <?php
+                            $statusClass = match ($mensagem->status) {
+                                'aprovada' => 'cpe-pill--green',
+                                'aguardando_verificacao' => 'cpe-pill--yellow',
+                                'ajuste_solicitado' => 'cpe-pill--blue',
+                                default => 'cpe-pill--blue',
+                            };
 
                             if ($mensagem->status === 'aprovada' && ! $loop->first) {
                                 $respostasExibidas++;
                             }
 
-                                    $isVoluntario = ! $gestor && $mensagem->tipo_remetente === 'educando';
-                                    $statusLabel = match ($mensagem->status) {
-                                        'aprovada' => $loop->first
-                                            ? ($isVoluntario ? 'Recebida' : 'Enviada')
-                                            : ($respostasExibidas === 1 ? 'Respondida' : "Respondida {$respostasExibidas}x"),
-                                        'aguardando_verificacao' => 'Pendente',
-                                        'ajuste_solicitado' => 'Ajuste solicitado',
-                                        default => 'Enviada',
-                                    };
-                                ?>
-                                <tr>
-                                    <td>
-                                        <span class="cpe-pill {{ $statusClass }}">
-                                            {{ $statusLabel }}
-                                        </span>
-                                    </td>
-                                    <td>{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y') }}</td>
-                                    <td>
-                                        <span class="cpe-truncate" title="{{ $mensagem->remetenteUsuario?->nome ?? $mensagem->remetenteParticipante?->nome ?? 'Remetente' }}">
-                                            {{ $mensagem->remetenteUsuario?->nome
-                                                ?? $mensagem->remetenteParticipante?->nome
-                                                ?? 'Remetente' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="cpe-truncate" title="{{ $mensagem->remetenteUsuario?->municipio_estado ?? $mensagem->remetenteParticipante?->municipio_estado ?? 'Não informado' }}">
-                                            {{ $mensagem->remetenteUsuario?->municipio_estado
-                                                ?? $mensagem->remetenteParticipante?->municipio_estado
-                                                ?? 'Não informado' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="cpe-truncate" title="{{ $mensagem->destinatarioUsuario?->nome ?? $mensagem->destinatarioParticipante?->nome ?? 'Destinatário' }}">
-                                            {{ $mensagem->destinatarioUsuario?->nome
-                                                ?? $mensagem->destinatarioParticipante?->nome
-                                                ?? 'Destinatário' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div style="display: flex; gap: 8px; align-items: center;">
-                                            <button class="cpe-icon-button" type="button" data-aside-open="aside-mensagem-{{ $mensagem->id }}" aria-label="Abrir mensagem">
-                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                </svg>
-                                            </button>
-                                            @if($gestor)
-                                                <a href="{{ route('cartas.mensagens.download', $mensagem) }}" class="cpe-icon-button" aria-label="Baixar anexo" download>
-                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        <polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                    </svg>
-                                                </a>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                            $isVoluntario = ! $gestor && $mensagem->tipo_remetente === 'educando';
+                            $statusLabel = match ($mensagem->status) {
+                                'aprovada' => $loop->first
+                                    ? ($isVoluntario ? 'Recebida' : 'Enviada')
+                                    : ($respostasExibidas === 1 ? 'Respondida' : "Respondida {$respostasExibidas}x"),
+                                'aguardando_verificacao' => 'Pendente',
+                                'ajuste_solicitado' => 'Ajuste solicitado',
+                                default => 'Enviada',
+                            };
+
+                            $remetenteItemNome = $mensagem->remetenteUsuario?->nome
+                                ?? $mensagem->remetenteParticipante?->nome
+                                ?? 'Remetente';
+                        ?>
+                        <div class="cpe-msg-item">
+                            <button type="button" class="cpe-msg-item__open" data-aside-open="aside-mensagem-{{ $mensagem->id }}">
+                                <span class="cpe-pill {{ $statusClass }}">{{ $statusLabel }}</span>
+                                <span class="cpe-msg-item__info">
+                                    <span class="cpe-msg-item__name" title="{{ $remetenteItemNome }}">{{ $remetenteItemNome }}</span>
+                                    <span class="cpe-msg-item__date">{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y') }}</span>
+                                </span>
+                            </button>
+                            @if($gestor)
+                                <a href="{{ route('cartas.mensagens.download', $mensagem) }}" class="cpe-icon-button cpe-msg-item__download" aria-label="Baixar anexo" download>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </a>
+                            @endif
+                        </div>
+                    @endforeach
                 </div>
 
                 @if($gestor)
-                    @if($carta->podeEducandoEnviar())
-                        <button type="button" class="cpe-button cpe-conversation__wide-button" data-modal-open="addCartaModal">Adicionar carta</button>
-                    @else
+                    @unless($carta->podeEducandoEnviar())
                         <p class="cpe-turn-note">
                             {{ $carta->temMensagemPendente()
                                 ? 'Há uma resposta aguardando verificação. Resolva-a antes de enviar uma nova carta.'
                                 : 'Aguardando a resposta do voluntário para enviar uma nova carta.' }}
                         </p>
-                    @endif
+                    @endunless
                 @else
-                    @if($carta->podeVoluntarioEnviar())
-                        <button type="button" class="cpe-button cpe-conversation__wide-button" data-modal-open="respondCartaModal">Responder {{ $remetentePrimeiroNome }}</button>
-                    @else
+                    @unless($carta->podeVoluntarioEnviar())
                         <p class="cpe-turn-note">
                             {{ $carta->ultimaMensagem?->status === 'ajuste_solicitado'
                                 ? 'Uma solicitação de ajuste foi recebida. Abra a carta para verificar e realizar o ajuste.'
                                 : 'Você poderá responder quando uma nova carta for recebida.' }}
                         </p>
-                    @endif
+                    @endunless
                 @endif
                 <a href="{{ route('cartas.dashboard') }}" class="cpe-button cpe-button--ghost cpe-conversation__wide-button">Voltar</a>
             </div>
         </section>
 
         <aside class="cpe-conversation__aside">
-            <div class="cpe-aside-panel cpe-aside-panel--default" id="asideDefault"></div>
+            <div class="cpe-aside-panel cpe-aside-panel--default" id="asideDefault">
+                <span>Selecione uma carta na lista para visualizá-la.</span>
+            </div>
 
             @foreach($carta->mensagens as $mensagem)
                 @php($mensagemMime = $mensagem->arquivo_final_mime ?: $mensagem->anexo_original_mime)
                 <div class="cpe-aside-panel" id="aside-mensagem-{{ $mensagem->id }}" hidden>
-                    <h2>Carta enviada por {{ $mensagem->remetenteUsuario?->nome ?? $mensagem->remetenteParticipante?->nome ?? 'Remetente' }}</h2>
-                    <p class="cpe-aside-date">{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y H:i') }}</p>
-
-                    @if($mensagem->anexo_original_path || $mensagem->arquivo_final_path)
-                        <div class="cpe-letter-preview cpe-letter-preview--media cpe-aside-preview">
-                            @if(str_starts_with((string) $mensagemMime, 'image/'))
-                                <img src="{{ route('cartas.mensagens.preview', $mensagem) }}" alt="Carta enviada">
-                            @elseif($mensagemMime === 'application/pdf')
-                                <iframe src="{{ route('cartas.mensagens.preview', $mensagem) }}#toolbar=0&navpanes=0" title="Carta enviada"></iframe>
-                            @else
-                                <div class="cpe-file-placeholder">Arquivo anexado: {{ $mensagem->arquivo_final_nome ?: $mensagem->anexo_original_nome }}</div>
-                            @endif
+                    @php($remetentePanelNome = $mensagem->remetenteUsuario?->nome ?? $mensagem->remetenteParticipante?->nome ?? 'Remetente')
+                    @php($destinatarioPanelNome = $mensagem->destinatarioUsuario?->nome ?? $mensagem->destinatarioParticipante?->nome ?? 'Destinatário')
+                    <div class="cpe-letter-stage">
+                        <div class="cpe-letter-header">
+                            <span class="cpe-letter-header__party">De: {{ $remetentePanelNome }}<br>Para: {{ $destinatarioPanelNome }}</span>
+                            <span class="cpe-letter-header__date">{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y') }}</span>
                         </div>
-                    @else
-                        <div class="cpe-letter-preview cpe-aside-preview">{{ $mensagem->texto ?? 'Carta sem visualização disponível.' }}</div>
-                    @endif
+
+                        @if($mensagem->anexo_original_path || $mensagem->arquivo_final_path)
+                            @if(str_starts_with((string) $mensagemMime, 'image/'))
+                                <div class="cpe-letter-preview cpe-letter-preview--media cpe-aside-preview">
+                                    <img class="cpe-letter-media" src="{{ route('cartas.mensagens.preview', $mensagem) }}" alt="Carta enviada">
+                                </div>
+                            @elseif($mensagemMime === 'application/pdf')
+                                <div class="cpe-letter-doc" data-pdf-src="{{ route('cartas.mensagens.preview', $mensagem) }}" role="img" aria-label="Carta enviada">
+                                    <div class="cpe-letter-doc__loading">Carregando carta…</div>
+                                </div>
+                            @else
+                                <div class="cpe-letter-preview cpe-aside-preview cpe-file-placeholder">Arquivo anexado: {{ $mensagem->arquivo_final_nome ?: $mensagem->anexo_original_nome }}</div>
+                            @endif
+                        @else
+                            <div class="cpe-letter-preview cpe-aside-preview">{{ $mensagem->texto ?? 'Carta sem visualização disponível.' }}</div>
+                        @endif
+                    </div>
 
                     @if(! ($gestor && $mensagem->status === 'aguardando_verificacao'))
                         <div class="cpe-modal-actions">
-                            <button type="button" class="cpe-button cpe-button--ghost" data-aside-close>Fechar</button>
                             @if($mensagem->anexo_original_path || $mensagem->arquivo_final_path)
                                 <button type="button" class="cpe-button cpe-button--ghost" data-print-src="{{ route('cartas.mensagens.preview', $mensagem) }}">Imprimir</button>
                             @else
                                 <button type="button" class="cpe-button cpe-button--ghost">Imprimir</button>
+                            @endif
+
+                            @if($loop->last)
+                                @if($gestor)
+                                    @if($carta->podeEducandoEnviar())
+                                        <button type="button" class="cpe-button" data-modal-open="addCartaModal">Adicionar carta</button>
+                                    @endif
+                                @else
+                                    @if($carta->podeVoluntarioEnviar())
+                                        <button type="button" class="cpe-button" data-modal-open="respondCartaModal">Responder {{ $remetentePrimeiroNome }}</button>
+                                    @endif
+                                @endif
                             @endif
                         </div>
                     @endif
@@ -358,71 +335,110 @@
 
     <style>
         .cpe-conversation {
-            display: grid;
-            grid-template-columns: minmax(560px, 1.08fr) .92fr;
+            position: relative;
+            --cpe-sidebar-w: clamp(360px, 28vw, 460px);
         }
 
-        .cpe-conversation .cpe-table {
-            table-layout: fixed;
-            width: 100%;
+        /* Nesta tela o titulo compete com a lista de mensagens na barra lateral estreita */
+        .cpe-conversation__main .cpe-title {
+            font-size: 24px;
+            line-height: 1.2;
         }
 
-        .cpe-conversation .cpe-table th,
-        .cpe-conversation .cpe-table td {
-            color: #0f0f0f;
-        }
-
-        .cpe-conversation .cpe-table th:nth-child(1),
-        .cpe-conversation .cpe-table td:nth-child(1) {
-            width: 125px;
-        }
-
-        .cpe-conversation .cpe-table th:nth-child(2),
-        .cpe-conversation .cpe-table td:nth-child(2) {
-            width: 95px;
-        }
-
-        .cpe-conversation .cpe-table th:nth-child(3),
-        .cpe-conversation .cpe-table td:nth-child(3) {
-            width: 130px;
-        }
-
-        .cpe-conversation .cpe-table th:nth-child(4),
-        .cpe-conversation .cpe-table td:nth-child(4) {
-            width: 155px;
-        }
-
-        .cpe-conversation .cpe-table th:nth-child(5),
-        .cpe-conversation .cpe-table td:nth-child(5) {
-            width: 130px;
-        }
-
-        .cpe-conversation .cpe-table th:nth-child(6),
-        .cpe-conversation .cpe-table td:nth-child(6) {
-            width: 75px;
-            text-align: center;
-        }
-
-        .cpe-conversation > .cpe-logo-top {
-            grid-column: 1 / -1;
-        }
-
+        /* Barra lateral fixa (aside): nao influencia a centralizacao da carta */
         .cpe-conversation__main {
-            min-height: 100%;
-            padding: 0 30px;
+            position: fixed;
+            left: 0;
+            top: 84px;
+            bottom: 0;
+            width: var(--cpe-sidebar-w);
+            overflow-y: auto;
+            box-sizing: border-box;
+            padding: 8px 26px 28px;
+            z-index: 30;
         }
 
         .cpe-conversation__content {
-            margin-top: 70px;
-            padding-bottom: 56px;
+            margin-top: 8px;
+            padding-bottom: 24px;
             display: grid;
-            gap: 22px;
+            gap: 20px;
         }
 
+        /* Lista lateral compacta de mensagens */
+        .cpe-msg-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .cpe-msg-item {
+            display: flex;
+            align-items: stretch;
+            gap: 6px;
+        }
+
+        .cpe-msg-item__open {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            border: 1px solid var(--cpe-line);
+            border-radius: 10px;
+            background: #fff;
+            padding: 10px 12px;
+            cursor: pointer;
+            text-align: left;
+            transition: border-color .18s, box-shadow .18s;
+        }
+
+        .cpe-msg-item__open:hover {
+            border-color: #b9b1ab;
+        }
+
+        .cpe-msg-item__open.is-active {
+            border-color: #008BBC;
+            box-shadow: inset 0 0 0 1px #008BBC;
+        }
+
+        .cpe-msg-item__info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .cpe-msg-item__name {
+            max-width: 160px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #222;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .cpe-msg-item__date {
+            color: #777;
+            font-size: 14px;
+        }
+
+        .cpe-msg-item__download {
+            flex: none;
+            align-self: center;
+        }
+
+        /* Visualizador da carta: centralizado na tela inteira */
         .cpe-conversation__aside {
-            background: var(--cpe-pink-panel);
-            min-height: calc(100vh - 120px);
-            border-left: 1px solid var(--cpe-line);
+            background: transparent;
+            min-height: calc(100vh - 130px);
+            border-left: 0;
+            display: flex;
+            justify-content: center;
+            padding: 8px 24px 48px;
+            box-sizing: border-box;
         }
 
         .cpe-aside-panel[hidden] {
@@ -430,18 +446,28 @@
         }
 
         .cpe-aside-panel--default {
-            min-height: 100%;
-            width: 100%;
+            align-self: stretch;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            color: #8a827b;
+            font-size: 14px;
+            text-align: center;
         }
 
         .cpe-aside-panel:not(.cpe-aside-panel--default) {
-            background: #fff;
-            min-height: 100%;
-            padding: 36px 32px;
+            width: min(1100px, calc(100vw - (var(--cpe-sidebar-w) * 2) - 64px));
+            min-width: 0;
+            padding: 8px 0 0;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .cpe-aside-panel:not(.cpe-aside-panel--default) > * {
+            width: 100%;
         }
 
         .cpe-aside-panel:not(.cpe-aside-panel--default) h2 {
@@ -456,9 +482,81 @@
             font-size: 14px;
         }
 
-        .cpe-aside-preview {
-            max-height: calc(100vh - 280px);
-            min-height: 240px;
+        .cpe-letter-stage {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .cpe-letter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 24px;
+            color: #008bbc;
+            font-weight: 500;
+            font-size: 19px;
+            line-height: 1.2;
+        }
+
+        .cpe-letter-header__date {
+            flex: none;
+            text-align: right;
+        }
+
+        .cpe-conversation .cpe-letter-preview--media {
+            border: 0;
+            background: transparent;
+            border-radius: 9px;
+            width: 100%;
+            max-height: none;
+            overflow: visible;
+        }
+
+        /* Documento PDF renderizado como imagem (pdf.js), rolavel entre paginas */
+        .cpe-letter-doc {
+            width: 100%;
+            max-height: 82vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            border-radius: 9px;
+            background: #fff;
+            padding: 14px;
+            box-sizing: border-box;
+            box-shadow: 0 2px 14px rgba(0, 0, 0, .08);
+        }
+
+        .cpe-letter-doc.is-loading {
+            min-height: 320px;
+        }
+
+        .cpe-letter-page {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, .14);
+        }
+
+        .cpe-letter-doc__loading,
+        .cpe-letter-doc__error {
+            color: #8a827b;
+            font-size: 14px;
+            padding: 40px 0;
+        }
+
+        .cpe-letter-media {
+            width: 100%;
+            height: auto;
+            max-height: 82vh;
+            object-fit: contain;
+            border-radius: 9px;
+            user-select: none;
+            -webkit-user-select: none;
+            pointer-events: none;
         }
 
         .cpe-conversation__wide-button {
@@ -570,22 +668,27 @@
             margin: 14px 0;
         }
 
-        @media (max-width: 980px) {
-            .cpe-conversation {
-                grid-template-columns: 1fr;
+        /* Em telas mais estreitas a barra lateral volta ao fluxo (empilhada acima da carta),
+           evitando sobreposicao com a carta centralizada. */
+        @media (max-width: 1050px) {
+            .cpe-conversation__main {
+                position: static;
+                width: auto;
+                max-width: 720px;
+                margin: 0 auto;
+                top: auto;
+                bottom: auto;
+                padding: 8px 24px;
             }
 
-            .cpe-conversation__aside:has(#asideDefault:not([hidden])) {
-                display: none;
+            .cpe-conversation__aside {
+                min-height: 0;
             }
+        }
 
-            .cpe-conversation__aside:has(#asideDefault[hidden]) {
-                display: block;
-                position: fixed;
-                inset: 0;
-                z-index: 1100;
-                overflow-y: auto;
-                background: #fff;
+        @media (max-width: 720px) {
+            .cpe-letter-header {
+                gap: 12px;
             }
 
             .cpe-form-row {

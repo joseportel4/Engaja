@@ -15,6 +15,8 @@
 
     .cpe-page {
         flex: 1;
+        min-height: 80vh;
+        box-sizing: border-box;
         background: var(--cpe-bg);
         color: var(--cpe-ink);
         font-family: 'Montserrat', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;

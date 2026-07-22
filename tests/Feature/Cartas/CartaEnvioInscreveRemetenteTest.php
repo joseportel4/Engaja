@@ -3,7 +3,6 @@
 namespace Tests\Feature\Cartas;
 
 use App\Models\Inscricao;
-use Illuminate\Http\UploadedFile;
 
 class CartaEnvioInscreveRemetenteTest extends CartasBaseTest
 {
@@ -14,7 +13,7 @@ class CartaEnvioInscreveRemetenteTest extends CartasBaseTest
             'participante_id' => $this->educando->id,
         ]);
 
-        $file = UploadedFile::fake()->create('carta.pdf', 100, 'application/pdf');
+        $file = $this->pdfFalsoValido('carta.pdf');
 
         $response = $this->actingAs($this->gestor)
             ->post(route('cartas.cartas.store'), [
@@ -37,7 +36,7 @@ class CartaEnvioInscreveRemetenteTest extends CartasBaseTest
             'participante_id' => $this->educando->id,
         ]);
 
-        $file = UploadedFile::fake()->create('carta.pdf', 100, 'application/pdf');
+        $file = $this->pdfFalsoValido('carta.pdf');
 
         $this->actingAs($this->gestor)
             ->post(route('cartas.cartas.store'), [

@@ -6,7 +6,7 @@
       "Read(./node_modules/**)",
       "Read(./public/build/**)",
       "Read(./public/hot/**)",
-      "Read(./public/storage/**)",
+      "Read(./storage/app/public/**)",
       "Read(./storage/framework/cache/**)",
       "Read(./storage/framework/sessions/**)",
       "Read(./storage/framework/views/**)",

@@ -5,7 +5,7 @@ namespace Tests\Feature\Cartas;
 use App\Models\Cartas\Carta;
 use App\Models\Cartas\CartaEvento;
 use App\Models\Cartas\CartaMensagem;
-use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 class CartasVoluntarioTest extends CartasBaseTest
 {
@@ -49,7 +49,7 @@ class CartasVoluntarioTest extends CartasBaseTest
     public function test_voluntario_pode_responder_carta_com_anexo_manuscrito(): void
     {
         $carta = $this->criarCartaParaVoluntario();
-        $file = UploadedFile::fake()->create('resposta.pdf', 200, 'application/pdf');
+        $file = $this->pdfFalsoValido('resposta.pdf');
 
         $response = $this->actingAs($this->voluntario)
             ->post(route('cartas.cartas.respond', $carta), [
@@ -66,6 +66,8 @@ class CartasVoluntarioTest extends CartasBaseTest
         $this->assertEquals(CartaMensagem::CANAL_ANEXO_MANUSCRITO, $mensagem->canal_entrada);
         $this->assertNotNull($mensagem->anexo_original_path);
         $this->assertNotNull($mensagem->anexo_original_nome);
+        $this->assertNotNull($mensagem->arquivo_final_path);
+        Storage::disk('local')->assertExists($mensagem->arquivo_final_path);
     }
 
     public function test_voluntario_nao_pode_responder_carta_de_outro(): void
@@ -147,9 +149,29 @@ class CartasVoluntarioTest extends CartasBaseTest
         $response->assertStatus(403);
     }
 
+    public function test_voluntario_pode_ajustar_mensagem_com_anexo_manuscrito(): void
+    {
+        [$carta, $mensagem] = $this->criarCartaComRespostaComAjusteSolicitado();
+
+        $response = $this->actingAs($this->voluntario)
+            ->put(route('cartas.mensagens.update-adjustment', $mensagem), [
+                'modo_resposta' => 'anexo_manuscrito',
+                'arquivo' => $this->pdfFalsoValido('ajuste.pdf'),
+            ]);
+
+        $response->assertRedirect();
+
+        $mensagem->refresh();
+
+        $this->assertEquals(CartaMensagem::CANAL_ANEXO_MANUSCRITO, $mensagem->canal_entrada);
+        $this->assertNotNull($mensagem->anexo_original_path);
+        $this->assertNotNull($mensagem->arquivo_final_path);
+        Storage::disk('local')->assertExists($mensagem->arquivo_final_path);
+    }
+
     public function test_voluntario_pode_iniciar_carta(): void
     {
-        $file = UploadedFile::fake()->create('carta.pdf', 100, 'application/pdf');
+        $file = $this->pdfFalsoValido('carta.pdf');
 
         $response = $this->actingAs($this->voluntario)
             ->post(route('cartas.voluntario.cartas.store'), [
@@ -180,5 +202,59 @@ class CartasVoluntarioTest extends CartasBaseTest
             'user_id' => $this->voluntario->id,
             'tipo' => CartaEvento::TIPO_MENSAGEM_ENVIADA,
         ]);
+    }
+
+    public function test_dashboard_prioriza_cartas_recebidas_e_com_ajuste(): void
+    {
+        // Prioridade menor primeiro: aguardando_voluntario (0), aguardando_ajuste (1), demais (2).
+        $this->criarCartaComRespostaAguardandoVerificacao();
+        $this->criarCartaParaVoluntario();
+        $this->criarCartaComRespostaComAjusteSolicitado();
+
+        $response = $this->actingAs($this->voluntario)->get(route('cartas.dashboard'));
+
+        $response->assertOk();
+
+        $ordemStatus = $response->viewData('cartas')->pluck('status')->all();
+
+        $this->assertEqualsCanonicalizing(
+            [Carta::STATUS_AGUARDANDO_VOLUNTARIO, Carta::STATUS_AGUARDANDO_AJUSTE],
+            array_slice($ordemStatus, 0, 2),
+        );
+        $this->assertSame(Carta::STATUS_AGUARDANDO_VERIFICACAO, end($ordemStatus));
+    }
+
+    public function test_show_exibe_carta_centralizada_com_pdf_read_only(): void
+    {
+        $carta = $this->criarCartaParaVoluntario();
+
+        CartaMensagem::create([
+            'carta_id' => $carta->id,
+            'rodada' => 1,
+            'remetente_participante_id' => $this->educando->id,
+            'destinatario_user_id' => $this->voluntario->id,
+            'tipo_remetente' => CartaMensagem::TIPO_REMETENTE_EDUCANDO,
+            'canal_entrada' => CartaMensagem::CANAL_ANEXO_MANUSCRITO,
+            'status' => CartaMensagem::STATUS_APROVADA,
+            'anexo_original_path' => 'cartas/exemplo.pdf',
+            'anexo_original_nome' => 'exemplo.pdf',
+            'anexo_original_mime' => 'application/pdf',
+            'enviada_em' => now(),
+            'criada_por' => $this->gestor->id,
+            'atualizada_por' => $this->gestor->id,
+        ]);
+
+        $response = $this->actingAs($this->voluntario)->get(route('cartas.cartas.show', $carta));
+
+        $response->assertOk();
+        // Lista lateral compacta e cabeçalho De/Para centralizado.
+        $response->assertSee('cpe-msg-list', false);
+        $response->assertSee('cpe-letter-header', false);
+        // PDF renderizado como imagem (pdf.js), read-only e sem controles do navegador.
+        $response->assertSee('cpe-letter-doc', false);
+        $response->assertSee('data-pdf-src', false);
+        $response->assertDontSee('<iframe', false);
+        // Botão "Responder" (roxo, sem --ghost) ao lado do "Imprimir" quando o voluntário pode enviar.
+        $response->assertSee('data-modal-open="respondCartaModal"', false);
     }
 }

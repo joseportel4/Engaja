@@ -12,6 +12,13 @@
             });
         });
 
+        const marcarItemAtivo = (button) => {
+            if (!button.closest('.cpe-msg-list')) return;
+            document.querySelectorAll('.cpe-msg-list [data-aside-open]').forEach((item) => {
+                item.classList.toggle('is-active', item === button);
+            });
+        };
+
         document.querySelectorAll('[data-aside-open]').forEach((button) => {
             button.addEventListener('click', () => {
                 const targetId = button.dataset.asideOpen;
@@ -21,8 +28,26 @@
                 aside.querySelectorAll('.cpe-aside-panel').forEach((panel) => {
                     panel.hidden = panel.id !== targetId;
                 });
+
+                marcarItemAtivo(button);
             });
         });
+
+        // Na tela de conversa, abre a carta mais recente por padrao.
+        const cpeAside = document.querySelector('.cpe-conversation__aside');
+        if (cpeAside) {
+            const paineis = cpeAside.querySelectorAll('.cpe-aside-panel:not(.cpe-aside-panel--default)');
+            const ultimo = paineis[paineis.length - 1];
+            if (ultimo) {
+                cpeAside.querySelectorAll('.cpe-aside-panel').forEach((panel) => {
+                    panel.hidden = panel.id !== ultimo.id;
+                });
+                const item = document.querySelector(`.cpe-msg-list [data-aside-open="${ultimo.id}"]`);
+                if (item) {
+                    item.classList.add('is-active');
+                }
+            }
+        }
 
         document.querySelectorAll('[data-aside-close]').forEach((button) => {
             button.addEventListener('click', () => {

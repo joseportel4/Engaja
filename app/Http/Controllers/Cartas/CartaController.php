@@ -140,6 +140,8 @@ class CartaController extends Controller
                 'atualizada_por' => $request->user()->id,
             ]);
 
+            $this->timbrado->aplicarAnexo($mensagem);
+
             CartaEvento::create([
                 'carta_id' => $carta->id,
                 'carta_mensagem_id' => $mensagem->id,
@@ -203,6 +205,8 @@ class CartaController extends Controller
                 'criada_por' => $request->user()->id,
                 'atualizada_por' => $request->user()->id,
             ]);
+
+            $this->timbrado->aplicarAnexo($mensagem);
 
             $carta->update([
                 'status' => Carta::STATUS_RESPONDIDA,
@@ -273,6 +277,8 @@ class CartaController extends Controller
 
             if ($data['modo_resposta'] === 'digitada') {
                 $this->timbrado->aplicar($mensagem);
+            } else {
+                $this->timbrado->aplicarAnexo($mensagem);
             }
 
             $carta->update([
@@ -345,6 +351,8 @@ class CartaController extends Controller
                 'criada_por' => $user->id,
                 'atualizada_por' => $user->id,
             ]);
+
+            $this->timbrado->aplicarAnexo($mensagem);
 
             CartaEvento::create([
                 'carta_id' => $carta->id,
@@ -532,13 +540,7 @@ class CartaController extends Controller
             if ($data['modo_resposta'] === 'digitada') {
                 $this->timbrado->aplicar($mensagem);
             } else {
-                $mensagem->forceFill([
-                    'arquivo_final_path' => null,
-                    'arquivo_final_nome' => null,
-                    'arquivo_final_mime' => null,
-                    'arquivo_final_tamanho' => null,
-                    'timbrado_aplicado_em' => null,
-                ])->save();
+                $this->timbrado->aplicarAnexo($mensagem);
             }
 
             $mensagem->carta->update([
@@ -603,12 +605,12 @@ class CartaController extends Controller
 
         $cartas = Carta::query()
             ->with([
-                'educando.user', 
-                'educando.municipio.estado', 
-                'voluntario', 
-                'mensagens' => function($q) {
+                'educando.user',
+                'educando.municipio.estado',
+                'voluntario',
+                'mensagens' => function ($q) {
                     $q->orderBy('rodada', 'asc');
-                }
+                },
             ])
             ->when($search !== '', function ($query) use ($search) {
                 $searchLower = mb_strtolower($search, 'UTF-8');
@@ -626,8 +628,8 @@ class CartaController extends Controller
             ->latest()
             ->get();
 
-        $zipFile = storage_path('app/temp_cartas_lote_' . uniqid() . '.zip');
-        $zip = new \ZipArchive();
+        $zipFile = storage_path('app/temp_cartas_lote_'.uniqid().'.zip');
+        $zip = new \ZipArchive;
         $hasFiles = false;
 
         if ($zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
@@ -647,7 +649,7 @@ class CartaController extends Controller
                         $uniqueName = $filename;
                         $counter = 1;
                         while (in_array($uniqueName, $addedFiles)) {
-                            $uniqueName = "{$nameWithoutExt}_" . str_pad((string)$counter, 2, '0', STR_PAD_LEFT) . ".{$ext}";
+                            $uniqueName = "{$nameWithoutExt}_".str_pad((string) $counter, 2, '0', STR_PAD_LEFT).".{$ext}";
                             $counter++;
                         }
 
@@ -665,6 +667,7 @@ class CartaController extends Controller
             if (file_exists($zipFile)) {
                 @unlink($zipFile);
             }
+
             return redirect()->back()->with('status', 'Nenhuma carta com anexo/PDF foi encontrada para gerar o lote.');
         }
 
@@ -715,6 +718,13 @@ class CartaController extends Controller
             ->doVoluntario($user)
             ->latest()
             ->get();
+
+        // Prioriza cartas recebidas e com ajuste solicitado, mantendo a data como criterio secundario.
+        $prioridade = [
+            Carta::STATUS_AGUARDANDO_VOLUNTARIO => 0,
+            Carta::STATUS_AGUARDANDO_AJUSTE => 1,
+        ];
+        $cartas = $cartas->sortBy(fn (Carta $carta) => $prioridade[$carta->status] ?? 2)->values();
 
         $destinatarios = $this->engajaUsersQuery()->limit(80)->get();
 

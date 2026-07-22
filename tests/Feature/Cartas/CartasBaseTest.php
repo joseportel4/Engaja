@@ -11,6 +11,7 @@ use App\Models\Participante;
 use App\Models\Regiao;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -100,6 +101,19 @@ abstract class CartasBaseTest extends TestCase
         ]);
 
         $this->eventoCartas = Evento::factory()->create(['is_cartas' => true]);
+    }
+
+    /**
+     * PDF real mínimo (não bytes aleatórios) — necessário porque o upload
+     * agora é processado pelo FPDI (CartaTimbradoService::aplicarAnexo()),
+     * que rejeita conteúdo que não seja um PDF válido.
+     */
+    protected function pdfFalsoValido(string $nome = 'carta.pdf'): UploadedFile
+    {
+        return UploadedFile::fake()->createWithContent(
+            $nome,
+            file_get_contents(base_path('tests/Fixtures/cartas/exemplo-anexo.pdf'))
+        );
     }
 
     protected function criarCartaParaVoluntario(): Carta
