@@ -28,11 +28,11 @@ class CartaRemetenteFilterTest extends TestCase
         return $participante;
     }
 
-    public function test_lista_de_remetentes_traz_todos_os_usuarios_sem_filtro(): void
+    public function test_lista_de_remetentes_traz_apenas_usuarios_engaja_com_participante(): void
     {
         $inscrito = $this->participanteInscrito(true);
         $foraDaAcao = $this->participanteInscrito(false);
-        $semParticipante = User::factory()->create(['sistema_origem' => User::SISTEMA_CARTAS]);
+        $usuarioCartas = User::factory()->create(['sistema_origem' => User::SISTEMA_CARTAS]);
 
         Role::findOrCreate('cartas_gestao', 'web');
         $gestor = User::factory()->create([
@@ -47,8 +47,11 @@ class CartaRemetenteFilterTest extends TestCase
 
         $ids = collect($response->viewData('engajaUsers'))->pluck('id');
 
+        // Usuários Engaja com participante DEVEM aparecer
         $this->assertTrue($ids->contains($inscrito->user_id));
         $this->assertTrue($ids->contains($foraDaAcao->user_id));
-        $this->assertTrue($ids->contains($semParticipante->id));
+
+        // Usuário do sistema Cartas NÃO deve aparecer
+        $this->assertFalse($ids->contains($usuarioCartas->id));
     }
 }

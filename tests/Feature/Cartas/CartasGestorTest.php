@@ -173,7 +173,24 @@ class CartasGestorTest extends CartasBaseTest
     {
         $carta = $this->criarCartaParaVoluntario();
 
-        $file = $this->pdfFalsoValido('segunda_carta.pdf');
+        // Adiciona uma resposta do voluntário (para que seja a vez do educando de novo)
+        CartaMensagem::create([
+            'carta_id' => $carta->id,
+            'rodada' => 2,
+            'remetente_user_id' => $this->voluntario->id,
+            'destinatario_participante_id' => $this->educando->id,
+            'tipo_remetente' => CartaMensagem::TIPO_REMETENTE_VOLUNTARIO,
+            'canal_entrada' => CartaMensagem::CANAL_DIGITADA,
+            'status' => CartaMensagem::STATUS_APROVADA,
+            'texto' => 'Mensagem aprovada do voluntario',
+            'enviada_em' => now(),
+            'verificada_por' => $this->gestor->id,
+            'verificada_em' => now(),
+            'criada_por' => $this->voluntario->id,
+            'atualizada_por' => $this->voluntario->id,
+        ]);
+
+        $file = UploadedFile::fake()->create('segunda_carta.pdf', 100, 'application/pdf');
 
         $response = $this->actingAs($this->gestor)
             ->post(route('cartas.cartas.mensagens.store', $carta), [

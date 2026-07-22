@@ -118,7 +118,7 @@ abstract class CartasBaseTest extends TestCase
 
     protected function criarCartaParaVoluntario(): Carta
     {
-        return Carta::create([
+        $carta = Carta::create([
             'codigo' => str_pad((string) (Carta::withTrashed()->count() + 1), 3, '0', STR_PAD_LEFT),
             'educando_participante_id' => $this->educando->id,
             'voluntario_user_id' => $this->voluntario->id,
@@ -128,6 +128,21 @@ abstract class CartasBaseTest extends TestCase
             'criada_por' => $this->gestor->id,
             'atualizada_por' => $this->gestor->id,
         ]);
+
+        CartaMensagem::create([
+            'carta_id' => $carta->id,
+            'rodada' => 1,
+            'remetente_participante_id' => $this->educando->id,
+            'destinatario_user_id' => $this->voluntario->id,
+            'tipo_remetente' => CartaMensagem::TIPO_REMETENTE_EDUCANDO,
+            'canal_entrada' => CartaMensagem::CANAL_ANEXO_DIGITALIZADO,
+            'status' => CartaMensagem::STATUS_APROVADA,
+            'enviada_em' => now(),
+            'criada_por' => $this->gestor->id,
+            'atualizada_por' => $this->gestor->id,
+        ]);
+
+        return $carta;
     }
 
     protected function criarCartaComRespostaAguardandoVerificacao(): array
