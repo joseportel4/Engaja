@@ -222,8 +222,12 @@
         }
 
         .cartas-alert--error {
-            border-color: #c53636;
-            color: #9b1c1c;
+            background: transparent;
+            border: 0;
+            padding: 0;
+            color: #d03030;
+            font-weight: 600;
+            text-align: center;
         }
 
         .cartas-app-shell {
