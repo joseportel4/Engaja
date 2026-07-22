@@ -33,13 +33,6 @@
                     <?php $respostasExibidas = 0; ?>
                     @foreach($carta->mensagens as $mensagem)
                         <?php
-                            $statusClass = match ($mensagem->status) {
-                                'aprovada' => 'cpe-pill--green',
-                                'aguardando_verificacao' => 'cpe-pill--yellow',
-                                'ajuste_solicitado' => 'cpe-pill--blue',
-                                default => 'cpe-pill--blue',
-                            };
-
                             if ($mensagem->status === 'aprovada' && ! $loop->first) {
                                 $respostasExibidas++;
                             }
@@ -52,6 +45,13 @@
                                 'aguardando_verificacao' => 'Pendente',
                                 'ajuste_solicitado' => 'Ajuste solicitado',
                                 default => 'Enviada',
+                            };
+
+                            $statusClass = match (true) {
+                                str_starts_with($statusLabel, 'Respondida') || $statusLabel === 'Recebida' => 'cpe-pill--green',
+                                $statusLabel === 'Pendente' => 'cpe-pill--yellow',
+                                $statusLabel === 'Ajuste solicitado' => 'cpe-pill--purple',
+                                default => 'cpe-pill--blue',
                             };
 
                             $remetenteItemNome = $mensagem->remetenteUsuario?->nome
@@ -337,6 +337,13 @@
         .cpe-conversation {
             position: relative;
             --cpe-sidebar-w: clamp(360px, 28vw, 460px);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .cpe-conversation > .cpe-logo-top {
+            width: 100%;
         }
 
         /* Nesta tela o titulo compete com a lista de mensagens na barra lateral estreita */
@@ -345,13 +352,12 @@
             line-height: 1.2;
         }
 
-        /* Barra lateral fixa (aside): nao influencia a centralizacao da carta */
+        /* Barra lateral sticky: acompanha o scroll mas respeita o limite do footer */
         .cpe-conversation__main {
-            position: fixed;
-            left: 0;
-            top: 84px;
-            bottom: 0;
+            position: sticky;
+            top: 0;
             width: var(--cpe-sidebar-w);
+            max-height: 100vh;
             overflow-y: auto;
             box-sizing: border-box;
             padding: 8px 26px 28px;
@@ -432,6 +438,8 @@
 
         /* Visualizador da carta: centralizado na tela inteira */
         .cpe-conversation__aside {
+            flex: 1;
+            min-width: 0;
             background: transparent;
             min-height: calc(100vh - 130px);
             border-left: 0;
@@ -673,7 +681,7 @@
         @media (max-width: 1050px) {
             .cpe-conversation__main {
                 position: static;
-                width: auto;
+                width: 100%;
                 max-width: 720px;
                 margin: 0 auto;
                 top: auto;
@@ -682,6 +690,7 @@
             }
 
             .cpe-conversation__aside {
+                width: 100%;
                 min-height: 0;
             }
         }

@@ -113,9 +113,12 @@
                         @forelse($cartas as $carta)
                             @php
                                 $ultimoStatus = $carta->ultimaMensagem?->status ?? $carta->status;
-                                $statusClass = str_contains($ultimoStatus, 'aprovada') || $carta->status === 'respondida'
-                                    ? 'cpe-pill--green'
-                                    : (str_contains($ultimoStatus, 'verificacao') ? 'cpe-pill--yellow' : 'cpe-pill--blue');
+                                $statusClass = match (true) {
+                                    $carta->status === 'respondida' => 'cpe-pill--green',
+                                    $carta->status === 'aguardando_ajuste' || $ultimoStatus === 'ajuste_solicitado' => 'cpe-pill--purple',
+                                    str_contains($ultimoStatus, 'verificacao') => 'cpe-pill--yellow',
+                                    default => 'cpe-pill--blue',
+                                };
                                 $statusLabel = match (true) {
                                     $carta->status === 'respondida' => 'Respondida',
                                     $carta->status === 'aguardando_ajuste' || $ultimoStatus === 'ajuste_solicitado' => 'Ajuste solicitado',
