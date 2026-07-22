@@ -86,6 +86,7 @@ class CartasTestSeeder extends Seeder
             'Carla Petrobras Teste',
             'Daniel Petrobras Teste',
             'Eva Petrobras Teste',
+            'Fabio Petrobras Teste', // sem cartas, para testar o estado vazio da tela do voluntário
         ];
         $voluntarios = [];
         foreach ($voluntarioNames as $index => $name) {

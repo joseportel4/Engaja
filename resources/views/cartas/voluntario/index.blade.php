@@ -19,22 +19,34 @@
                 <div class="cpe-alert">{{ session('status') }}</div>
             @endif
 
-            <div class="cpe-table-card">
-                <table class="cpe-table">
-                    <thead>
-                        <tr>
-                            <th>Status</th>
-                            <th>Data</th>
-                            <th>Remetente</th>
-                            <th>Município do Remetente</th>
-                            <th>Destinatário</th>
-                            <th></th>
-                            <th></th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($cartas as $carta)
+            @if($cartas->isEmpty())
+                <div class="cpe-empty-card">
+                    <div class="cpe-empty-frame">
+                        <span class="cpe-empty-corner cpe-empty-corner--tl"></span>
+                        <span class="cpe-empty-corner cpe-empty-corner--tr"></span>
+                        <span class="cpe-empty-corner cpe-empty-corner--bl"></span>
+                        <span class="cpe-empty-corner cpe-empty-corner--br"></span>
+                        <strong>Você ainda não recebeu nenhuma carta</strong>
+                        <span class="cpe-empty-hint">Assim que alguém enviar uma carta para você, enviaremos uma notificação para seu e-mail cadastrado.</span>
+                    </div>
+                </div>
+            @else
+                <div class="cpe-table-card">
+                    <table class="cpe-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Data</th>
+                                <th>Remetente</th>
+                                <th>Município do Remetente</th>
+                                <th>Destinatário</th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($cartas as $carta)
                             @php
                                 $primeira = $carta->mensagens->sortBy('rodada')->first();
                                 $statusLabel = match ($carta->status) {
@@ -123,19 +135,11 @@
                                     @endif
                                 </td>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8">
-                                    <div class="cpe-volunteer-empty">
-                                        <strong>Você ainda não recebeu nenhuma carta.</strong>
-                                        <span>Assim que alguém enviar uma carta para você, enviaremos uma notificação para seu e-mail cadastrado.</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
 
             <button type="button" class="cpe-button cpe-volunteer__send" data-modal-open="sendCartaModal">Enviar uma carta</button>
         </section>
@@ -268,13 +272,17 @@
 
     <style>
         .cpe-volunteer {
-            padding: 0 28px 80px;
+            padding: 0 28px 56px;
+            display: flex;
+            flex-direction: column;
         }
 
         .cpe-volunteer__content {
             width: min(100%, 940px);
             margin: 168px auto 0;
-            display: grid;
+            display: flex;
+            flex: 1;
+            flex-direction: column;
             gap: 34px;
         }
 
@@ -370,36 +378,94 @@
         }
 
         .cpe-volunteer h1 {
-            margin: 0;
+            margin: 0 0 40px;
             text-align: center;
-            font-size: 28px;
-            font-weight: 800;
+            font-size: 32px;
+            font-weight: 600;
+            line-height: 1.2;
         }
 
         .cpe-volunteer__send {
-            width: 100%;
-            margin-top: 28px;
+            align-self: center;
+            width: 318px;
+            max-width: 100%;
+            height: 51px;
+            margin-top: auto;
+            border-radius: 12px;
+            box-shadow: 0 8px 44px rgba(0, 0, 0, .25);
         }
 
-        .cpe-volunteer-empty {
-            min-height: 96px;
+        .cpe-empty-card {
+            width: min(100%, 432px);
+            margin: 0 auto;
+            background: rgba(150, 2, 199, .05);
+            border-radius: 8px;
+            padding: 14px;
             display: grid;
             place-items: center;
-            text-align: center;
         }
 
-        .cpe-volunteer-empty strong {
-            display: block;
-            font-size: 18px;
-            color: #111;
+        .cpe-empty-frame {
+            position: relative;
+            width: 100%;
+            padding: 24px 20px;
+            display: grid;
+            justify-items: center;
+            gap: 8px;
         }
 
-        .cpe-volunteer-empty span {
+        .cpe-empty-corner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+        }
+
+        .cpe-empty-corner--tl {
+            top: 0;
+            left: 0;
+            border-top: 1px solid var(--cpe-purple);
+            border-left: 1px solid var(--cpe-purple);
+        }
+
+        .cpe-empty-corner--tr {
+            top: 0;
+            right: 0;
+            border-top: 1px solid var(--cpe-purple);
+            border-right: 1px solid var(--cpe-purple);
+        }
+
+        .cpe-empty-corner--bl {
+            bottom: 0;
+            left: 0;
+            border-bottom: 1px solid var(--cpe-purple);
+            border-left: 1px solid var(--cpe-purple);
+        }
+
+        .cpe-empty-corner--br {
+            bottom: 0;
+            right: 0;
+            border-bottom: 1px solid var(--cpe-purple);
+            border-right: 1px solid var(--cpe-purple);
+        }
+
+        .cpe-empty-frame strong {
             display: block;
-            width: min(100%, 350px);
-            color: #666;
-            font-size: 13px;
+            width: 100%;
+            font-size: 22px;
+            font-weight: 700;
             line-height: 1.2;
+            text-align: center;
+            text-transform: uppercase;
+            color: var(--cpe-purple);
+        }
+
+        .cpe-empty-hint {
+            display: block;
+            width: min(100%, 274px);
+            color: #414652;
+            font-size: 14px;
+            line-height: 1.2;
+            text-align: center;
         }
 
         .cpe-modal-actions--three {
