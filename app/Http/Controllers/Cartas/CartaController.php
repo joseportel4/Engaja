@@ -719,6 +719,13 @@ class CartaController extends Controller
             ->latest()
             ->get();
 
+        // Prioriza cartas recebidas e com ajuste solicitado, mantendo a data como criterio secundario.
+        $prioridade = [
+            Carta::STATUS_AGUARDANDO_VOLUNTARIO => 0,
+            Carta::STATUS_AGUARDANDO_AJUSTE => 1,
+        ];
+        $cartas = $cartas->sortBy(fn (Carta $carta) => $prioridade[$carta->status] ?? 2)->values();
+
         $destinatarios = $this->engajaUsersQuery()->limit(80)->get();
 
         return view('cartas.voluntario.index', compact('cartas', 'destinatarios'));

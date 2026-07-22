@@ -216,4 +216,24 @@ class CartasVoluntarioTest extends CartasBaseTest
             'tipo' => CartaEvento::TIPO_MENSAGEM_ENVIADA,
         ]);
     }
+
+    public function test_dashboard_prioriza_cartas_recebidas_e_com_ajuste(): void
+    {
+        // Prioridade menor primeiro: aguardando_voluntario (0), aguardando_ajuste (1), demais (2).
+        $this->criarCartaComRespostaAguardandoVerificacao();
+        $this->criarCartaParaVoluntario();
+        $this->criarCartaComRespostaComAjusteSolicitado();
+
+        $response = $this->actingAs($this->voluntario)->get(route('cartas.dashboard'));
+
+        $response->assertOk();
+
+        $ordemStatus = $response->viewData('cartas')->pluck('status')->all();
+
+        $this->assertEqualsCanonicalizing(
+            [Carta::STATUS_AGUARDANDO_VOLUNTARIO, Carta::STATUS_AGUARDANDO_AJUSTE],
+            array_slice($ordemStatus, 0, 2),
+        );
+        $this->assertSame(Carta::STATUS_AGUARDANDO_VERIFICACAO, end($ordemStatus));
+    }
 }
