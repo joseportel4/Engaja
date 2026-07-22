@@ -336,7 +336,13 @@
     <style>
         .cpe-conversation {
             position: relative;
-            --cpe-sidebar-w: clamp(320px, 24vw, 400px);
+            --cpe-sidebar-w: clamp(360px, 28vw, 460px);
+        }
+
+        /* Nesta tela o titulo compete com a lista de mensagens na barra lateral estreita */
+        .cpe-conversation__main .cpe-title {
+            font-size: 24px;
+            line-height: 1.2;
         }
 
         /* Barra lateral fixa (aside): nao influencia a centralizacao da carta */

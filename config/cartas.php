@@ -32,7 +32,7 @@ return [
         'font_family' => 'Kalam',
         'font_dir' => resource_path('fonts/cartas'),
         'font_file' => 'Kalam-Regular.php',
-        'font_size' => 11.0,
+        'font_size' => 13.0,
 
         // Ilustração (bonequinho com estrela) no canto inferior direito do
         // modelo: nessa faixa vertical o texto para antes de alcançá-la em
