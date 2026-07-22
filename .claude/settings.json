@@ -22,8 +22,7 @@
       "Read(./composer.lock)",
       "Read(./**/*.log)",
       "Read(./auth.json)",
-      "Read(./.env)",
-      "Read(./.env.*)"
+      "Read(./.env)"
     ]
   },
   "hooks": {
