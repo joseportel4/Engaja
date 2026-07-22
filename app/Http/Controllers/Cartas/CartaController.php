@@ -8,6 +8,7 @@ use App\Models\Cartas\CartaEvento;
 use App\Models\Cartas\CartaMensagem;
 use App\Models\Evento;
 use App\Models\Inscricao;
+use App\Models\Municipio;
 use App\Models\User;
 use App\Notifications\Cartas\AjusteSolicitadoNotification;
 use App\Notifications\Cartas\CartaRecebidaNotification;
@@ -19,8 +20,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-use Spatie\LaravelPdf\Facades\Pdf;
-use setasign\Fpdi\Fpdi;
 
 class CartaController extends Controller
 {
@@ -141,6 +140,8 @@ class CartaController extends Controller
                 'atualizada_por' => $request->user()->id,
             ]);
 
+            $this->timbrado->aplicarAnexo($mensagem);
+
             CartaEvento::create([
                 'carta_id' => $carta->id,
                 'carta_mensagem_id' => $mensagem->id,
@@ -204,6 +205,8 @@ class CartaController extends Controller
                 'criada_por' => $request->user()->id,
                 'atualizada_por' => $request->user()->id,
             ]);
+
+            $this->timbrado->aplicarAnexo($mensagem);
 
             $carta->update([
                 'status' => Carta::STATUS_RESPONDIDA,
@@ -274,6 +277,8 @@ class CartaController extends Controller
 
             if ($data['modo_resposta'] === 'digitada') {
                 $this->timbrado->aplicar($mensagem);
+            } else {
+                $this->timbrado->aplicarAnexo($mensagem);
             }
 
             $carta->update([
@@ -346,6 +351,8 @@ class CartaController extends Controller
                 'criada_por' => $user->id,
                 'atualizada_por' => $user->id,
             ]);
+
+            $this->timbrado->aplicarAnexo($mensagem);
 
             CartaEvento::create([
                 'carta_id' => $carta->id,
@@ -533,13 +540,7 @@ class CartaController extends Controller
             if ($data['modo_resposta'] === 'digitada') {
                 $this->timbrado->aplicar($mensagem);
             } else {
-                $mensagem->forceFill([
-                    'arquivo_final_path' => null,
-                    'arquivo_final_nome' => null,
-                    'arquivo_final_mime' => null,
-                    'arquivo_final_tamanho' => null,
-                    'timbrado_aplicado_em' => null,
-                ])->save();
+                $this->timbrado->aplicarAnexo($mensagem);
             }
 
             $mensagem->carta->update([
@@ -604,12 +605,12 @@ class CartaController extends Controller
 
         $cartas = Carta::query()
             ->with([
-                'educando.user', 
-                'educando.municipio.estado', 
-                'voluntario', 
-                'mensagens' => function($q) {
+                'educando.user',
+                'educando.municipio.estado',
+                'voluntario',
+                'mensagens' => function ($q) {
                     $q->orderBy('rodada', 'asc');
-                }
+                },
             ])
             ->when($search !== '', function ($query) use ($search) {
                 $searchLower = mb_strtolower($search, 'UTF-8');
@@ -627,38 +628,38 @@ class CartaController extends Controller
             ->latest()
             ->get();
 
-        $zipFile = storage_path('app/temp_cartas_lote_' . uniqid() . '.zip');
-        $zip = new \ZipArchive();
+        $zipFile = storage_path('app/temp_cartas_lote_'.uniqid().'.zip');
+        $zip = new \ZipArchive;
         $hasFiles = false;
 
         if ($zip->open($zipFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
             $addedFiles = [];
-            
+
             foreach ($cartas as $carta) {
                 foreach ($carta->mensagens as $mensagem) {
                     $path = $mensagem->arquivo_final_path ?: $mensagem->anexo_original_path;
-                    
+
                     if ($path && Storage::disk('local')->exists($path)) {
                         $filename = $this->gerarNomeArquivo($mensagem, $path);
-                        
+
                         // Evita conflito de nomes idênticos no ZIP
                         $nameWithoutExt = pathinfo($filename, PATHINFO_FILENAME);
                         $ext = pathinfo($filename, PATHINFO_EXTENSION);
-                        
+
                         $uniqueName = $filename;
                         $counter = 1;
                         while (in_array($uniqueName, $addedFiles)) {
-                            $uniqueName = "{$nameWithoutExt}_" . str_pad((string)$counter, 2, '0', STR_PAD_LEFT) . ".{$ext}";
+                            $uniqueName = "{$nameWithoutExt}_".str_pad((string) $counter, 2, '0', STR_PAD_LEFT).".{$ext}";
                             $counter++;
                         }
-                        
+
                         $addedFiles[] = $uniqueName;
                         $zip->addFile(Storage::disk('local')->path($path), $uniqueName);
                         $hasFiles = true;
                     }
                 }
             }
-            
+
             $zip->close();
         }
 
@@ -666,6 +667,7 @@ class CartaController extends Controller
             if (file_exists($zipFile)) {
                 @unlink($zipFile);
             }
+
             return redirect()->back()->with('status', 'Nenhuma carta com anexo/PDF foi encontrada para gerar o lote.');
         }
 
@@ -697,7 +699,7 @@ class CartaController extends Controller
             ->withQueryString();
 
         $engajaUsers = $this->remetenteCandidatosQuery()->get();
-        $municipios = \App\Models\Municipio::orderBy('nome')->get();
+        $municipios = Municipio::orderBy('nome')->get();
 
         return view('cartas.gestor.index', compact('cartas', 'engajaUsers', 'search', 'municipioId', 'municipios'));
     }

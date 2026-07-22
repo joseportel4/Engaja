@@ -8,6 +8,7 @@ use App\Models\Participante;
 use App\Models\User;
 use App\Services\Cartas\CartaTimbradoService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\File;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -34,6 +35,53 @@ class CartaTimbradoTest extends TestCase
         $this->assertGreaterThan(0, $mensagem->arquivo_final_tamanho);
         $this->assertNotNull($mensagem->timbrado_aplicado_em);
         Storage::disk('local')->assertExists($mensagem->arquivo_final_path);
+    }
+
+    public function test_aplicar_anexo_gera_pdf_final_multipagina(): void
+    {
+        Storage::fake('local');
+
+        $mensagem = CartaMensagem::factory()->create([
+            'texto' => null,
+            'canal_entrada' => CartaMensagem::CANAL_ANEXO_MANUSCRITO,
+            'status' => CartaMensagem::STATUS_AGUARDANDO_VERIFICACAO,
+            'anexo_original_path' => Storage::disk('local')->putFile(
+                'cartas/anexos-teste',
+                new File(base_path('tests/Fixtures/cartas/exemplo-anexo.pdf'))
+            ),
+        ]);
+
+        (new CartaTimbradoService)->aplicarAnexo($mensagem);
+
+        $mensagem->refresh();
+
+        $this->assertNotNull($mensagem->arquivo_final_path);
+        $this->assertSame('application/pdf', $mensagem->arquivo_final_mime);
+        $this->assertGreaterThan(0, $mensagem->arquivo_final_tamanho);
+        $this->assertNotNull($mensagem->timbrado_aplicado_em);
+        Storage::disk('local')->assertExists($mensagem->arquivo_final_path);
+    }
+
+    public function test_aplicar_anexo_com_pdf_nao_suportado_nao_derruba_o_envio(): void
+    {
+        Storage::fake('local');
+
+        $path = 'cartas/anexos-teste/invalido.pdf';
+        Storage::disk('local')->put($path, random_bytes(200));
+
+        $mensagem = CartaMensagem::factory()->create([
+            'texto' => null,
+            'canal_entrada' => CartaMensagem::CANAL_ANEXO_MANUSCRITO,
+            'status' => CartaMensagem::STATUS_AGUARDANDO_VERIFICACAO,
+            'anexo_original_path' => $path,
+        ]);
+
+        (new CartaTimbradoService)->aplicarAnexo($mensagem);
+
+        $mensagem->refresh();
+
+        $this->assertNull($mensagem->arquivo_final_path);
+        $this->assertNotNull($mensagem->anexo_original_path);
     }
 
     public function test_resposta_digitada_do_voluntario_aplica_timbrado(): void

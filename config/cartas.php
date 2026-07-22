@@ -15,7 +15,9 @@ return [
     'timbrado' => [
         'path' => public_path('images/cartas/PAEB_CartasparaEsperançar_PapeldeCarta.pdf'),
 
-        // Área de escrita, em milímetros.
+        // Área de escrita, em milímetros. Também é a caixa útil usada para
+        // centralizar o conteúdo de cartas enviadas como anexo em PDF (ver
+        // CartaTimbradoService::renderUpload()) — não só para texto digitado.
         'margin_left' => 13.0,
         'margin_right' => 13.0,
         // topo do texto da primeira linha — logo do cabeçalho termina em

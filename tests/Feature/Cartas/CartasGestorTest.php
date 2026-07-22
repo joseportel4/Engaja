@@ -5,14 +5,12 @@ namespace Tests\Feature\Cartas;
 use App\Models\Cartas\Carta;
 use App\Models\Cartas\CartaEvento;
 use App\Models\Cartas\CartaMensagem;
-use App\Models\User;
-use Illuminate\Http\UploadedFile;
 
 class CartasGestorTest extends CartasBaseTest
 {
     public function test_gestor_pode_cadastrar_carta_para_voluntario(): void
     {
-        $file = UploadedFile::fake()->create('carta.pdf', 100, 'application/pdf');
+        $file = $this->pdfFalsoValido('carta.pdf');
 
         $response = $this->actingAs($this->gestor)
             ->post(route('cartas.cartas.store'), [
@@ -65,7 +63,7 @@ class CartasGestorTest extends CartasBaseTest
             ]);
         }
 
-        $file = UploadedFile::fake()->create('carta.pdf', 100, 'application/pdf');
+        $file = $this->pdfFalsoValido('carta.pdf');
 
         $this->actingAs($this->gestor)
             ->post(route('cartas.cartas.store'), [
@@ -95,7 +93,7 @@ class CartasGestorTest extends CartasBaseTest
 
     public function test_gestor_nao_pode_cadastrar_carta_sem_remetente(): void
     {
-        $file = UploadedFile::fake()->create('carta.pdf', 100, 'application/pdf');
+        $file = $this->pdfFalsoValido('carta.pdf');
 
         $response = $this->actingAs($this->gestor)
             ->post(route('cartas.cartas.store'), [
@@ -175,7 +173,7 @@ class CartasGestorTest extends CartasBaseTest
     {
         $carta = $this->criarCartaParaVoluntario();
 
-        $file = UploadedFile::fake()->create('segunda_carta.pdf', 100, 'application/pdf');
+        $file = $this->pdfFalsoValido('segunda_carta.pdf');
 
         $response = $this->actingAs($this->gestor)
             ->post(route('cartas.cartas.mensagens.store', $carta), [

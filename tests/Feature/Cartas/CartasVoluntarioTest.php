@@ -5,7 +5,7 @@ namespace Tests\Feature\Cartas;
 use App\Models\Cartas\Carta;
 use App\Models\Cartas\CartaEvento;
 use App\Models\Cartas\CartaMensagem;
-use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 class CartasVoluntarioTest extends CartasBaseTest
 {
@@ -49,7 +49,7 @@ class CartasVoluntarioTest extends CartasBaseTest
     public function test_voluntario_pode_responder_carta_com_anexo_manuscrito(): void
     {
         $carta = $this->criarCartaParaVoluntario();
-        $file = UploadedFile::fake()->create('resposta.pdf', 200, 'application/pdf');
+        $file = $this->pdfFalsoValido('resposta.pdf');
 
         $response = $this->actingAs($this->voluntario)
             ->post(route('cartas.cartas.respond', $carta), [
@@ -66,6 +66,8 @@ class CartasVoluntarioTest extends CartasBaseTest
         $this->assertEquals(CartaMensagem::CANAL_ANEXO_MANUSCRITO, $mensagem->canal_entrada);
         $this->assertNotNull($mensagem->anexo_original_path);
         $this->assertNotNull($mensagem->anexo_original_nome);
+        $this->assertNotNull($mensagem->arquivo_final_path);
+        Storage::disk('local')->assertExists($mensagem->arquivo_final_path);
     }
 
     public function test_voluntario_nao_pode_responder_carta_de_outro(): void
@@ -160,9 +162,29 @@ class CartasVoluntarioTest extends CartasBaseTest
         $response->assertStatus(403);
     }
 
+    public function test_voluntario_pode_ajustar_mensagem_com_anexo_manuscrito(): void
+    {
+        [$carta, $mensagem] = $this->criarCartaComRespostaComAjusteSolicitado();
+
+        $response = $this->actingAs($this->voluntario)
+            ->put(route('cartas.mensagens.update-adjustment', $mensagem), [
+                'modo_resposta' => 'anexo_manuscrito',
+                'arquivo' => $this->pdfFalsoValido('ajuste.pdf'),
+            ]);
+
+        $response->assertRedirect();
+
+        $mensagem->refresh();
+
+        $this->assertEquals(CartaMensagem::CANAL_ANEXO_MANUSCRITO, $mensagem->canal_entrada);
+        $this->assertNotNull($mensagem->anexo_original_path);
+        $this->assertNotNull($mensagem->arquivo_final_path);
+        Storage::disk('local')->assertExists($mensagem->arquivo_final_path);
+    }
+
     public function test_voluntario_pode_iniciar_carta(): void
     {
-        $file = UploadedFile::fake()->create('carta.pdf', 100, 'application/pdf');
+        $file = $this->pdfFalsoValido('carta.pdf');
 
         $response = $this->actingAs($this->voluntario)
             ->post(route('cartas.voluntario.cartas.store'), [
