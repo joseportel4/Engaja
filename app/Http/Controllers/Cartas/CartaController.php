@@ -93,7 +93,7 @@ class CartaController extends Controller
             return back()->withErrors(['remetente_user_id' => 'Nenhuma acao de cartas esta configurada.'])->withInput();
         }
 
-        $voluntario = $this->selectVoluntario();
+        $voluntario = $this->selectVoluntario($remetente->id);
         if (! $voluntario) {
             return back()->withErrors(['destinatario' => 'Nao ha voluntarios disponiveis para receber a carta.'])->withInput();
         }
@@ -733,6 +733,8 @@ class CartaController extends Controller
     private function remetenteCandidatosQuery()
     {
         return User::query()
+            ->where('sistema_origem', User::SISTEMA_ENGAJA)
+            ->whereHas('participante')
             ->with('participante.municipio.estado')
             ->orderBy('name');
     }
@@ -746,14 +748,15 @@ class CartaController extends Controller
             ->orderBy('name');
     }
 
-    private function selectVoluntario(): ?User
+    private function selectVoluntario(?int $excludeUserId = null): ?User
     {
+        $randomFn = DB::getDriverName() === 'mysql' ? 'RAND()' : 'RANDOM()';
+
         return $this->voluntariosQuery()
-            ->withCount(['cartasComoVoluntario as cartas_abertas_count' => function ($query) {
-                $query->whereNotIn('status', [Carta::STATUS_ENCERRADA, Carta::STATUS_RESPONDIDA]);
-            }])
-            ->orderBy('cartas_abertas_count')
-            ->inRandomOrder()
+            ->when($excludeUserId, fn ($query) => $query->where('users.id', '!=', $excludeUserId))
+            ->withCount('cartasComoVoluntario as cartas_atribuidas_count')
+            ->reorder()
+            ->orderByRaw("cartas_atribuidas_count ASC, {$randomFn}")
             ->first();
     }
 
