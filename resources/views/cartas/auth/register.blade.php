@@ -7,36 +7,52 @@
     <h1 class="cartas-title">Crie sua conta</h1>
 
     @if ($errors->any())
-        <div class="cartas-alert cartas-alert--error">{{ $errors->first() }}</div>
+        <div id="registrationErrors" class="cartas-alert cartas-alert--error" role="alert" tabindex="-1">
+            <strong>Revise os campos destacados:</strong>
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
     @endif
 
     <form method="POST" action="{{ route('cartas.register.store') }}" class="cartas-form" data-estados-url="{{ route('cartas.localidades.estados') }}" data-municipios-url="{{ route('cartas.localidades.municipios', ['estadoIbgeId' => '__ESTADO__']) }}">
         @csrf
 
         <div class="cartas-form-group">
-            <label class="cartas-label">Nome</label>
-            <input class="cartas-field-light" type="text" name="name" value="{{ old('name') }}" placeholder="Digite seu nome completo, sem abreviação." required autofocus>
+            <label class="cartas-label" for="name">Nome</label>
+            <input id="name" class="cartas-field-light @error('name') is-invalid @enderror" type="text" name="name" value="{{ old('name') }}" placeholder="Digite seu nome completo, sem abreviação." aria-describedby="name-error" required autofocus>
+            @error('name')
+                <p id="name-error" class="cartas-field-error">{{ $message }}</p>
+            @enderror
         </div>
 
         <div class="cartas-form-group">
-            <label class="cartas-label">E-mail</label>
-            <input class="cartas-field-light" type="email" name="email" value="{{ old('email') }}" placeholder="Digite seu e-mail." required>
+            <label class="cartas-label" for="email">E-mail</label>
+            <input id="email" class="cartas-field-light @error('email') is-invalid @enderror" type="email" name="email" value="{{ old('email') }}" placeholder="Digite seu e-mail." aria-describedby="email-error" required>
+            @error('email')
+                <p id="email-error" class="cartas-field-error">{{ $message }}</p>
+            @enderror
         </div>
 
         <div class="cartas-form-group">
-            <label class="cartas-label">Senha</label>
+            <label class="cartas-label" for="passwordInput">Senha</label>
             <div class="cartas-password-wrap">
-                <input id="passwordInput" class="cartas-field-light" type="password" name="password" placeholder="Digite uma senha." required>
+                <input id="passwordInput" class="cartas-field-light @error('password') is-invalid @enderror" type="password" name="password" placeholder="Digite uma senha." aria-describedby="password-error" required>
                 <button type="button" class="cartas-password-toggle" onclick="togglePassword('passwordInput', this)" title="Mostrar/Ocultar senha">
                     <i class="bi bi-eye"></i>
                 </button>
             </div>
+            @error('password')
+                <p id="password-error" class="cartas-field-error">{{ $message }}</p>
+            @enderror
         </div>
 
         <div class="cartas-form-group">
-            <label class="cartas-label">Confirmar senha</label>
+            <label class="cartas-label" for="passwordConfirmInput">Confirmar senha</label>
             <div class="cartas-password-wrap">
-                <input id="passwordConfirmInput" class="cartas-field-light" type="password" name="password_confirmation" placeholder="Confirmar senha." required>
+                <input id="passwordConfirmInput" class="cartas-field-light @error('password') is-invalid @enderror" type="password" name="password_confirmation" placeholder="Confirmar senha." required>
                 <button type="button" class="cartas-password-toggle" onclick="togglePassword('passwordConfirmInput', this)" title="Mostrar/Ocultar senha">
                     <i class="bi bi-eye"></i>
                 </button>
@@ -46,39 +62,54 @@
         <div class="cartas-section">
             <div class="cartas-grid-2">
                 <div class="cartas-form-group">
-                    <label class="cartas-label">CPF</label>
-                    <input id="cpf" class="cartas-field-light" type="text" name="cpf" value="{{ old('cpf') }}" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" required>
+                    <label class="cartas-label" for="cpf">CPF</label>
+                    <input id="cpf" class="cartas-field-light @error('cpf') is-invalid @enderror" type="text" name="cpf" value="{{ old('cpf') }}" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" aria-describedby="cpf-error" required>
+                    @error('cpf')
+                        <p id="cpf-error" class="cartas-field-error">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="cartas-form-group">
-                    <label class="cartas-label">Telefone</label>
-                    <input id="telefone" class="cartas-field-light" type="text" name="telefone" value="{{ old('telefone') }}" inputmode="numeric" maxlength="15" placeholder="(99) 99999-9999" required>
+                    <label class="cartas-label" for="telefone">Telefone</label>
+                    <input id="telefone" class="cartas-field-light @error('telefone') is-invalid @enderror" type="text" name="telefone" value="{{ old('telefone') }}" inputmode="numeric" maxlength="15" placeholder="(99) 99999-9999" aria-describedby="telefone-error" required>
+                    @error('telefone')
+                        <p id="telefone-error" class="cartas-field-error">{{ $message }}</p>
+                    @enderror
                 </div>
             </div>
 
             <div class="cartas-grid-2">
                 <div class="cartas-form-group">
-                    <label class="cartas-label">Estado</label>
-                    <select id="estado_ibge_id" class="cartas-field-light" name="estado_ibge_id" required>
+                    <label class="cartas-label" for="estado_ibge_id">Estado</label>
+                    <select id="estado_ibge_id" class="cartas-field-light @error('estado_ibge_id') is-invalid @enderror" name="estado_ibge_id" aria-describedby="estado-error" required>
                         <option value="">Selecione...</option>
                     </select>
+                    @error('estado_ibge_id')
+                        <p id="estado-error" class="cartas-field-error">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="cartas-form-group" id="municipio-wrap" hidden>
-                    <label class="cartas-label">Município</label>
-                    <select id="municipio_ibge_id" class="cartas-field-light" name="municipio_ibge_id" disabled required>
+                    <label class="cartas-label" for="municipio_ibge_id">Município</label>
+                    <select id="municipio_ibge_id" class="cartas-field-light @error('municipio_ibge_id') is-invalid @enderror" name="municipio_ibge_id" aria-describedby="municipio-error" disabled required>
                         <option value="">Selecione...</option>
                     </select>
+                    @error('municipio_ibge_id')
+                        <p id="municipio-error" class="cartas-field-error">{{ $message }}</p>
+                    @enderror
                 </div>
             </div>
         </div>
 
-        <div class="cartas-terms-check">
+        <div class="cartas-terms-check @error('termos_aceitos') cartas-terms-check--invalid @enderror">
             <label class="cartas-terms-check__label">
-                <input type="checkbox" name="termos_aceitos" id="termosCheckbox" value="1" {{ old('termos_aceitos') ? 'checked' : '' }}>
+                <input type="checkbox" name="termos_aceitos" id="termosCheckbox" value="1" {{ old('termos_aceitos') ? 'checked' : '' }} required>
                 <span>Li e estou de acordo com os <a href="#" id="openTermsModal" class="cartas-terms-check__link">termos de uso</a>.</span>
             </label>
+            @error('termos_aceitos')
+                <p class="cartas-field-error">{{ $message }}</p>
+            @enderror
         </div>
 
-        <button type="submit" class="cartas-button" id="submitBtn" {{ old('termos_aceitos') ? '' : 'disabled' }}>Continuar</button>
+        <button type="submit" class="cartas-button" id="submitBtn">Continuar</button>
     </form>
 
     <a href="{{ route('cartas.login') }}" class="cartas-link" style="margin-top:28px;font-weight:700;">Já tenho uma conta</a>
@@ -122,6 +153,8 @@
         const estadoSelecionado = @json(old('estado_ibge_id'));
         const municipioSelecionado = @json(old('municipio_ibge_id'));
         let municipiosRequestId = 0;
+
+        document.getElementById('registrationErrors')?.focus();
 
         const addOption = (select, value, label) => select.add(new Option(label, value));
         const setSubmitLoading = loading => {
@@ -171,6 +204,10 @@
         form.addEventListener('submit', event => {
             if (municipio.dataset.loading === 'true') {
                 event.preventDefault();
+                municipio.setCustomValidity('Aguarde o carregamento dos municípios.');
+                municipio.reportValidity();
+            } else {
+                municipio.setCustomValidity('');
             }
         });
 
@@ -292,6 +329,24 @@
             box-shadow: 0 0 0 3px rgba(168, 0, 214, .14);
         }
 
+        .cartas-field-light.is-invalid {
+            border-color: #c62828;
+            box-shadow: 0 0 0 3px rgba(198, 40, 40, .14);
+        }
+
+        .cartas-field-error {
+            margin: 6px 0 0;
+            color: #b42318;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.35;
+        }
+
+        .cartas-alert--error ul {
+            margin: 8px 0 0;
+            padding-left: 20px;
+        }
+
         .cartas-field-light:disabled,
         input.cartas-field-light:read-only,
         textarea.cartas-field-light:read-only {
@@ -340,6 +395,13 @@
             margin-top: 2px;
             cursor: pointer;
             accent-color: #a800d6;
+        }
+
+        .cartas-terms-check--invalid {
+            padding: 10px;
+            border: 1px solid #c62828;
+            border-radius: 6px;
+            background: #fff4f4;
         }
 
         .cartas-terms-check__link {
@@ -439,16 +501,10 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const checkbox = document.getElementById('termosCheckbox');
-            const submitBtn = document.getElementById('submitBtn');
             const openBtn = document.getElementById('openTermsModal');
             const closeBtn = document.getElementById('closeTermsModal');
             const modal = document.getElementById('termsModal');
             const backdrop = modal?.querySelector('.cartas-terms-modal__backdrop');
-
-            checkbox?.addEventListener('change', () => {
-                submitBtn.disabled = !checkbox.checked;
-            });
 
             openBtn?.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -471,4 +527,3 @@
         });
     </script>
 @endpush
-

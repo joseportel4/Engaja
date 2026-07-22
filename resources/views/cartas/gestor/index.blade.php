@@ -20,7 +20,7 @@
                     <div class="cpe-alert">{{ session('status') }}</div>
                 @endif
 
-                <form method="POST" action="{{ route('cartas.cartas.store') }}" enctype="multipart/form-data" class="cpe-manager-form">
+                <form id="gestorCartaForm" method="POST" action="{{ route('cartas.cartas.store') }}" enctype="multipart/form-data" class="cpe-manager-form">
                     @csrf
                     <label class="cpe-upload">
                         <input type="file" name="arquivo" required accept=".pdf,application/pdf">
@@ -50,26 +50,26 @@
                         </ul>
                     </div>
 
-                    <button type="submit" class="cpe-button">Enviar carta</button>
+                    <button type="button" class="cpe-button" id="gestorCartaSubmitBtn">Enviar carta</button>
                 </form>
             </div>
         </section>
 
         <section class="cpe-manager__right">
             <div class="cpe-manager__header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
-                <div class="cpe-manager__titleline" style="margin: 0; display: flex; align-items: center; gap: 8px;">
-                    <h2 style="margin: 0; padding: 0; font-size: 24px; font-weight: 600; color: #111;">Todas as cartas</h2>
-                    <span style="margin: 0; font-size: 15px; color: #666;">({{ $cartas->total() }} cartas)</span>
+                <div class="cpe-manager__titleline" style="margin: 0; display: flex; align-items: center; gap: 12px;">
+                    <h2 style="margin: 0; padding: 0; font-size: 26px; font-weight: 600; color: #111;">Todas as cartas</h2>
+                    <span style="margin: 0; font-size: 16px; font-weight: 500; color: #222; background: #f4f4f4; padding: 4px 16px; border-radius: 999px;">{{ $cartas->total() }} cartas</span>
                 </div>
 
                 <form id="filterForm" method="GET" action="{{ route('cartas.dashboard') }}" style="display: flex; gap: 24px; align-items: stretch; flex-wrap: wrap; background: #fff; padding: 16px 20px; border-radius: 8px; border: 1px solid #eaeaea; box-shadow: 0 2px 4px rgba(0,0,0,0.02); width: 100%; justify-content: space-between;">
-                    
+
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; max-width: 300px;">
                         <label for="municipio_id" style="font-size: 13px; font-weight: 600; color: #111;">Município do Educando:</label>
-                        <select id="municipio_id" name="municipio_id" style="height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #333;" onchange="document.getElementById('filterForm').submit()">
-                            <option value="">Todos os municípios</option>
+                        <select id="municipio_id" name="municipio_id" style="height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #111;">
+                            <option value="" style="color: #333;">Todos os municípios</option>
                             @foreach($municipios as $mun)
-                                <option value="{{ $mun->id }}" @selected($municipioId == $mun->id)>{{ $mun->nome }}</option>
+                                <option value="{{ $mun->id }}" style="color: #111;" @selected($municipioId == $mun->id)>{{ $mun->nome }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -77,7 +77,7 @@
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 2; min-width: 250px;">
                         <label for="search_input" style="font-size: 13px; font-weight: 600; color: #111;">Pesquisa de Remetente ou Destinatário:</label>
                         <div style="position: relative; height: 40px; display: flex; align-items: center;">
-                            <input id="search_input" type="search" name="q" value="{{ $search }}" placeholder="Digite o nome..." style="height: 100%; width: 100%; box-sizing: border-box; padding: 0 36px 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none;">
+                            <input id="search_input" type="search" name="q" value="{{ $search }}" placeholder="Digite o nome..." style="height: 100%; width: 100%; box-sizing: border-box; padding: 0 36px 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; color: #111;">
                             <button type="submit" aria-label="Pesquisar" style="position: absolute; right: 8px; background: none; border: none; color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 100%;">
                                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </button>
@@ -119,7 +119,7 @@
                                 $statusLabel = match (true) {
                                     $carta->status === 'respondida' => 'Respondida',
                                     $carta->status === 'aguardando_ajuste' || $ultimoStatus === 'ajuste_solicitado' => 'Ajuste solicitado',
-                                    str_contains($ultimoStatus, 'verificacao') => 'Em preparação',
+                                    str_contains($ultimoStatus, 'verificacao') => 'Pendente',
                                     default => 'Enviada',
                                 };
                             @endphp
@@ -163,7 +163,7 @@
             </div>
 
             <div class="cpe-pagination">
-                {{ $cartas->links() }}
+                {{ $cartas->links('cartas.gestor.pagination') }}
             </div>
         </section>
 
@@ -259,6 +259,11 @@
             color: #555;
         }
 
+        #search_input::placeholder {
+            color: #333;
+            opacity: 1;
+        }
+
         .cpe-search {
             width: min(260px, 100%);
             height: 38px;
@@ -291,7 +296,7 @@
 
         .cpe-manager-table .cpe-table th,
         .cpe-manager-table .cpe-table td {
-            color: #333;
+            color: #0f0f0f;
         }
 
         .cpe-combobox__input::placeholder {
@@ -331,9 +336,120 @@
             padding: 42px !important;
         }
 
+        .cpe-table-card.cpe-manager-table {
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            box-shadow: none;
+            border-bottom: 0;
+        }
+
         .cpe-pagination {
-            padding: 12px 28px;
-            margin-top: auto;
+            background: #fff;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+            box-shadow: 0 1px 0 rgba(0, 0, 0, .05);
+            margin-top: 0;
+        }
+
+        .cpe-custom-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 16px 24px;
+            border-top: 1px solid #eaecf0;
+            gap: 12px;
+        }
+
+        .cpe-page-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 14px;
+            height: 38px;
+            border: 1px solid #d0d5dd;
+            border-radius: 8px;
+            background: #fff;
+            color: #344054;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 20px;
+            text-decoration: none;
+            transition: all 0.15s ease;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+            cursor: pointer;
+        }
+
+        .cpe-page-btn:hover:not(.cpe-page-btn--disabled) {
+            background: #f9fafb;
+            border-color: #d0d5dd;
+            color: #1d2939;
+        }
+
+        .cpe-page-btn--disabled {
+            opacity: 0.5;
+            cursor: default;
+            pointer-events: none;
+            background: #f9fafb;
+            color: #98a2b3;
+        }
+
+        .cpe-page-numbers {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .cpe-page-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 38px;
+            height: 38px;
+            padding: 0 8px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 20px;
+            color: #667085;
+            text-decoration: none;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+
+        a.cpe-page-num:hover {
+            background: #f9fafb;
+            color: #1d2939;
+        }
+
+        .cpe-page-num--active {
+            background: #f4ebfa;
+            color: #a800d6;
+            font-weight: 700;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .cpe-page-num--dots {
+            color: #667085;
+            cursor: default;
+            pointer-events: none;
+            min-width: 38px;
+            height: 38px;
+        }
+
+        @media (max-width: 640px) {
+            .cpe-custom-pagination {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .cpe-page-numbers {
+                order: -1;
+            }
         }
 
         @media (max-width: 980px) {
@@ -362,26 +478,126 @@
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('search_input');
             const filterForm = document.getElementById('filterForm');
+            const municipioSelect = document.getElementById('municipio_id');
+            const tableContainer = document.querySelector('.cpe-manager-table');
+            const paginationContainer = document.querySelector('.cpe-pagination');
             let debounceTimer;
+
+            function fetchResults(url) {
+                tableContainer.style.opacity = '0.5';
+
+                fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    tableContainer.innerHTML = doc.querySelector('.cpe-manager-table').innerHTML;
+                    paginationContainer.innerHTML = doc.querySelector('.cpe-pagination').innerHTML;
+
+                    tableContainer.style.opacity = '1';
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar dados:', error);
+                    tableContainer.style.opacity = '1';
+                });
+            }
+
+            if (filterForm) {
+                filterForm.addEventListener('submit', function(e) {
+                    const submitter = e.submitter;
+                    // Ignora a submissão via botão de download de PDF
+                    if (submitter && submitter.getAttribute('formaction')) {
+                        return;
+                    }
+
+                    e.preventDefault();
+
+                    const url = new URL(filterForm.action);
+                    const formData = new FormData(filterForm);
+                    const searchParams = new URLSearchParams(formData);
+
+                    url.search = searchParams.toString();
+                    fetchResults(url);
+
+                    window.history.pushState({}, '', url);
+                });
+            }
 
             if (searchInput && filterForm) {
                 searchInput.addEventListener('input', function() {
                     clearTimeout(debounceTimer);
-                    
+
                     debounceTimer = setTimeout(function() {
                         const val = searchInput.value.trim();
-                        // If empty (e.g. user clicked the 'x' to clear), submit immediately to show all
-                        if (val === '') {
-                            filterForm.submit();
+                        if (val === '' || val.length >= 2) {
+                            filterForm.dispatchEvent(new Event('submit', { cancelable: true }));
                         }
-                        // If typed 2 or more characters, submit to filter
-                        else if (val.length >= 2) {
-                            filterForm.submit();
-                        }
-                        // if length is 1, wait for them to type more, don't submit yet
-                    }, 500); // 500ms delay
+                    }, 500);
+                });
+            }
+
+            if (municipioSelect && filterForm) {
+                municipioSelect.addEventListener('change', function() {
+                    filterForm.dispatchEvent(new Event('submit', { cancelable: true }));
+                });
+            }
+
+            document.addEventListener('click', function(e) {
+                const paginationLink = e.target.closest('.cpe-pagination a');
+                if (paginationLink) {
+                    e.preventDefault();
+                    const url = paginationLink.href;
+                    fetchResults(url);
+                    window.history.pushState({}, '', url);
+                }
+            });
+
+            window.addEventListener('popstate', function() {
+                fetchResults(window.location.href);
+            });
+            //logica do modal de confirmação do gestor
+            const gestorSubmitBtn = document.getElementById('gestorCartaSubmitBtn');
+            const gestorForm = document.getElementById('gestorCartaForm');
+            const gestorConfirmModal = document.getElementById('gestorConfirmModal');
+            const gestorConfirmOk = document.getElementById('gestorConfirmOk');
+            const gestorConfirmCancel = document.querySelectorAll('[data-gestor-confirm-close]');
+
+            if (gestorSubmitBtn && gestorForm && gestorConfirmModal) {
+                gestorSubmitBtn.addEventListener('click', function() {
+                    gestorConfirmModal.classList.add('is-open');
+                });
+
+                gestorConfirmOk.addEventListener('click', function() {
+                    gestorForm.submit();
+                });
+
+                gestorConfirmCancel.forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        gestorConfirmModal.classList.remove('is-open');
+                    });
+                });
+
+                gestorConfirmModal.querySelector('.cpe-modal__backdrop').addEventListener('click', function() {
+                    gestorConfirmModal.classList.remove('is-open');
                 });
             }
         });
     </script>
+
+    <div class="cpe-modal" id="gestorConfirmModal">
+        <div class="cpe-modal__backdrop"></div>
+        <div class="cpe-modal__dialog">
+            <h2>Confirmar envio</h2>
+            <p>Você tem certeza que deseja enviar esta carta? Esta ação não poderá ser desfeita.</p>
+            <div class="cpe-modal-actions">
+                <button type="button" class="cpe-button cpe-button--ghost" data-gestor-confirm-close>Cancelar</button>
+                <button type="button" class="cpe-button" id="gestorConfirmOk">Confirmar envio</button>
+            </div>
+        </div>
+    </div>
 @endsection

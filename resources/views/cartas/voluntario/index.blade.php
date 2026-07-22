@@ -39,7 +39,7 @@
                                 $primeira = $carta->mensagens->sortBy('rodada')->first();
                                 $statusLabel = match ($carta->status) {
                                     'aguardando_voluntario' => 'Recebida',
-                                    'aguardando_verificacao' => 'Em preparação',
+                                    'aguardando_verificacao' => 'Pendente',
                                     'aguardando_ajuste' => 'Ajuste solicitado',
                                     'respondida' => 'Respondida',
                                     'aguardando_educando' => 'Aguardando educando',

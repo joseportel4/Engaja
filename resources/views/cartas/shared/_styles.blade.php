@@ -332,7 +332,7 @@
     .cpe-table td {
         padding: 18px 14px;
         border-bottom: 1px solid #e8e8e8;
-        color: #5d5d5d;
+        color: #0f0f0f;
         vertical-align: middle;
     }
 
@@ -454,7 +454,7 @@
     }
 
     .cpe-modal p {
-        color: #666;
+        color: #000000;
         font-size: 13px;
         margin: 0 0 16px;
     }

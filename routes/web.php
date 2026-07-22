@@ -64,6 +64,7 @@ Route::prefix('cartas')->name('cartas.')->group(function () {
         Route::get('/verificar-email', [CartasAuthController::class, 'verificationNotice'])->name('verification.notice');
 
         Route::middleware('cartas.verified')->group(function () {
+            Route::post('/welcome-seen', [CartasAuthController::class, 'markWelcomeSeen'])->name('welcome.seen');
             Route::get('/dashboard', [CartasCartaController::class, 'dashboard'])->name('dashboard');
             Route::get('/usuarios', [CartasUserManagementController::class, 'index'])->name('usuarios.index');
             Route::get('/usuarios/{managedUser}/editar', [CartasUserManagementController::class, 'edit'])->name('usuarios.edit');

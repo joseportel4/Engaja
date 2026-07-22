@@ -1,7 +1,7 @@
 @extends('cartas.auth._shell')
 
 @section('title', 'Nova senha - Cartas para Esperançar')
-@section('auth-bg-style', "background-image: url('" . asset('images/cartas/bg-login.png') . "');")
+@section('auth-bg-style', "background-image: url('" . asset('images/cartas/bg-recuperar-senha.png') . "');")
 
 @section('auth-content')
     <h1 class="cartas-title">Nova senha</h1>

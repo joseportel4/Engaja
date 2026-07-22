@@ -707,6 +707,7 @@ class CartaController extends Controller
     private function voluntarioDashboard(Request $request): View
     {
         $user = $request->user();
+        $user->loadMissing('participante.municipio.estado');
 
         $cartas = Carta::query()
             ->with(['educando.user', 'educando.municipio.estado', 'voluntario.participante.municipio.estado', 'mensagens' => fn ($q) => $q->latest('rodada'), 'ultimaMensagem'])

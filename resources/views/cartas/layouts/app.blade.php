@@ -272,6 +272,7 @@
 <body>
     @yield('body')
     @include('cartas.layouts.footer')
+    @include('cartas.shared._welcome_modal')
     @stack('scripts')
 </body>
 </html>

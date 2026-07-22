@@ -1,7 +1,41 @@
 @extends('cartas.auth._shell')
 
 @section('title', 'Verifique seu e-mail - Cartas para Esperançar')
-@section('auth-bg-style', "background-image: url('" . asset('images/cartas/bg-cadastro.png') . "');")
+@section('auth-bg-style', 'background-color: #c893df; background-image: none; position: relative; overflow: hidden;')
+
+@section('auth-side-content')
+    {{-- Ilustração 1: menina na janela --}}
+    <img
+        src="{{ asset('images/cartas/ilustracao1-verificar-email.png') }}"
+        alt=""
+        style="
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -58%);
+            width: 65%;
+            height: auto;
+            object-fit: contain;
+            z-index: 1;
+            pointer-events: none;
+        "
+    >
+    {{-- Ilustração 2: envelope com notas --}}
+    <img
+        src="{{ asset('images/cartas/ilustracao2-verificar-email.png') }}"
+        alt=""
+        style="
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 20%;
+            height: auto;
+            object-fit: contain;
+            z-index: 2;
+            pointer-events: none;
+        "
+    >
+@endsection
 
 @section('auth-content')
     <h1 class="cartas-title cartas-title--strong">Verifique seu e-mail</h1>
