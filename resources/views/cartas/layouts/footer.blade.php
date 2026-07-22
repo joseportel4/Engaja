@@ -45,12 +45,13 @@
                 <nav class="cpe-ft__nav">
                     <a href="https://alfaejabrasil.org.br/home" target="_blank" rel="noopener">Início</a>
                     <a href="https://alfaejabrasil.org.br/blogs" target="_blank" rel="noopener">Blog</a>
+                    <a href="https://alfaejabrasil.org.br/atualizacoes" target="_blank" rel="noopener">Notícias</a>
                     <a href="https://alfaejabrasil.org.br/podcast" target="_blank" rel="noopener">Podcast</a>
-                    <a href="#">Materiais</a>
-                    <a href="#">EAD</a>
+                    <a href="https://alfaejabrasil.org.br/imprensa" target="_blank" rel="noopener">Imprensa</a>
                 </nav>
 
                 <nav class="cpe-ft__nav">
+                    <a href="https://alfaejabrasil.org.br/nossas-publicacoes" target="_blank" rel="noopener">Nossas Publicações</a>
                     <a href="https://alfaejabrasil.org.br/alfa-eja-brasil-o-que-e-e-quais-sao-seus-principais-objetivos" target="_blank" rel="noopener">O projeto ALFA-EJA Brasil</a>
                     <a href="https://alfaejabrasil.org.br/politica-de-privacidade" target="_blank" rel="noopener">Política de privacidade</a>
                     <a href="https://alfaejabrasil.org.br/termos-de-uso" target="_blank" rel="noopener">Termos de uso</a>
