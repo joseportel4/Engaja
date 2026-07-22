@@ -236,4 +236,38 @@ class CartasVoluntarioTest extends CartasBaseTest
         );
         $this->assertSame(Carta::STATUS_AGUARDANDO_VERIFICACAO, end($ordemStatus));
     }
+
+    public function test_show_exibe_carta_centralizada_com_pdf_read_only(): void
+    {
+        $carta = $this->criarCartaParaVoluntario();
+
+        CartaMensagem::create([
+            'carta_id' => $carta->id,
+            'rodada' => 1,
+            'remetente_participante_id' => $this->educando->id,
+            'destinatario_user_id' => $this->voluntario->id,
+            'tipo_remetente' => CartaMensagem::TIPO_REMETENTE_EDUCANDO,
+            'canal_entrada' => CartaMensagem::CANAL_ANEXO_MANUSCRITO,
+            'status' => CartaMensagem::STATUS_APROVADA,
+            'anexo_original_path' => 'cartas/exemplo.pdf',
+            'anexo_original_nome' => 'exemplo.pdf',
+            'anexo_original_mime' => 'application/pdf',
+            'enviada_em' => now(),
+            'criada_por' => $this->gestor->id,
+            'atualizada_por' => $this->gestor->id,
+        ]);
+
+        $response = $this->actingAs($this->voluntario)->get(route('cartas.cartas.show', $carta));
+
+        $response->assertOk();
+        // Lista lateral compacta e cabeçalho De/Para centralizado.
+        $response->assertSee('cpe-msg-list', false);
+        $response->assertSee('cpe-letter-header', false);
+        // PDF renderizado como imagem (pdf.js), read-only e sem controles do navegador.
+        $response->assertSee('cpe-letter-doc', false);
+        $response->assertSee('data-pdf-src', false);
+        $response->assertDontSee('<iframe', false);
+        // Botão "Responder" (roxo, sem --ghost) ao lado do "Imprimir" quando o voluntário pode enviar.
+        $response->assertSee('data-modal-open="respondCartaModal"', false);
+    }
 }
