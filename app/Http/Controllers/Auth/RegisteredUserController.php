@@ -43,7 +43,10 @@ class RegisteredUserController extends Controller
     {
         $validator = Validator::make($this->prepareData($request), [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'email' => [
+                'required', 'string', 'lowercase', 'email', 'max:255',
+                Rule::unique('users', 'email')->where('sistema_origem', User::SISTEMA_ENGAJA),
+            ],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'cpf'                          => ['required', 'digits:11'],
             'telefone'                     => ['nullable', 'regex:/^\d{10,11}$/'],
@@ -92,6 +95,7 @@ class RegisteredUserController extends Controller
                 'name' => $data['name'],
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
+                'sistema_origem' => User::SISTEMA_ENGAJA,
                 'identidade_genero'            => $data['identidade_genero'],
                 'identidade_genero_outro'      => $data['identidade_genero_outro'] ?? null,
                 'raca_cor'                     => $data['raca_cor'],

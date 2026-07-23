@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Facades\Excel;
@@ -475,7 +476,10 @@ class EventoController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email' => [
+                'required', 'string', 'lowercase', 'email', 'max:255',
+                Rule::unique('users', 'email')->where('sistema_origem', User::SISTEMA_ENGAJA),
+            ],
         ]);
 
         $data = $request->validated();
@@ -490,6 +494,7 @@ class EventoController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make(Str::random(8)),
+                'sistema_origem' => User::SISTEMA_ENGAJA,
             ]);
 
             $user->assignRole('participante');

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Cartas\Carta;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -26,6 +27,11 @@ class Municipio extends Model
     public function agendamentos()
     {
         return $this->hasMany(Agendamento::class);
+    }
+
+    public function cartas()
+    {
+        return $this->hasMany(Carta::class);
     }
 
     public function atividades()

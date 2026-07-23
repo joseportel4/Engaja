@@ -33,6 +33,9 @@ class RolesPermissionsSeeder extends Seeder
             'certificado.emitir', 'certificado.editar', 'certificado.baixar',
             'modeloCertificado.criar', 'modeloCertificado.editar', 'modeloCertificado.excluir',
             'agendamento.criar', 'agendamento.editar', 'agentamento.ver', 'agendamento.excluir', 'agendamento.notificar',
+            'cartas.ver', 'cartas.criar', 'cartas.editar', 'cartas.excluir',
+            'cartas.distribuir', 'cartas.responder', 'cartas.verificar',
+            'cartas.editar-enviada', 'cartas.relatorio', 'cartas.exportar',
         ];
 
         foreach ($permissoes as $p) {
@@ -45,6 +48,9 @@ class RolesPermissionsSeeder extends Seeder
         $articulador = Role::firstOrCreate(['name' => 'articulador', 'guard_name' => 'web']);
         $participante = Role::firstOrCreate(['name' => 'participante', 'guard_name' => 'web']);
         $SME = Role::firstOrCreate(['name' => 'SME', 'guard_name' => 'web']);
+        $cartasAdmin = Role::firstOrCreate(['name' => 'cartas_admin', 'guard_name' => 'web']);
+        $cartasGestao = Role::firstOrCreate(['name' => 'cartas_gestao', 'guard_name' => 'web']);
+        $cartasVoluntario = Role::firstOrCreate(['name' => 'cartas_voluntario', 'guard_name' => 'web']);
 
         $admin->givePermissionTo([
             'user.ver', 'user.criar', 'user.editar', 'user.excluir',
@@ -130,6 +136,21 @@ class RolesPermissionsSeeder extends Seeder
         // SME
         $SME->givePermissionTo([
             'agendamento.criar', 'agendamento.editar', 'agentamento.ver', 'agendamento.excluir',
+        ]);
+
+        $cartasAdmin->givePermissionTo([
+            'cartas.ver', 'cartas.criar', 'cartas.editar', 'cartas.excluir',
+            'cartas.distribuir', 'cartas.responder', 'cartas.verificar',
+            'cartas.editar-enviada', 'cartas.relatorio', 'cartas.exportar',
+        ]);
+
+        $cartasGestao->givePermissionTo([
+            'cartas.ver', 'cartas.criar', 'cartas.editar',
+            'cartas.verificar', 'cartas.relatorio', 'cartas.exportar',
+        ]);
+
+        $cartasVoluntario->givePermissionTo([
+            'cartas.ver', 'cartas.responder',
         ]);
     }
 }
