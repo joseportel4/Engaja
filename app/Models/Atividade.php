@@ -17,6 +17,7 @@ class Atividade extends Model
     protected $fillable = [
         'evento_id',
         'municipio_id',
+        'abrangencia_nacional',
         'descricao',
         'dia',
         'hora_inicio',
@@ -30,6 +31,7 @@ class Atividade extends Model
     ];
 
     protected $casts = [
+        'abrangencia_nacional' => 'boolean',
         'checklist_planejamento' => 'array',
         'checklist_encerramento' => 'array',
     ];

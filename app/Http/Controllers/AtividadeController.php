@@ -31,12 +31,17 @@ class AtividadeController extends Controller
             ->orderBy('nome')
             ->get();
 
+        $temAbrangenciaNacional = $evento->atividades()
+            ->where('abrangencia_nacional', true)
+            ->exists();
+
         $atividades = $evento->atividades()
             ->with([
                 'municipios.estado',
                 'avaliacaoAtividades' => fn ($rel) => $rel->when($userId, fn ($query) => $query->where('user_id', $userId)),
             ])
-            ->when($request->filled('municipio_id'), fn ($q) => $q->whereHas(
+            ->when($request->input('municipio_id') === 'brasil', fn ($q) => $q->where('abrangencia_nacional', true))
+            ->when($request->filled('municipio_id') && $request->input('municipio_id') !== 'brasil', fn ($q) => $q->whereHas(
                 'municipios',
                 fn ($q2) => $q2->where('municipios.id', $request->municipio_id)
             ))
@@ -45,7 +50,7 @@ class AtividadeController extends Controller
             ->paginate(12)
             ->appends($request->query());
 
-        return view('atividades.index', compact('evento', 'atividades', 'municipiosDisponiveis'));
+        return view('atividades.index', compact('evento', 'atividades', 'municipiosDisponiveis', 'temAbrangenciaNacional'));
     }
 
     public function create(Evento $evento)
@@ -107,6 +112,7 @@ class AtividadeController extends Controller
         $dados = $request->validate([
             'municipios' => 'nullable|array',
             'municipios.*' => 'exists:municipios,id',
+            'abrangencia_nacional' => 'nullable|boolean',
             'descricao' => 'required|string',
             'dia' => 'required|date',
             'hora_inicio' => 'required|date_format:H:i',
@@ -135,6 +141,11 @@ class AtividadeController extends Controller
 
         $municipiosSelecionados = $dados['municipios'] ?? [];
         unset($dados['municipios']);
+
+        $dados['abrangencia_nacional'] = $request->boolean('abrangencia_nacional');
+        if ($dados['abrangencia_nacional']) {
+            $municipiosSelecionados = [];
+        }
 
         // Mantém o campo legado municipio_id preenchido com o primeiro selecionado (para compatibilidade).
         $dados['municipio_id'] = $municipiosSelecionados[0] ?? null;
@@ -186,6 +197,7 @@ class AtividadeController extends Controller
         $dados = $request->validate([
             'municipios' => 'nullable|array',
             'municipios.*' => 'exists:municipios,id',
+            'abrangencia_nacional' => 'nullable|boolean',
             'descricao' => 'required|string',
             'dia' => 'required|date',
             'hora_inicio' => 'required|date_format:H:i',
@@ -214,6 +226,11 @@ class AtividadeController extends Controller
 
         $municipiosSelecionados = $dados['municipios'] ?? [];
         unset($dados['municipios']);
+
+        $dados['abrangencia_nacional'] = $request->boolean('abrangencia_nacional');
+        if ($dados['abrangencia_nacional']) {
+            $municipiosSelecionados = [];
+        }
 
         $dados['municipio_id'] = $municipiosSelecionados[0] ?? null;
 

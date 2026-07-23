@@ -431,9 +431,11 @@
 
               $momento = trim($at->descricao ?? '') !== '' ? $at->descricao : 'Momento';
               $local = $at->local ?? null;
-              $municipio = $at->municipios->isNotEmpty()
-                ? $at->municipios->map(fn($m) => $m->nome_com_estado ?? $m->nome)->join(', ')
-                : null;
+              $municipio = $at->abrangencia_nacional
+                ? 'Brasil'
+                : ($at->municipios->isNotEmpty()
+                  ? $at->municipios->map(fn($m) => $m->nome_com_estado ?? $m->nome)->join(', ')
+                  : null);
               $publicoEsperado = $at->publico_esperado;
               $cargaHoraria = $at->carga_horaria;
               $cargaLabel = !is_null($cargaHoraria) ? \App\Support\CargaHoraria::formatMinutos((int) $cargaHoraria) : null;
