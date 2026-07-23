@@ -17,7 +17,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('cartas.register.store') }}" class="cartas-form" data-estados-url="{{ route('cartas.localidades.estados') }}" data-municipios-url="{{ route('cartas.localidades.municipios', ['estadoIbgeId' => '__ESTADO__']) }}">
+    <form method="POST" action="{{ route('cartas.register.store') }}" class="cartas-form" data-estados-url="{{ route('cartas.localidades.estados') }}" data-municipios-url="{{ route('cartas.localidades.municipios', ['estadoId' => '__ESTADO__']) }}">
         @csrf
 
         <div class="cartas-form-group">
@@ -79,20 +79,20 @@
 
             <div class="cartas-grid-2">
                 <div class="cartas-form-group">
-                    <label class="cartas-label" for="estado_ibge_id">Estado</label>
-                    <select id="estado_ibge_id" class="cartas-field-light @error('estado_ibge_id') is-invalid @enderror" name="estado_ibge_id" aria-describedby="estado-error" required>
+                    <label class="cartas-label" for="estado_id">Estado</label>
+                    <select id="estado_id" class="cartas-field-light @error('estado_id') is-invalid @enderror" name="estado_id" aria-describedby="estado-error" required>
                         <option value="">Selecione...</option>
                     </select>
-                    @error('estado_ibge_id')
+                    @error('estado_id')
                         <p id="estado-error" class="cartas-field-error">{{ $message }}</p>
                     @enderror
                 </div>
                 <div class="cartas-form-group" id="municipio-wrap" hidden>
-                    <label class="cartas-label" for="municipio_ibge_id">Município</label>
-                    <select id="municipio_ibge_id" class="cartas-field-light @error('municipio_ibge_id') is-invalid @enderror" name="municipio_ibge_id" aria-describedby="municipio-error" disabled required>
+                    <label class="cartas-label" for="municipio_id">Município</label>
+                    <select id="municipio_id" class="cartas-field-light @error('municipio_id') is-invalid @enderror" name="municipio_id" aria-describedby="municipio-error" disabled required>
                         <option value="">Selecione...</option>
                     </select>
-                    @error('municipio_ibge_id')
+                    @error('municipio_id')
                         <p id="municipio-error" class="cartas-field-error">{{ $message }}</p>
                     @enderror
                 </div>
@@ -146,12 +146,12 @@
         if (telefone) telefone.value = maskPhone(telefone.value);
 
         const form = document.querySelector('.cartas-form');
-        const estado = document.getElementById('estado_ibge_id');
-        const municipio = document.getElementById('municipio_ibge_id');
+        const estado = document.getElementById('estado_id');
+        const municipio = document.getElementById('municipio_id');
         const municipioWrap = document.getElementById('municipio-wrap');
         const submitButton = form.querySelector('button[type="submit"]');
-        const estadoSelecionado = @json(old('estado_ibge_id'));
-        const municipioSelecionado = @json(old('municipio_ibge_id'));
+        const estadoSelecionado = @json(old('estado_id'));
+        const municipioSelecionado = @json(old('municipio_id'));
         let municipiosRequestId = 0;
 
         document.getElementById('registrationErrors')?.focus();

@@ -10,10 +10,10 @@ use App\Http\Controllers\AutorizacaoImagemImportController;
 use App\Http\Controllers\AvaliacaoAtividadeController;
 use App\Http\Controllers\AvaliacaoConsolidadaController;
 use App\Http\Controllers\AvaliacaoController;
+use App\Http\Controllers\CertificadoController;
 use App\Http\Controllers\Cartas\AuthController as CartasAuthController;
 use App\Http\Controllers\Cartas\CartaController as CartasCartaController;
 use App\Http\Controllers\Cartas\UserManagementController as CartasUserManagementController;
-use App\Http\Controllers\CertificadoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DimensaoController;
 use App\Http\Controllers\EscalaController;
@@ -43,7 +43,7 @@ Route::get('/', function () {
 
 Route::prefix('cartas')->name('cartas.')->group(function () {
     Route::get('/localidades/estados', [CartasAuthController::class, 'estados'])->name('localidades.estados');
-    Route::get('/localidades/estados/{estadoIbgeId}/municipios', [CartasAuthController::class, 'municipios'])->whereNumber('estadoIbgeId')->name('localidades.municipios');
+    Route::get('/localidades/estados/{estadoId}/municipios', [CartasAuthController::class, 'municipios'])->whereNumber('estadoId')->name('localidades.municipios');
     Route::get('/termos', [CartasAuthController::class, 'terms'])->name('terms');
     Route::post('/termos', [CartasAuthController::class, 'acceptTerms'])->name('terms.accept');
 

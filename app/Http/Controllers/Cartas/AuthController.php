@@ -6,9 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Estado;
 use App\Models\Municipio;
 use App\Models\Participante;
-use App\Models\Regiao;
 use App\Models\User;
-use App\Services\IbgeLocalidadesService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,8 +25,6 @@ use Spatie\Permission\Models\Role;
 class AuthController extends Controller
 {
     private const PENDING_REGISTRATION_SESSION_KEY = 'cartas.pending_registration';
-
-    public function __construct(private readonly IbgeLocalidadesService $ibgeLocalidades) {}
 
     public function apresentacao(): View
     {
@@ -87,30 +83,29 @@ class AuthController extends Controller
 
     public function estados(): JsonResponse
     {
-        return response()->json($this->ibgeLocalidades->estados());
+        return response()->json(Estado::query()
+            ->orderBy('nome')
+            ->get(['id', 'nome', 'sigla']));
     }
 
-    public function municipios(int $estadoIbgeId): JsonResponse
+    public function municipios(int $estadoId): JsonResponse
     {
-        return response()->json($this->ibgeLocalidades->municipiosDoEstado($estadoIbgeId));
+        return response()->json(Municipio::query()
+            ->where('estado_id', $estadoId)
+            ->orderBy('nome')
+            ->get(['id', 'nome']));
     }
 
     public function storeRegister(Request $request): RedirectResponse
     {
         $data = $this->validatedRegistrationData($request);
 
-        try {
-            $localidade = $this->ibgeLocalidades->localizar($data['estado_ibge_id'], $data['municipio_ibge_id']);
-        } catch (\RuntimeException $exception) {
-            throw ValidationException::withMessages(['municipio_ibge_id' => $exception->getMessage()]);
-        }
+        $municipio = Municipio::query()
+            ->whereKey($data['municipio_id'])
+            ->where('estado_id', $data['estado_id'])
+            ->firstOrFail();
 
-        $user = DB::transaction(function () use ($data, $localidade) {
-            $municipio = $this->createOrFindMunicipio([
-                'estado_nome' => $localidade['estado']['nome'],
-                'estado_sigla' => $localidade['estado']['sigla'],
-                'municipio_nome' => $localidade['municipio']['nome'],
-            ]);
+        $user = DB::transaction(function () use ($data, $municipio) {
 
             $user = User::create([
                 'name' => $data['name'],
@@ -272,20 +267,27 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'cpf' => ['required', 'digits:11'],
             'telefone' => ['required', 'regex:/^\d{10,11}$/'],
-            'estado_ibge_id' => ['required', 'integer', 'min:1'],
-            'municipio_ibge_id' => ['required', 'integer', 'min:1'],
+            'estado_id' => ['required', 'integer', Rule::exists('estados', 'id')],
+            'municipio_id' => ['required', 'integer', Rule::exists('municipios', 'id')],
             'termos_aceitos' => ['accepted'],
         ], [
             'cpf.required' => 'Informe seu CPF.',
             'cpf.digits' => 'CPF deve conter 11 dígitos.',
             'telefone.required' => 'Informe seu telefone.',
             'telefone.regex' => 'Telefone deve ter DDD e 10 ou 11 dígitos.',
-            'estado_ibge_id.required' => 'Selecione seu estado.',
-            'municipio_ibge_id.required' => 'Selecione seu município.',
+            'estado_id.required' => 'Selecione seu estado.',
+            'municipio_id.required' => 'Selecione seu município.',
             'termos_aceitos.accepted' => 'Você precisa aceitar os termos de uso para continuar.',
         ]);
 
         $validator->after(function ($validator) use ($data) {
+            if (isset($data['estado_id'], $data['municipio_id']) && ! Municipio::query()
+                ->whereKey($data['municipio_id'])
+                ->where('estado_id', $data['estado_id'])
+                ->exists()) {
+                $validator->errors()->add('municipio_id', 'O município selecionado não pertence ao estado informado.');
+            }
+
             if (! $this->isValidCpf($data['cpf'] ?? '')) {
                 $validator->errors()->add('cpf', 'CPF inválido.');
             } elseif ($this->cpfDuplicado($data['cpf'])) {
@@ -305,13 +307,19 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
             'cpf' => ['required', 'digits:11'],
             'telefone' => ['required', 'regex:/^\d{10,11}$/'],
-            'estado_nome' => ['required', 'string', 'max:255'],
-            'estado_sigla' => ['required', 'string', 'size:2'],
-            'municipio_nome' => ['required', 'string', 'max:255'],
+            'estado_id' => ['required', 'integer', Rule::exists('estados', 'id')],
+            'municipio_id' => ['required', 'integer', Rule::exists('municipios', 'id')],
         ], [
             'telefone.required' => 'Informe seu telefone.',
             'telefone.regex' => 'Telefone deve ter DDD e 10 ou 11 dígitos.',
         ])->after(function ($validator) use ($pendingRegistration) {
+            if (isset($pendingRegistration['estado_id'], $pendingRegistration['municipio_id']) && ! Municipio::query()
+                ->whereKey($pendingRegistration['municipio_id'])
+                ->where('estado_id', $pendingRegistration['estado_id'])
+                ->exists()) {
+                $validator->errors()->add('municipio_id', 'O município selecionado não pertence ao estado informado.');
+            }
+
             $cpf = $pendingRegistration['cpf'] ?? '';
             if (! $this->isValidCpf($cpf)) {
                 $validator->errors()->add('cpf', 'CPF inválido.');
@@ -320,8 +328,12 @@ class AuthController extends Controller
             }
         })->validate();
 
-        $user = DB::transaction(function () use ($data) {
-            $municipio = $this->createOrFindMunicipio($data);
+        $municipio = Municipio::query()
+            ->whereKey($data['municipio_id'])
+            ->where('estado_id', $data['estado_id'])
+            ->firstOrFail();
+
+        $user = DB::transaction(function () use ($data, $municipio) {
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -360,43 +372,8 @@ class AuthController extends Controller
             'email' => trim((string) $request->input('email')),
             'cpf' => $toNull(preg_replace('/\D+/', '', (string) $request->input('cpf'))),
             'telefone' => $toNull(preg_replace('/\D+/', '', (string) $request->input('telefone'))),
-            'estado_ibge_id' => $toNull($request->input('estado_ibge_id')),
-            'municipio_ibge_id' => $toNull($request->input('municipio_ibge_id')),
-        ]);
-    }
-
-    private function createOrFindMunicipio(array $data): Municipio
-    {
-        $estado = Estado::withTrashed()->whereRaw('UPPER(sigla) = ?', [mb_strtoupper($data['estado_sigla'])])->first();
-        if ($estado?->trashed()) {
-            $estado->restore();
-        }
-
-        if (! $estado) {
-            if (! Regiao::query()->whereKey(4)->exists()) {
-                throw ValidationException::withMessages([
-                    'estado_ibge_id' => 'Cadastre a região "Outras" (ID 4) antes de incluir um novo estado.',
-                ]);
-            }
-
-            $estado = Estado::create([
-                'nome' => $data['estado_nome'],
-                'sigla' => mb_strtoupper($data['estado_sigla']),
-                'regiao_id' => 4,
-            ]);
-        }
-
-        $municipio = Municipio::withTrashed()
-            ->where('estado_id', $estado->id)
-            ->whereRaw('LOWER(nome) = ?', [mb_strtolower($data['municipio_nome'])])
-            ->first();
-        if ($municipio?->trashed()) {
-            $municipio->restore();
-        }
-
-        return $municipio ?? Municipio::create([
-            'estado_id' => $estado->id,
-            'nome' => $data['municipio_nome'],
+            'estado_id' => $toNull($request->input('estado_id')),
+            'municipio_id' => $toNull($request->input('municipio_id')),
         ]);
     }
 

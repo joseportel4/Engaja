@@ -4,9 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\Atividade;
 use App\Models\Eixo;
+use App\Models\Estado;
 use App\Models\Evento;
 use App\Models\Inscricao;
+use App\Models\Municipio;
 use App\Models\Participante;
+use App\Models\Regiao;
 use App\Models\User;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -170,6 +173,66 @@ class InscricaoImportTodosMomentosTest extends TestCase
         $this->assertSame(1, DB::table('origem_usuario')
             ->where('evento_id', $evento->id)
             ->where('user_id', $pUser->id)
+            ->count());
+    }
+
+    public function test_confirmar_importacao_associa_localidade_existente_ao_participante_sem_municipio(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('administrador');
+
+        $regiao = Regiao::factory()->create(['nome' => 'Outras']);
+        $estado = Estado::create(['regiao_id' => $regiao->id, 'nome' => 'Ceará', 'sigla' => 'CE']);
+        $municipio = Municipio::create(['estado_id' => $estado->id, 'nome' => 'Sobral']);
+
+        $eixo = Eixo::create(['nome' => 'Eixo importa localidade']);
+        $evento = Evento::factory()->create([
+            'user_id' => $admin->id,
+            'eixo_id' => $eixo->id,
+        ]);
+
+        Atividade::factory()->create([
+            'evento_id' => $evento->id,
+            'dia' => '2026-02-10',
+            'hora_inicio' => '09:00:00',
+            'hora_fim' => '10:00:00',
+        ]);
+
+        $participanteUser = User::factory()->create([
+            'email' => 'participante.sobral@test.local',
+        ]);
+        $participante = Participante::create([
+            'user_id' => $participanteUser->id,
+            'municipio_id' => null,
+        ]);
+
+        $sessionKey = "import_preview_evento_{$evento->id}_todos";
+        session([$sessionKey => [
+            'modo_todos_momentos' => true,
+            'atividade_id' => null,
+            'origem' => null,
+            'rows' => [
+                [
+                    'nome' => 'Participante Sobral',
+                    'email' => 'participante.sobral@test.local',
+                    'cpf' => null,
+                    'telefone' => null,
+                    'municipio' => 'Sobral',
+                    'municipio_id' => null,
+                    'estado' => 'CE',
+                ],
+            ],
+        ]]);
+
+        $this->actingAs($admin)
+            ->post(route('inscricoes.confirmar', $evento), ['session_key' => $sessionKey])
+            ->assertRedirect(route('eventos.show', $evento));
+
+        $participante->refresh();
+
+        $this->assertSame($municipio->id, $participante->municipio_id);
+        $this->assertSame(1, Inscricao::where('evento_id', $evento->id)
+            ->where('participante_id', $participante->id)
             ->count());
     }
 }
