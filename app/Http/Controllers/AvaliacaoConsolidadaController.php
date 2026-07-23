@@ -4,9 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Evento;
 use App\Services\AvaliacaoConsolidacaoService;
-use Spatie\LaravelPdf\Facades\Pdf;
+use App\Word\AvaliacaoConsolidadaWordBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class AvaliacaoConsolidadaController extends Controller
 {
@@ -54,7 +55,14 @@ class AvaliacaoConsolidadaController extends Controller
 
         $grupos = $service->build($evento, $agrupamento);
 
-        $nomeArquivo = 'consolidado-' . Str::slug($evento->nome) . '-' . now()->format('Ymd') . '.pdf';
+        $nomeBase = 'consolidado-'.Str::slug($evento->nome).'-'.now()->format('Ymd');
+
+        if ($request->get('formato') === 'docx') {
+            return AvaliacaoConsolidadaWordBuilder::build($evento, $agrupamento, $grupos)
+                ->download($nomeBase.'.docx');
+        }
+
+        $nomeArquivo = $nomeBase.'.pdf';
 
         return Pdf::view('avaliacoes.consolidadas_pdf', compact('evento', 'agrupamento', 'grupos'))
             ->withAlfaEjaBrand()

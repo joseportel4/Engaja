@@ -13,16 +13,27 @@
     </div>
 
 
+    @php
+        // Só os filtros compartilhados pelas duas abas viajam na troca de aba.
+        // Assim o Total Geral não "herda" município/momento/turno da aba Por
+        // Momento (que ele ignora), evitando que o export anuncie um filtro
+        // que não foi aplicado.
+        $abaQuery = array_intersect_key(request()->query(), array_flip(['evento_id', 'regiao_id', 'de', 'ate']));
+
+        // Escopo do export do Total Geral: filtros aplicados + ordenação + dimensões.
+        $tgExportQuery = array_intersect_key(request()->query(), array_flip(['evento_id', 'regiao_id', 'de', 'ate', 'sort', 'dir', 'dimensoes']));
+    @endphp
+
     {{-- Abas --}}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <ul class="nav nav-tabs" role="tablist" style="flex: 1;">
             <li class="nav-item" role="presentation">
-                <a class="nav-link @if($tab === 'momento') active @endif" href="{{ route('relatorio-quantitativo.index') }}?{{ http_build_query(array_merge(request()->query(), ['tab' => 'momento'])) }}" role="tab">
+                <a class="nav-link @if($tab === 'momento') active @endif" href="{{ route('relatorio-quantitativo.index') }}?{{ http_build_query(array_merge($abaQuery, ['tab' => 'momento'])) }}" role="tab">
                     Relatório por Momento
                 </a>
             </li>
             <li class="nav-item" role="presentation">
-                <a class="nav-link @if($tab === 'total-geral') active @endif" href="{{ route('relatorio-quantitativo.index') }}?{{ http_build_query(array_merge(request()->query(), ['tab' => 'total-geral'])) }}" role="tab">
+                <a class="nav-link @if($tab === 'total-geral') active @endif" href="{{ route('relatorio-quantitativo.index') }}?{{ http_build_query(array_merge($abaQuery, ['tab' => 'total-geral'])) }}" role="tab">
                     Total Geral de Participantes
                 </a>
             </li>
@@ -37,12 +48,18 @@
                 <a href="{{ route('relatorio-quantitativo.exportar-momento') }}?{{ http_build_query(array_merge(request()->query(), ['formato' => 'xlsx'])) }}" class="btn btn-sm btn-outline-success" title="Exportar como Excel">
                     <i class="bi bi-file-earmark-spreadsheet"></i> Excel
                 </a>
+                <a href="{{ route('relatorio-quantitativo.exportar-momento') }}?{{ http_build_query(array_merge(request()->query(), ['formato' => 'docx'])) }}" class="btn btn-sm btn-outline-primary" title="Exportar como Word">
+                    <i class="bi bi-file-earmark-word"></i> Word
+                </a>
             @else
-                <a id="btn-export-total-geral-pdf" href="{{ route('relatorio-quantitativo.exportar-total-geral') }}?{{ http_build_query(array_merge(request()->query(), ['formato' => 'pdf'])) }}" class="btn btn-sm btn-outline-danger" title="Exportar como PDF">
+                <a id="btn-export-total-geral-pdf" href="{{ route('relatorio-quantitativo.exportar-total-geral') }}?{{ http_build_query(array_merge($tgExportQuery, ['formato' => 'pdf'])) }}" class="btn btn-sm btn-outline-danger" title="Exportar como PDF">
                     <i class="bi bi-filetype-pdf"></i> PDF
                 </a>
-                <a id="btn-export-total-geral-xlsx" href="{{ route('relatorio-quantitativo.exportar-total-geral') }}?{{ http_build_query(array_merge(request()->query(), ['formato' => 'xlsx'])) }}" class="btn btn-sm btn-outline-success" title="Exportar como Excel">
+                <a id="btn-export-total-geral-xlsx" href="{{ route('relatorio-quantitativo.exportar-total-geral') }}?{{ http_build_query(array_merge($tgExportQuery, ['formato' => 'xlsx'])) }}" class="btn btn-sm btn-outline-success" title="Exportar como Excel">
                     <i class="bi bi-file-earmark-spreadsheet"></i> Excel
+                </a>
+                <a id="btn-export-total-geral-docx" href="{{ route('relatorio-quantitativo.exportar-total-geral') }}?{{ http_build_query(array_merge($tgExportQuery, ['formato' => 'docx'])) }}" class="btn btn-sm btn-outline-primary" title="Exportar como Word">
+                    <i class="bi bi-file-earmark-word"></i> Word
                 </a>
             @endif
         </div>
@@ -312,7 +329,7 @@
                         ['field' => 'regiao', 'headerHtml' => tg_sort_link('Região', 'regiao'), 'flex' => 1, 'colSpanWhen' => ['dt-row-subtotal', 'dt-row-unidentified'], 'colSpanCount' => 2],
                         ['field' => 'municipio', 'headerHtml' => tg_sort_link('Município', 'municipio'), 'flex' => 1],
                         ['field' => 'previstos', 'headerHtml' => tg_sort_link('Previstos', 'previstos'), 'flex' => 1],
-                        ['field' => 'total_presentes', 'headerHtml' => tg_sort_link('Total Presentes', 'total_presentes'), 'flex' => 1],
+                        ['field' => 'total_presentes', 'headerHtml' => tg_sort_link('Participantes distintos', 'total_presentes'), 'flex' => 1],
                         ['headerName' => 'CPF', 'groupId' => 'cpf', 'children' => [
                             ['field' => 'com_cpf', 'headerHtml' => tg_sort_link('Com CPF', 'com_cpf'), 'flex' => 1],
                             ['field' => 'sem_cpf', 'headerHtml' => tg_sort_link('Sem CPF', 'sem_cpf'), 'flex' => 1],
@@ -360,7 +377,7 @@
                         $rowClass = null;
                         if (isset($row['_is_total'])) {
                             $rowClass = 'dt-row-subtotal';
-                        } elseif (isset($row['_is_unidentified'])) {
+                        } elseif (isset($row['_is_unidentified']) || isset($row['_is_brasil'])) {
                             $rowClass = 'dt-row-unidentified';
                         }
 
@@ -408,6 +425,10 @@
                     :pagination="false"
                     row-class-field="_rowClass"
                 />
+                <p class="text-muted small mt-2 mb-0 px-3 pb-2">
+                    <strong>Participantes distintos</strong> conta pessoas — cada pessoa uma vez por município —, diferente de <em>Qtd Presentes</em> da aba "Por Momento", que conta registros de presença.
+                    A linha <strong>TOTAL</strong> soma os participantes distintos de cada município; quem participou em mais de um município é contado em cada um deles.
+                </p>
             @endif
         </div>
     </div>
@@ -519,7 +540,7 @@
     function updateExportUrls() {
         var activeDims = Array.from(document.querySelectorAll('.dim-toggle.active')).map(function (b) { return b.dataset.dim; });
 
-        ['btn-export-total-geral-pdf', 'btn-export-total-geral-xlsx'].forEach(function (id) {
+        ['btn-export-total-geral-pdf', 'btn-export-total-geral-xlsx', 'btn-export-total-geral-docx'].forEach(function (id) {
             var btn = document.getElementById(id);
             if (!btn) return;
             var url = new URL(btn.href);

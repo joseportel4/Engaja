@@ -167,6 +167,11 @@
                        title="Baixar PDF consolidado com todos os relatórios deste momento">
                         📄 PDF Geral
                     </a>
+                    <a href="{{ route('avaliacao-atividade.download-all', ['atividade' => $atividade, 'formato' => 'docx']) }}"
+                       class="btn btn-sm btn-outline-primary text-nowrap"
+                       title="Baixar Word consolidado com todos os relatórios deste momento">
+                        <i class="bi bi-file-earmark-word"></i> Word Geral
+                    </a>
                     @endif
                     </div>
 
@@ -194,6 +199,7 @@
                                             <div class="d-flex gap-1">
                                                 <a href="{{ route('avaliacao-atividade.show', $relatorio) }}" class="btn btn-sm btn-outline-primary">Ver</a>
                                                 <a href="{{ route('avaliacao-atividade.download', $relatorio) }}" class="btn btn-sm btn-outline-secondary">PDF</a>
+                                                <a href="{{ route('avaliacao-atividade.download', ['relatorio' => $relatorio, 'formato' => 'docx']) }}" class="btn btn-sm btn-outline-secondary">Word</a>
                                             </div>
                                         </div>
                                         <div class="mt-2 bg-white p-3 border rounded">{!! $relatorio->$campo !!}</div>

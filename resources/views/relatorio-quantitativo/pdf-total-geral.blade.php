@@ -49,7 +49,7 @@
         $partes[] = 'no período <strong>' . $intervalo . '</strong>';
     }
 
-    $totalMunicipios = $totalGeral->filter(fn($r) => ! isset($r['_is_total']) && ! isset($r['_is_unidentified']))->count();
+    $totalMunicipios = $totalGeral->filter(fn($r) => ! isset($r['_is_total']) && ! isset($r['_is_unidentified']) && ! isset($r['_is_brasil']))->count();
     $contexto = 'Exibindo o total de participantes em <strong>'.$totalMunicipios.'</strong> '.($totalMunicipios === 1 ? 'município' : 'municípios');
     $contexto .= count($partes) ? ' '.implode(', ', $partes) : '';
     $contexto .= '.';
@@ -73,7 +73,7 @@
             <th class="table-header" rowspan="2">Região</th>
             <th class="table-header" rowspan="2">Município</th>
             <th class="table-header text-end" rowspan="2">Previstos</th>
-            <th class="table-header text-end" rowspan="2">Total Presentes</th>
+            <th class="table-header text-end" rowspan="2">Participantes distintos</th>
             @if(in_array('cpf', $dimensoes))
             <th class="table-header-group" colspan="3">CPF</th>
             @endif
@@ -159,7 +159,7 @@
             <td class="text-end" style="padding:3px;">{{ $row['metricas']['tag']['movimento_social'] }}</td><td class="text-end" style="padding:3px;">{{ $fmtPct($row['metricas']['tag']['pct_movimento_social']) }}</td>
             @endif
         </tr>
-        @elseif(isset($row['_is_unidentified']))
+        @elseif(isset($row['_is_unidentified']) || isset($row['_is_brasil']))
         <tr class="unidentified-row" style="border-bottom:1px solid #ddd;">
             <td colspan="2" class="table-data">{{ $row['municipio_nome'] }}</td>
             <td class="table-data text-end">{{ $row['previstos'] ?: '—' }}</td>

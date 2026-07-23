@@ -12,6 +12,9 @@ use App\Models\RespostaAvaliacao;
 use App\Models\SubmissaoAvaliacao;
 use App\Models\TemplateAvaliacao;
 use App\Services\AvaliacaoRespostasDashboardService;
+use App\Word\MatrizPresencaWordBuilder;
+use App\Word\WordDocument;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -450,6 +453,41 @@ class DashboardController extends Controller
             'Período' => $periodo,
         ]);
 
+        if ($request->get('formato') === 'docx') {
+            $doc = new WordDocument('landscape');
+            $doc->addTitle('Relatório de Presenças');
+            $doc->addFiltersSummary(array_map(
+                fn ($chave, $valor) => $chave.': '.$valor,
+                array_keys($filtroResumo),
+                array_values($filtroResumo),
+            ));
+
+            if ($truncado) {
+                $doc->addParagraph(
+                    "Resultado parcial: exibindo {$maxAtividades} de {$totalAtividades} momentos.",
+                    ['italic' => true, 'color' => '856404']
+                );
+            }
+
+            $rows = $atividades->map(fn ($a) => [
+                $a->dia ? Carbon::parse($a->dia)->format('d/m/Y') : '—',
+                substr((string) $a->hora_inicio, 0, 5) ?: '—',
+                $a->descricao ?? '—',
+                $a->evento_nome ?? '—',
+                $a->municipio?->nome_com_estado ?? '—',
+                (int) $a->inscritos_count,
+                (int) $a->presentes_count,
+                (int) $a->ausentes_count,
+            ])->all();
+
+            $doc->addTable(
+                ['Data', 'Hora', 'Momento', 'Ação', 'Município', 'Inscritos', 'Presentes', 'Ausentes'],
+                $rows
+            );
+
+            return $doc->download('dashboard-presencas-'.now()->format('Ymd_His').'.docx');
+        }
+
         return Pdf::view('dashboard_pdf', [
             'atividades' => $atividades,
             'filtroResumo' => $filtroResumo,
@@ -471,6 +509,12 @@ class DashboardController extends Controller
 
         $eventoId = $request->integer('evento_id');
         $evento = Evento::findOrFail($eventoId);
+
+        if ($request->get('formato') === 'docx') {
+            $doc = MatrizPresencaWordBuilder::build($eventoId);
+
+            return $doc->download('Matriz_Presenca_'.Str::slug($evento->nome).'_'.now()->format('Ymd_Hi').'.docx');
+        }
 
         $fileName = 'Matriz_Presenca_'.Str::slug($evento->nome).'_'.now()->format('Ymd_Hi').'.xlsx';
 

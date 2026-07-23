@@ -9,6 +9,8 @@ use App\Models\Evento;
 use App\Models\Municipio;
 use App\Models\Regiao;
 use App\Services\PainelGerencialService;
+use App\Word\WordDocument;
+use App\Word\WordTableExport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -63,6 +65,14 @@ class PainelGerencialController extends Controller
                 ->landscape()
                 ->withAlfaEjaBrand($marginTop, 10, 25, 10)
                 ->download('painel-gerencial-'.now()->format('Ymd_His').'.pdf');
+        }
+
+        if ($formato === 'docx') {
+            $doc = new WordDocument('landscape');
+            $doc->addTitle('Painel Gerencial de Quantitativos');
+            WordTableExport::render($doc, new PainelGerencialExport($request));
+
+            return $doc->download('painel-gerencial-'.now()->format('Ymd_His').'.docx');
         }
 
         return Excel::download(

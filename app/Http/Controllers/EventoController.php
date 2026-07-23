@@ -17,6 +17,9 @@ use App\Models\SituacaoDesafiadora;
 use App\Models\User;
 use App\Services\EventoDuplicacaoService;
 use App\Support\CargaHoraria;
+use App\Word\PlanejamentoWordBuilder;
+use App\Word\WordDocument;
+use App\Word\WordTableExport;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -30,7 +33,6 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Facades\Excel;
 use Spatie\LaravelPdf\Facades\Pdf;
-use Spatie\LaravelPdf\PdfBuilder;
 
 class EventoController extends Controller
 {
@@ -191,18 +193,29 @@ class EventoController extends Controller
 
         $tipo = $request->get('tipo', 'geral');
         $semOuvintes = $request->boolean('sem_ouvintes');
+        $formato = $request->get('formato', 'xlsx');
         $slug = Str::slug($evento->nome ?? 'acao-pedagogica');
         $sufixo = $semOuvintes ? '-sem-ouvintes' : '';
 
         if ($tipo === 'momentos') {
-            $nomeArquivo = $slug.'-participantes-por-momento'.$sufixo.'.xlsx';
-
-            return Excel::download(new EventoParticipantesPorMomentoExport($evento, $semOuvintes), $nomeArquivo);
+            $export = new EventoParticipantesPorMomentoExport($evento, $semOuvintes);
+            $baseNome = $slug.'-participantes-por-momento'.$sufixo;
+            $titulo = 'Participantes por momento — '.($evento->nome ?? '');
+        } else {
+            $export = new EventoParticipantesGeralExport($evento, $semOuvintes);
+            $baseNome = $slug.'-participantes-geral'.$sufixo;
+            $titulo = 'Participantes — '.($evento->nome ?? '');
         }
 
-        $nomeArquivo = $slug.'-participantes-geral'.$sufixo.'.xlsx';
+        if ($formato === 'docx') {
+            $doc = new WordDocument;
+            $doc->addTitle($titulo);
+            WordTableExport::render($doc, $export);
 
-        return Excel::download(new EventoParticipantesGeralExport($evento, $semOuvintes), $nomeArquivo);
+            return $doc->download($baseNome.'.docx');
+        }
+
+        return Excel::download($export, $baseNome.'.xlsx');
     }
 
     public function edit(Evento $evento)
@@ -307,7 +320,7 @@ class EventoController extends Controller
         return redirect()->route('eventos.index')->with('success', 'Evento excluído.');
     }
 
-    public function gerarPdfPlanejamento(Evento $evento): PdfBuilder
+    public function gerarPdfPlanejamento(Evento $evento, Request $request)
     {
         $this->authorize('view', $evento);
 
@@ -315,6 +328,15 @@ class EventoController extends Controller
         $matrizesOrdenadas = $evento->matrizes
             ->sortBy('nome', SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
+
+        if ($request->get('formato') === 'docx') {
+            return PlanejamentoWordBuilder::build(
+                $evento,
+                $matrizesOrdenadas,
+                Evento::ACOES_GERAIS,
+                array_values(Evento::CHECKLIST_PLANEJAMENTO_ITEMS),
+            )->download('planejamento-'.Str::slug($evento->nome).'.docx');
+        }
 
         return Pdf::view('eventos.planejamento_pdf', [
             'evento' => $evento,

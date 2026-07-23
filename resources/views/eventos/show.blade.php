@@ -207,6 +207,10 @@
           <i class="fas fa-file-pdf"></i> Ver Planejamento da Ação
         </a>
 
+        <a href="{{ route('eventos.planejamento.pdf', ['evento' => $evento, 'formato' => 'docx']) }}" class="btn btn-outline-secondary">
+          <i class="bi bi-file-earmark-word"></i> Planejamento (Word)
+        </a>
+
         @hasanyrole('administrador|gerente|eq_pedagogica')
           <a href="{{ route('inscricoes.selecionar', $evento)}}" class="btn btn-engaja">Inscrever participantes</a>
         @endhasanyrole
@@ -572,6 +576,10 @@
                   class="btn btn-outline-secondary w-100">
                   Baixar XLSX sem ouvintes
                 </a>
+                <a href="{{ route('eventos.relatorios', ['evento' => $evento, 'tipo' => 'geral', 'formato' => 'docx']) }}"
+                  class="btn btn-outline-primary w-100">
+                  <i class="bi bi-file-earmark-word"></i> Baixar Word
+                </a>
               </div>
             </div>
           </div>
@@ -587,6 +595,10 @@
                 <a href="{{ route('eventos.relatorios', ['evento' => $evento, 'tipo' => 'momentos', 'sem_ouvintes' => 1]) }}"
                   class="btn btn-outline-secondary w-100">
                   Baixar XLSX sem ouvintes
+                </a>
+                <a href="{{ route('eventos.relatorios', ['evento' => $evento, 'tipo' => 'momentos', 'formato' => 'docx']) }}"
+                  class="btn btn-outline-primary w-100">
+                  <i class="bi bi-file-earmark-word"></i> Baixar Word
                 </a>
               </div>
             </div>
