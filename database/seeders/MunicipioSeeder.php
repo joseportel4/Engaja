@@ -2,10 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-
 
 class MunicipioSeeder extends Seeder
 {
@@ -17,29 +15,42 @@ class MunicipioSeeder extends Seeder
         $now = now();
 
         $municipios = [
-            //Região Norte
-            ['nome' => 'Oiapoque',                 'estado_id' => 1, 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 'Coari',                    'estado_id' => 2, 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 'Carauari',                 'estado_id' => 2, 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 'Belém',                    'estado_id' => 3, 'created_at' => $now, 'updated_at' => $now],
+            // Região Norte
+            ['nome' => 'Oiapoque',                 'uf' => 'AP'],
+            ['nome' => 'Coari',                    'uf' => 'AM'],
+            ['nome' => 'Carauari',                 'uf' => 'AM'],
+            ['nome' => 'Belém',                    'uf' => 'PA'],
 
-            //Região Nordeste I
-            ['nome' => 'Caucaia',                  'estado_id' => 4, 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 'Fortaleza',                'estado_id' => 4, 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 'Icapuí',                   'estado_id' => 4, 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 'Alto do Rodrigues',        'estado_id' => 5, 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 'Porto do Mangue',          'estado_id' => 5, 'created_at' => $now, 'updated_at' => $now],
+            // Região Nordeste I
+            ['nome' => 'Caucaia',                  'uf' => 'CE'],
+            ['nome' => 'Fortaleza',                'uf' => 'CE'],
+            ['nome' => 'Icapuí',                   'uf' => 'CE'],
+            ['nome' => 'Alto do Rodrigues',        'uf' => 'RN'],
+            ['nome' => 'Porto do Mangue',          'uf' => 'RN'],
 
-            //Região Nordeste II
-            ['nome' => 'Araçás',                   'estado_id' => 6, 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 'São Francisco do Conde',   'estado_id' => 6, 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 'Conde',                    'estado_id' => 7, 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 'Ipojuca',                  'estado_id' => 8, 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 'Cabo de Santo Agostinho',  'estado_id' => 8, 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 'Brejo Grande',             'estado_id' => 9, 'created_at' => $now, 'updated_at' => $now],
-            ['nome' => 'Santa Luzia do Itanhy',    'estado_id' => 9, 'created_at' => $now, 'updated_at' => $now],
+            // Região Nordeste II
+            ['nome' => 'Araçás',                   'uf' => 'BA'],
+            ['nome' => 'São Francisco do Conde',   'uf' => 'BA'],
+            ['nome' => 'Conde',                    'uf' => 'PB'],
+            ['nome' => 'Ipojuca',                  'uf' => 'PE'],
+            ['nome' => 'Cabo de Santo Agostinho',  'uf' => 'PE'],
+            ['nome' => 'Brejo Grande',             'uf' => 'SE'],
+            ['nome' => 'Santa Luzia do Itanhy',    'uf' => 'SE'],
         ];
 
-        DB::table('municipios')->insert($municipios);
+        $estadoIds = DB::table('estados')->pluck('id', 'sigla');
+
+        foreach ($municipios as $municipio) {
+            DB::table('municipios')->updateOrInsert(
+                [
+                    'estado_id' => $estadoIds[$municipio['uf']],
+                    'nome' => $municipio['nome'],
+                ],
+                [
+                    'updated_at' => $now,
+                    'deleted_at' => null,
+                ]
+            );
+        }
     }
 }
