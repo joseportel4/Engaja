@@ -13,6 +13,7 @@
     <div class="d-flex flex-wrap gap-2">
       <a href="{{ route('usuarios.index') }}" class="btn btn-light border">Voltar</a>
       <a href="{{ route('usuarios.sem-vinculo.exportar') }}" class="btn btn-engaja">Exportar XLSX</a>
+      <a href="{{ route('usuarios.sem-vinculo.exportar', ['formato' => 'docx']) }}" class="btn btn-outline-primary"><i class="bi bi-file-earmark-word"></i> Word</a>
     </div>
   </div>
 

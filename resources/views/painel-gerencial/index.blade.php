@@ -17,6 +17,9 @@
             <a href="{{ route('painel-gerencial.exportar') }}?{{ http_build_query(array_merge(request()->query(), ['formato' => 'xlsx'])) }}" class="btn btn-sm btn-outline-success" title="Exportar como Excel">
                 <i class="bi bi-file-earmark-spreadsheet"></i> Excel
             </a>
+            <a href="{{ route('painel-gerencial.exportar') }}?{{ http_build_query(array_merge(request()->query(), ['formato' => 'docx'])) }}" class="btn btn-sm btn-outline-primary" title="Exportar como Word">
+                <i class="bi bi-file-earmark-word"></i> Word
+            </a>
         </div>
     </div>
 

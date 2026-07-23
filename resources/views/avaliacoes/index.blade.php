@@ -83,6 +83,7 @@
             . '<li><a class="dropdown-item" href="' . route('avaliacoes.show', $avaliacao) . '">Ver</a></li>'
             . '<li><a class="dropdown-item" href="' . route('avaliacoes.transcricao', $avaliacao) . '">Transcrição</a></li>'
             . '<li><a class="dropdown-item" href="' . route('avaliacoes.ficha-pdf', $avaliacao) . '">Baixar ficha para preenchimento à mão (PDF)</a></li>'
+            . '<li><a class="dropdown-item" href="' . route('avaliacoes.ficha-pdf', ['avaliacao' => $avaliacao, 'formato' => 'docx']) . '">Baixar ficha para preenchimento (Word)</a></li>'
             . '<li><a class="dropdown-item" href="' . route('avaliacoes.edit', $avaliacao) . '">Editar</a></li>';
 
         if (auth()->user()->hasAnyRole(['administrador', 'gerente', 'eq_pedagogica'])) {

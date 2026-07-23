@@ -199,6 +199,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" name="formato" value="docx" class="btn btn-outline-primary"><i class="bi bi-file-earmark-word"></i> Word</button>
                     <button type="submit" class="btn btn-success">Gerar Planilha</button>
                 </div>
             </form>
@@ -257,6 +258,7 @@
                     <div class="d-flex gap-2">
                         <button type="reset" class="btn btn-light btn-sm">Limpar</button>
                         <button type="submit" class="btn btn-primary btn-sm">Gerar PDF</button>
+                        <button type="submit" name="formato" value="docx" class="btn btn-outline-primary btn-sm"><i class="bi bi-file-earmark-word"></i> Word</button>
                     </div>
                 </div>
                 <input type="hidden" name="sort" value="{{ request('sort', 'dia') }}">

@@ -49,7 +49,7 @@ class RelatorioMomentoExport implements FromCollection, ShouldAutoSize, WithEven
         ];
     }
 
-    private function getFiltersSummary(): array
+    public function getFiltersSummary(): array
     {
         $filtros = [];
 
