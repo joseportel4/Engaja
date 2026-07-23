@@ -308,6 +308,7 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
     Route::resource('eventos', EventoController::class);
     Route::get('eventos/{evento}', [EventoController::class, 'show'])->name('eventos.show');
     Route::get('eventos/{evento}/planejamento/pdf', [EventoController::class, 'gerarPdfPlanejamento'])->name('eventos.planejamento.pdf');
+    Route::post('eventos/{evento}/duplicate', [EventoController::class, 'duplicate'])->name('eventos.duplicate');
 });
 
 Route::resource('eventos.atividades', AtividadeController::class)

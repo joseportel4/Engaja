@@ -15,6 +15,7 @@ use App\Models\Participante;
 use App\Models\Presenca;
 use App\Models\SituacaoDesafiadora;
 use App\Models\User;
+use App\Services\EventoDuplicacaoService;
 use App\Support\CargaHoraria;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -271,6 +272,25 @@ class EventoController extends Controller
 
         return redirect()->route('eventos.index')
             ->with('success', 'Ação pedagógica atualizada com sucesso!');
+    }
+
+    public function duplicate(Evento $evento, EventoDuplicacaoService $service)
+    {
+        $this->authorize('duplicate', $evento);
+
+        try {
+            $copia = $service->duplicar($evento);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('eventos.index')
+                ->with('error', 'Não foi possível duplicar a ação pedagógica. Tente novamente.');
+        }
+
+        return redirect()
+            ->route('eventos.edit', $copia)
+            ->with('success', 'Ação pedagógica duplicada com sucesso! Revise e ajuste os dados antes de publicar.');
     }
 
     public function destroy(Evento $evento)
