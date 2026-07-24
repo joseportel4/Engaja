@@ -24,7 +24,9 @@
     $fim = \Carbon\Carbon::parse($atividade->hora_fim)->format('H:i');
     $data = \Carbon\Carbon::parse($atividade->dia)->format('d/m/Y');
     $municipio = $atividade->municipio;
-    $munLabel = $municipio ? ($municipio->nome . ' / ' . ($municipio->estado->sigla ?? '')) : '—';
+    $munLabel = $atividade->abrangencia_nacional
+        ? 'Brasil'
+        : ($municipio ? ($municipio->nome . ' / ' . ($municipio->estado->sigla ?? '')) : '—');
 @endphp
 
 <x-pdf.header title="Lista de Presença" />

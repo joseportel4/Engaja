@@ -136,11 +136,27 @@
   $municipiosSelecionados = collect(old('municipios', isset($atividade) ? $atividade->municipios->pluck('id')->all() : []))
     ->map(fn($v) => (string) $v)
     ->all();
+  $abrangenciaNacional = (bool) old('abrangencia_nacional', $atividade->abrangencia_nacional ?? false);
 @endphp
 <div class="mb-3">
-  <span class="form-label d-block">Municípios</span>
+  <span class="form-label d-block">Abrangência territorial</span>
+  <input type="hidden" name="abrangencia_nacional" value="0">
+  <div class="form-check border rounded p-3 ps-5 mb-3 bg-light">
+    <input
+      class="form-check-input"
+      type="checkbox"
+      name="abrangencia_nacional"
+      value="1"
+      id="abrangencia_nacional"
+      @checked($abrangenciaNacional)>
+    <label class="form-check-label fw-semibold" for="abrangencia_nacional">
+      Brasil (abrangência nacional)
+    </label>
+    <div class="form-text">Use esta opção quando o momento puder receber participantes de qualquer município brasileiro.</div>
+  </div>
+
   <script type="application/json" id="municipios-json-data">{!! json_encode($municipiosJson ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}</script>
-  <div class="row g-3 align-items-start">
+  <div class="row g-3 align-items-start" id="municipios-selecao-container" @if($abrangenciaNacional) hidden @endif>
     <div class="col-lg-7">
       <div class="municipios-busca-wrap mb-2">
         <label for="municipios-busca-input" class="visually-hidden">Buscar pelo nome do município</label>
@@ -224,6 +240,8 @@
   const resumoLista = document.getElementById('municipios-resumo-lista');
   const resumoContador = document.getElementById('municipios-resumo-contador');
   const filtrosTags = document.getElementById('municipios-filtros-tags');
+  const abrangenciaNacional = document.getElementById('abrangencia_nacional');
+  const municipiosContainer = document.getElementById('municipios-selecao-container');
 
   if (!buscaInput || !listaEl || !hiddenEl) return;
 
@@ -594,7 +612,16 @@
     buildSugestoes();
   });
 
+  function syncAbrangenciaNacional() {
+    if (municipiosContainer && abrangenciaNacional) {
+      municipiosContainer.hidden = abrangenciaNacional.checked;
+    }
+  }
+
+  abrangenciaNacional?.addEventListener('change', syncAbrangenciaNacional);
+
   syncHiddenInputs();
+  syncAbrangenciaNacional();
   renderFiltrosTags();
   renderResumo();
   renderListaCheckboxes();

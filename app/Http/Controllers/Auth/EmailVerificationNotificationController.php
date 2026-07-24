@@ -14,7 +14,11 @@ class EmailVerificationNotificationController extends Controller
     public function store(Request $request): RedirectResponse
     {
         if ($request->user()->hasVerifiedEmail()) {
-            return redirect()->intended('/');
+            $redirectTo = $request->user()->isCartasUser()
+                ? route('cartas.dashboard')
+                : '/';
+
+            return redirect()->intended($redirectTo);
         }
 
         $request->user()->sendEmailVerificationNotification();

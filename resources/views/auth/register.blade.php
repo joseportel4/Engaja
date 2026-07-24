@@ -1,12 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-@php
-    $munLabel = function ($m) {
-        $uf = $m->estado->sigla ?? null;
-        return $uf ? "{$m->nome} — {$uf}" : $m->nome;
-    };
-@endphp
 <div class="container py-5">
     <div class="row">
         <div class="col-md-8 offset-md-2">
@@ -143,21 +137,7 @@
                                         @enderror
                                     </div>
 
-                                    <div class="col-md-6">
-                                        <label for="municipio_id" class="form-label">Município</label>
-                                        <select id="municipio_id" name="municipio_id"
-                                                class="form-select @error('municipio_id') is-invalid @enderror">
-                                            <option value="">— Nenhum —</option>
-                                            @foreach($municipios as $m)
-                                                <option value="{{ $m->id }}" @selected((string) old('municipio_id') === (string) $m->id)>
-                                                    {{ $munLabel($m) }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        @error('municipio_id')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
+                                    @include('auth.partials.municipio-select')
                                 </div>
                             </div>
                         </div>

@@ -21,6 +21,9 @@
         <label for="municipio_id" class="form-label mb-0 small text-muted">Município</label>
         <select name="municipio_id" id="municipio_id" class="form-select form-select-sm" onchange="this.form.submit()">
           <option value="">Todos</option>
+          @if($temAbrangenciaNacional ?? false)
+            <option value="brasil" @selected(request('municipio_id') === 'brasil')>Brasil</option>
+          @endif
           @foreach($municipiosDisponiveis as $m)
             <option value="{{ $m->id }}" @selected(request('municipio_id') == $m->id)>
               {{ $m->nome_com_estado ?? $m->nome }}
@@ -49,9 +52,11 @@
         }
 
         $rows = $atividades->map(function ($at) {
-            $munLabel = $at->municipios->isNotEmpty()
-                ? $at->municipios->map(fn ($m) => $m->nome_com_estado ?? $m->nome)->join(', ')
-                : '-';
+            $munLabel = $at->abrangencia_nacional
+                ? 'Brasil'
+                : ($at->municipios->isNotEmpty()
+                    ? $at->municipios->map(fn ($m) => $m->nome_com_estado ?? $m->nome)->join(', ')
+                    : '-');
 
             $statusHtml = $at->checklists_incompletos
                 ? '<button type="button" class="badge bg-warning text-dark border-0 btn-checklist-reabrir" data-atividade-id="' . $at->id . '" data-checklist-pl="' . e(json_encode($at->checklist_planejamento ?? [])) . '" data-checklist-en="' . e(json_encode($at->checklist_encerramento ?? [])) . '" style="cursor:pointer; font-size:0.75rem; padding:0.35rem 0.5rem;">⚠️ Checklist incompleto</button>'

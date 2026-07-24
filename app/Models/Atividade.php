@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Cartas\Carta;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +17,7 @@ class Atividade extends Model
     protected $fillable = [
         'evento_id',
         'municipio_id',
+        'abrangencia_nacional',
         'descricao',
         'dia',
         'hora_inicio',
@@ -29,6 +31,7 @@ class Atividade extends Model
     ];
 
     protected $casts = [
+        'abrangencia_nacional' => 'boolean',
         'checklist_planejamento' => 'array',
         'checklist_encerramento' => 'array',
     ];
@@ -76,6 +79,11 @@ class Atividade extends Model
     public function inscricoes(): HasMany
     {
         return $this->hasMany(Inscricao::class);
+    }
+
+    public function cartas(): HasMany
+    {
+        return $this->hasMany(Carta::class);
     }
 
     public function participantes(): BelongsToMany

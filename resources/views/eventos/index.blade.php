@@ -98,8 +98,19 @@
                 if (auth()->user()->can('update', $ev) && auth()->user()->hasAnyRole(['administrador', 'gerente', 'eq_pedagogica'])) {
                     $acoesHtml .= '<li><a class="dropdown-item" href="' . route('eventos.edit', $ev) . '">Editar</a></li>';
 
+                    $acoesHtml .= '<li><hr class="dropdown-divider"></li>'
+                        . '<li>'
+                        . '<form method="POST" action="' . route('eventos.duplicate', $ev) . '" data-confirm="Deseja duplicar esta ação pedagógica? Uma cópia será criada com os mesmos dados de edição e momentos, sem inscritos e presenças.">'
+                        . csrf_field()
+                        . '<button type="submit" class="dropdown-item">'
+                        . ' Duplicar ação'
+                        . '</button>'
+                        . '</form>'
+                        . '</li>';
+
                     if (auth()->user()->hasRole('administrador')) {
-                        $acoesHtml .= '<li>'
+                        $acoesHtml .= '<li><hr class="dropdown-divider"></li>'
+                            . '<li>'
                             . '<form method="POST" action="' . route('eventos.destroy', $ev) . '" data-confirm="Tem certeza que deseja excluir esta ação pedagógica?">'
                             . csrf_field() . method_field('DELETE')
                             . '<button type="submit" class="dropdown-item text-danger">Excluir</button>'

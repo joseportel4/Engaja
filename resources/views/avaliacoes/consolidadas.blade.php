@@ -23,6 +23,12 @@
                 <i class="bi bi-file-earmark-pdf-fill me-1"></i>
                 Baixar PDF
             </a>
+            <a id="btn-download-docx"
+               href="{{ route('avaliacoes-consolidadas.pdf', ['evento_id' => $evento->id, 'agrupamento' => $agrupamento, 'formato' => 'docx']) }}"
+               class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-word me-1"></i>
+                Baixar Word
+            </a>
             @endif
         </div>
     </div>
@@ -737,6 +743,7 @@ body.csl-loading * { cursor: wait !important; }
     const selEvento  = document.getElementById('evento_id');
     const selAgrup   = document.getElementById('agrupamento');
     const btnPdf     = document.getElementById('btn-download-pdf');
+    const btnDocx    = document.getElementById('btn-download-docx');
     const baseUrlPdf = '{{ route('avaliacoes-consolidadas.pdf') }}';
 
     // ── Feedback visual de loading ao submeter ─────────────
@@ -765,8 +772,9 @@ body.csl-loading * { cursor: wait !important; }
 
     // ── Atualizar href do PDF sincronizado ─────────────────
     function atualizarPdf() {
-        if (!btnPdf) return;
-        btnPdf.href = baseUrlPdf + '?evento_id=' + selEvento.value + '&agrupamento=' + selAgrup.value;
+        const query = '?evento_id=' + selEvento.value + '&agrupamento=' + selAgrup.value;
+        if (btnPdf) btnPdf.href = baseUrlPdf + query;
+        if (btnDocx) btnDocx.href = baseUrlPdf + query + '&formato=docx';
     }
 
     // Inicializa PDF href
