@@ -122,7 +122,7 @@
                                 $statusLabel = match (true) {
                                     $carta->status === 'respondida' => 'Respondida',
                                     $carta->status === 'aguardando_ajuste' || $ultimoStatus === 'ajuste_solicitado' => 'Ajuste solicitado',
-                                    str_contains($ultimoStatus, 'verificacao') => 'Pendente',
+                                    str_contains($ultimoStatus, 'verificacao') => 'Em preparação',
                                     default => 'Enviada',
                                 };
                             @endphp

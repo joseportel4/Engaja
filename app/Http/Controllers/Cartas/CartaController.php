@@ -159,7 +159,7 @@ class CartaController extends Controller
 
         $voluntario->notify(new CartaRecebidaNotification($carta->load('mensagens')));
 
-        return redirect()->route('cartas.dashboard')->with('status', 'Carta enviada para o voluntario.');
+        return redirect()->route('cartas.dashboard')->with('status', 'Carta enviada para o voluntário.');
     }
 
     public function storeMessage(Request $request, Carta $carta): RedirectResponse

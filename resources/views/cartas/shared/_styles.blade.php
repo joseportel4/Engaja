@@ -512,17 +512,20 @@
     }
 
     .cpe-alert {
-        border: 1px solid #e2e2e2;
+        border: 1px solid #b7deb7;
         border-radius: 6px;
-        background: #fff;
+        background: #f2fbf2;
+        color: #2e7a2e;
         padding: 10px 12px;
         font-size: 13px;
+        font-weight: 500;
         margin-bottom: 14px;
     }
 
     .cpe-alert--error {
         border-color: #d04b4b;
         color: #9f1d1d;
+        background: #fffafa;
     }
 
     .cpe-letter-preview {
