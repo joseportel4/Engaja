@@ -269,8 +269,9 @@
         background: var(--land-purple);
         color: var(--land-paper);
         text-align: center;
+        box-sizing: border-box;
+        height: 664px;
         padding: 64px 0;
-        min-height: 80vh;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -469,8 +470,9 @@
         background: var(--land-blue);
         color: var(--land-paper);
         text-align: center;
-        padding: 80px 0;
-        min-height: 80vh;
+        box-sizing: border-box;
+        height: 664px;
+        padding: 264px 0;
         display: flex;
         flex-direction: column;
         justify-content: center;
