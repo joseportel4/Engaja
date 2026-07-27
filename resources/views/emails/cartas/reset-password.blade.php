@@ -85,6 +85,11 @@
       <p>
         <a class="btn" href="{{ $url }}">Redefinir senha</a>
       </p>
+
+      <p style="margin-top: 24px;">
+         Obrigado por esperançar com a gente.<br>
+         <strong>Projeto ALFA-EJA Brasil | Cartas para Esperançar</strong>
+      </p>
       <p class="muted">Se o botão não funcionar, copie e cole este link no navegador:<br>{{ $url }}</p>
       <p class="muted">Se você não solicitou a recuperação, nenhuma ação é necessária.</p>
     </div>
