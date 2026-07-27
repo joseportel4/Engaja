@@ -4,14 +4,15 @@ namespace App\Exports;
 
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class MatrizPresencaCapaSheet implements FromView, WithTitle, WithStyles, WithColumnWidths
+class MatrizPresencaCapaSheet implements FromView, WithColumnWidths, WithStyles, WithTitle
 {
     protected $evento;
+
     protected $atividadesPorMunicipio;
 
     public function __construct($evento, $atividadesPorMunicipio)
@@ -25,7 +26,10 @@ class MatrizPresencaCapaSheet implements FromView, WithTitle, WithStyles, WithCo
         $municipiosResumo = [];
 
         foreach ($this->atividadesPorMunicipio as $municipioId => $atividades) {
-            $municipioNome = $atividades->first()->municipio?->nome_com_estado ?? 'Sem Município';
+            $primeiraAtividade = $atividades->first();
+            $municipioNome = $primeiraAtividade->abrangencia_nacional
+                ? 'Brasil'
+                : ($primeiraAtividade->municipio?->nome_com_estado ?? 'Sem Município');
 
             $inscritosUnicos = collect();
             foreach ($atividades as $atividade) {
@@ -41,8 +45,8 @@ class MatrizPresencaCapaSheet implements FromView, WithTitle, WithStyles, WithCo
             ];
         }
 
-        //por nome do municipio
-        usort($municipiosResumo, fn($a, $b) => strcmp($a['nome'], $b['nome']));
+        // por nome do municipio
+        usort($municipiosResumo, fn ($a, $b) => strcmp($a['nome'], $b['nome']));
 
         return view('exports.matriz_presenca_capa', [
             'evento' => $this->evento,
@@ -58,8 +62,8 @@ class MatrizPresencaCapaSheet implements FromView, WithTitle, WithStyles, WithCo
     public function styles(Worksheet $sheet)
     {
         return [
-            1    => ['font' => ['bold' => true, 'size' => 14]],
-            2    => ['font' => ['italic' => true]],
+            1 => ['font' => ['bold' => true, 'size' => 14]],
+            2 => ['font' => ['italic' => true]],
         ];
     }
 

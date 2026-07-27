@@ -20,6 +20,10 @@ class ProfilePhotoPromptMiddleware
 
     public function handle(Request $request, Closure $next): Response
     {
+        if ($request->routeIs('cartas.*') || $request->is('cartas/*') || $request->is('cartas')) {
+            return $next($request);
+        }
+
         if (! auth()->check()) {
             return $next($request);
         }

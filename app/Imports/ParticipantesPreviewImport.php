@@ -14,7 +14,7 @@ class ParticipantesPreviewImport implements SkipsEmptyRows, ToCollection, WithHe
     /** @var Collection<array<string,mixed>> Linhas normalizadas para exibir na prévia */
     public Collection $rows;
 
-    /** @var array<string,int> Cache: nome_do_municipio_lower => id */
+    /** @var array<string, array<int, array{id: int, estado_nome: string, estado_sigla: string}>> */
     protected array $municipiosCache = [];
 
     /** @var array<int,string> */
@@ -38,9 +38,15 @@ class ParticipantesPreviewImport implements SkipsEmptyRows, ToCollection, WithHe
 
         // Pré-carrega municípios para não consultar a cada linha
         $this->municipiosCache = Municipio::query()
-            ->select('id', 'nome')
+            ->with('estado:id,nome,sigla')
+            ->select('id', 'nome', 'estado_id')
             ->get()
-            ->mapWithKeys(fn ($m) => [mb_strtolower(trim($m->nome)) => $m->id])
+            ->groupBy(fn ($m) => $this->slugify($m->nome))
+            ->map(fn ($municipios) => $municipios->map(fn ($municipio) => [
+                'id' => (int) $municipio->id,
+                'estado_nome' => (string) $municipio->estado?->nome,
+                'estado_sigla' => (string) $municipio->estado?->sigla,
+            ])->values()->all())
             ->all();
 
         $this->tiposOrganizacao = config('engaja.organizacoes', []);
@@ -76,10 +82,27 @@ class ParticipantesPreviewImport implements SkipsEmptyRows, ToCollection, WithHe
 
             // Resolve municipio_id via cache (se existir)
             $municipioNome = $this->firstValue($raw, ['municipio', 'município', 'cidade']) ?? '';
+            $estado = $this->firstValue($raw, ['estado', 'uf', 'estado_sigla', 'sigla_estado']) ?? '';
+            if (preg_match('/^(.+?)\s*(?:-|\/)\s*([A-Za-z]{2})$/u', $municipioNome, $matches)) {
+                $municipioNome = trim($matches[1]);
+                if ($estado === '') {
+                    $estado = mb_strtoupper($matches[2]);
+                }
+            }
+
             $municipioId = null;
             if ($municipioNome !== '') {
-                $key = mb_strtolower($municipioNome);
-                $municipioId = $this->municipiosCache[$key] ?? null;
+                $candidatos = collect($this->municipiosCache[$this->slugify($municipioNome)] ?? []);
+                if ($estado !== '') {
+                    $estadoNormalizado = $this->slugify($estado);
+                    $candidatos = $candidatos->filter(fn (array $municipio) => $this->slugify($municipio['estado_nome']) === $estadoNormalizado
+                        || $this->slugify($municipio['estado_sigla']) === $estadoNormalizado
+                    );
+                }
+
+                if ($candidatos->count() === 1) {
+                    $municipioId = $candidatos->first()['id'];
+                }
             }
 
             $tipoColumnExists = false;
@@ -116,6 +139,7 @@ class ParticipantesPreviewImport implements SkipsEmptyRows, ToCollection, WithHe
                 'telefone' => preg_replace('/\D+/', '', (string) $telefoneRaw) ?: null,
                 'municipio' => $municipioNome,
                 'municipio_id' => $municipioId,
+                'estado' => $estado,
                 'tipo_organizacao' => $tipoOut,
                 'tipo_organizacao_ok' => $tipoOk,
                 'escola_unidade' => $organizacaoLivre,

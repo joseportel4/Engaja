@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -1140,6 +1141,7 @@ class InscricaoController extends Controller
             'cpf' => ['cpf', 'documento'],
             'telefone' => ['telefone', 'celular', 'fone', 'telefone celular', 'telefone_celular'],
             'municipio' => ['municipio', 'município', 'cidade'],
+            'estado' => ['estado', 'uf', 'estado_sigla', 'sigla estado'],
             'tipo_organizacao' => ['tipo de organizacao', 'tipo_da_organizacao', 'tipo organizacao', 'tipoorganizacao'],
             'organizacao' => ['organizacao', 'organização', 'escola_unidade', 'escola unidade', 'organizacao_nome'],
             'tag' => ['tag'],
@@ -1154,9 +1156,15 @@ class InscricaoController extends Controller
         }
 
         $municipiosLookup = Municipio::query()
-            ->select('id', 'nome')
+            ->with('estado:id,nome,sigla')
+            ->select('id', 'nome', 'estado_id')
             ->get()
-            ->mapWithKeys(fn ($m) => [mb_strtolower(trim((string) $m->nome)) => (int) $m->id])
+            ->groupBy(fn ($m) => $this->normalizeSpreadsheetHeader((string) $m->nome))
+            ->map(fn ($municipios) => $municipios->map(fn ($municipio) => [
+                'id' => (int) $municipio->id,
+                'estado_nome' => (string) $municipio->estado?->nome,
+                'estado_sigla' => (string) $municipio->estado?->sigla,
+            ])->values()->all())
             ->all();
 
         $spreadsheet = IOFactory::load($absolutePath);
@@ -1199,6 +1207,13 @@ class InscricaoController extends Controller
                     $cpfRaw = $this->sheetCellValue($sheet, $fieldToColumn['cpf'] ?? null, $rowNumber);
                     $telefoneRaw = $this->sheetCellValue($sheet, $fieldToColumn['telefone'] ?? null, $rowNumber);
                     $municipioNome = $this->sheetCellValue($sheet, $fieldToColumn['municipio'] ?? null, $rowNumber);
+                    $estado = $this->sheetCellValue($sheet, $fieldToColumn['estado'] ?? null, $rowNumber);
+                    if (preg_match('/^(.+?)\s*(?:-|\/)\s*([A-Za-z]{2})$/u', $municipioNome, $matches)) {
+                        $municipioNome = trim($matches[1]);
+                        if ($estado === '') {
+                            $estado = mb_strtoupper($matches[2]);
+                        }
+                    }
                     $tipoOrganizacao = $this->sheetCellValue($sheet, $fieldToColumn['tipo_organizacao'] ?? null, $rowNumber);
                     $organizacao = $this->sheetCellValue($sheet, $fieldToColumn['organizacao'] ?? null, $rowNumber);
                     $tag = $this->sheetCellValue($sheet, $fieldToColumn['tag'] ?? null, $rowNumber);
@@ -1210,6 +1225,7 @@ class InscricaoController extends Controller
                         $cpfRaw === '' &&
                         $telefoneRaw === '' &&
                         $municipioNome === '' &&
+                        $estado === '' &&
                         $tipoOrganizacao === '' &&
                         $organizacao === '' &&
                         $tag === ''
@@ -1217,9 +1233,19 @@ class InscricaoController extends Controller
                         continue;
                     }
 
-                    $municipioId = $municipioNome !== ''
-                        ? ($municipiosLookup[mb_strtolower($municipioNome)] ?? null)
-                        : null;
+                    $municipioId = null;
+                    if ($municipioNome !== '') {
+                        $candidatos = collect($municipiosLookup[$this->normalizeSpreadsheetHeader($municipioNome)] ?? []);
+                        if ($estado !== '') {
+                            $estadoNormalizado = $this->normalizeSpreadsheetHeader($estado);
+                            $candidatos = $candidatos->filter(fn (array $municipio) => $this->normalizeSpreadsheetHeader($municipio['estado_nome']) === $estadoNormalizado
+                                || $this->normalizeSpreadsheetHeader($municipio['estado_sigla']) === $estadoNormalizado
+                            );
+                        }
+                        if ($candidatos->count() === 1) {
+                            $municipioId = $candidatos->first()['id'];
+                        }
+                    }
 
                     if ($tipoOrganizacao === '' && $organizacao !== '') {
                         $tipoOrganizacao = $organizacao;
@@ -1233,6 +1259,7 @@ class InscricaoController extends Controller
                         'telefone' => preg_replace('/\D+/', '', $telefoneRaw) ?: null,
                         'municipio' => $municipioNome,
                         'municipio_id' => $municipioId,
+                        'estado' => $estado,
                         'tipo_organizacao' => $tipoOrganizacao,
                         'tipo_organizacao_ok' => true,
                         'escola_unidade' => $organizacao,
@@ -1616,7 +1643,13 @@ class InscricaoController extends Controller
             $tagOptions = config('engaja.participante_tags', Participante::TAGS);
             $tagLookup = array_fill_keys($tagOptions, true);
 
-            foreach ($rows as $row) {
+            $municipiosConhecidos = Municipio::withTrashed()
+                ->with(['estado' => fn ($query) => $query->withTrashed()])
+                ->get()
+                ->groupBy(fn (Municipio $municipio) => $this->normalizeSpreadsheetHeader($municipio->nome));
+            $municipiosResolvidos = [];
+
+            foreach ($rows as $rowIndex => $row) {
                 $email = strtolower(trim((string) ($row['email'] ?? '')));
                 if (! $email) {
                     continue;
@@ -1651,8 +1684,15 @@ class InscricaoController extends Controller
 
                 $telefoneValue = $telefoneValue !== '' ? $telefoneValue : null;
 
+                $municipioId = $this->resolveMunicipioImportacao(
+                    $row,
+                    $municipiosConhecidos,
+                    $municipiosResolvidos,
+                    (int) $rowIndex + 2,
+                );
+
                 $dados = [
-                    'municipio_id' => ($row['municipio_id'] ?? null) ?: null,
+                    'municipio_id' => $municipioId,
                     'cpf' => (($row['cpf'] ?? '') !== '') ? trim((string) $row['cpf']) : null,
                     'telefone' => $telefoneValue,
                     'escola_unidade' => ($org !== '') ? $org : null,
@@ -1729,6 +1769,73 @@ class InscricaoController extends Controller
         return redirect()
             ->route('eventos.show', $evento)
             ->with('success', 'Importação confirmada e salva com sucesso!');
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @param  Collection<string, Collection<int, Municipio>>  $municipiosConhecidos
+     * @param  array<string, int>  $municipiosResolvidos
+     */
+    private function resolveMunicipioImportacao(
+        array $row,
+        Collection $municipiosConhecidos,
+        array &$municipiosResolvidos,
+        int $linha,
+    ): ?int {
+        $municipioId = (int) ($row['municipio_id'] ?? 0);
+        if ($municipioId > 0) {
+            return $municipioId;
+        }
+
+        $municipioNome = trim((string) ($row['municipio'] ?? ''));
+        if ($municipioNome === '') {
+            return null;
+        }
+
+        $estado = trim((string) ($row['estado'] ?? $row['uf'] ?? $row['estado_sigla'] ?? ''));
+        if (preg_match('/^(.+?)\s*(?:-|\/)\s*([A-Za-z]{2})$/u', $municipioNome, $matches)) {
+            $municipioNome = trim($matches[1]);
+            if ($estado === '') {
+                $estado = mb_strtoupper($matches[2]);
+            }
+        }
+
+        $nomeNormalizado = $this->normalizeSpreadsheetHeader($municipioNome);
+        $estadoNormalizado = $this->normalizeSpreadsheetHeader($estado);
+        $cacheKey = $nomeNormalizado.'|'.$estadoNormalizado;
+
+        if (isset($municipiosResolvidos[$cacheKey])) {
+            return $municipiosResolvidos[$cacheKey];
+        }
+
+        $candidatos = collect($municipiosConhecidos->get($nomeNormalizado, collect()));
+        if ($estadoNormalizado !== '') {
+            $candidatos = $candidatos->filter(function (Municipio $municipio) use ($estadoNormalizado) {
+                $sigla = $this->normalizeSpreadsheetHeader((string) $municipio->estado?->sigla);
+                $nome = $this->normalizeSpreadsheetHeader((string) $municipio->estado?->nome);
+
+                return $sigla === $estadoNormalizado || $nome === $estadoNormalizado;
+            })->values();
+        }
+
+        if ($candidatos->count() === 1) {
+            /** @var Municipio $municipio */
+            $municipio = $candidatos->first();
+            if ($municipio->estado?->trashed()) {
+                $municipio->estado->restore();
+            }
+            if ($municipio->trashed()) {
+                $municipio->restore();
+            }
+
+            return $municipiosResolvidos[$cacheKey] = $municipio->id;
+        }
+
+        $mensagem = $candidatos->isEmpty()
+            ? "Linha {$linha}: município \"{$municipioNome}\" não encontrado na base de localidades."
+            : "Linha {$linha}: há mais de um município chamado \"{$municipioNome}\". Informe o estado ou UF para identificá-lo.";
+
+        throw ValidationException::withMessages(['rows' => $mensagem]);
     }
 
     public function inscritos(Request $request, Evento $evento)

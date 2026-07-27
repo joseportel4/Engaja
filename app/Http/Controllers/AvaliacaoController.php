@@ -17,6 +17,8 @@ use App\Models\TemplateAvaliacao;
 use App\Models\User;
 use App\Services\AvaliacaoRespostasDashboardService;
 use App\ViewModels\Avaliacao\QuestoesFormViewModel;
+use App\Word\AvaliacaoFichaWordBuilder;
+use App\Word\AvaliacaoResultadosWordBuilder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -1348,7 +1350,10 @@ class AvaliacaoController extends Controller
 
         $validator = Validator::make($payload, [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+            'email' => [
+                'required', 'email', 'max:255',
+                Rule::unique('users', 'email')->where('sistema_origem', User::SISTEMA_ENGAJA),
+            ],
             'cpf' => ['nullable', 'digits:11'],
         ]);
 
@@ -1384,7 +1389,10 @@ class AvaliacaoController extends Controller
             $cpf = $validated['cpf'] ?? null;
 
             $user = User::firstOrCreate(
-                ['email' => $email],
+                [
+                    'email' => $email,
+                    'sistema_origem' => User::SISTEMA_ENGAJA,
+                ],
                 [
                     'name' => $name !== '' ? $name : ($cpf ?? 'Participante'),
                     'password' => Hash::make(Str::random(12)),
@@ -1817,7 +1825,17 @@ class AvaliacaoController extends Controller
         $payload = $avaliacaoRespostas->buildDashboardPayload($filterRequest);
 
         $fileSlug = Str::slug($atividade->descricao ?: 'momento');
-        $fileName = 'avaliacoes-momento-'.$atividade->id.'-'.$fileSlug.'-'.now()->format('Ymd_His').'.pdf';
+        $fileBase = 'avaliacoes-momento-'.$atividade->id.'-'.$fileSlug.'-'.now()->format('Ymd_His');
+        $fileName = $fileBase.'.pdf';
+
+        if (request()->get('formato') === 'docx') {
+            return AvaliacaoResultadosWordBuilder::build(
+                $atividade,
+                $avaliacao,
+                $payload['totais'],
+                $payload['perguntas'],
+            )->download($fileBase.'.docx');
+        }
 
         return Pdf::view('avaliacoes.resultados_atividade_pdf', [
             'atividade' => $atividade,
@@ -1840,13 +1858,17 @@ class AvaliacaoController extends Controller
             'avaliacaoQuestoes.indicador.dimensao',
         ]);
 
-        $fileName = 'ficha-avaliacao-'.$avaliacao->id.'-'.now()->format('Ymd_His').'.pdf';
+        $fileBase = 'ficha-avaliacao-'.$avaliacao->id.'-'.now()->format('Ymd_His');
+
+        if (request()->get('formato') === 'docx') {
+            return AvaliacaoFichaWordBuilder::build($avaliacao)->download($fileBase.'.docx');
+        }
 
         return Pdf::view('avaliacoes.ficha_pdf', [
             'avaliacao' => $avaliacao,
         ])
             ->format('a4')
             ->withAlfaEjaBrand()
-            ->download($fileName);
+            ->download($fileBase.'.pdf');
     }
 }

@@ -3,41 +3,44 @@
 @section('title', 'Relatório de Participação e Avaliação por Encontro')
 
 @section('content')
-{{-- Filtros Aplicados --}}
+{{-- Contexto do relatório em prosa natural --}}
 @php
-    $filtrosAplicados = [];
+    $partes = [];
     if (request('evento_id')) {
         $evento = \App\Models\Evento::find(request('evento_id'));
-        if ($evento) $filtrosAplicados[] = "Ação: " . $evento->nome;
+        if ($evento) $partes[] = 'da ação <strong>' . e($evento->nome) . '</strong>';
+    }
+    if (request('descricao')) {
+        $partes[] = 'do momento <strong>' . e(request('descricao')) . '</strong>';
     }
     if (request('regiao_id')) {
         $regiao = \App\Models\Regiao::find(request('regiao_id'));
-        if ($regiao) $filtrosAplicados[] = "Região: " . $regiao->nome;
+        if ($regiao) $partes[] = 'na região <strong>' . e($regiao->nome) . '</strong>';
     }
     if (request('municipio_id')) {
         $municipio = \App\Models\Municipio::find(request('municipio_id'));
-        if ($municipio) $filtrosAplicados[] = "Município: " . $municipio->nome;
-    }
-    if (request('descricao')) {
-        $filtrosAplicados[] = "Momento: " . request('descricao');
+        if ($municipio) $partes[] = 'no município de <strong>' . e($municipio->nome) . '</strong>';
     }
     if (request('de') || request('ate')) {
         $de = request('de') ? \Carbon\Carbon::parse(request('de'))->format('d/m/Y') : '';
         $ate = request('ate') ? \Carbon\Carbon::parse(request('ate'))->format('d/m/Y') : '';
-        $intervalo = ($de && $ate) ? "$de até $ate" : ($de ? "a partir de $de" : "até $ate");
-        $filtrosAplicados[] = "Período: " . $intervalo;
+        $intervalo = ($de && $ate) ? "de $de a $ate" : ($de ? "a partir de $de" : "até $ate");
+        $partes[] = 'no período <strong>' . $intervalo . '</strong>';
     }
     if (request('periodo')) {
-        $periodos = ['manha' => 'Manhã', 'tarde' => 'Tarde', 'noite' => 'Noite'];
-        $filtrosAplicados[] = "Período do dia: " . ($periodos[request('periodo')] ?? request('periodo'));
+        $periodos = ['manha' => 'manhã', 'tarde' => 'tarde', 'noite' => 'noite'];
+        $partes[] = 'no turno da <strong>' . ($periodos[request('periodo')] ?? e(request('periodo'))) . '</strong>';
     }
-    $filtrosAplicados[] = 'Total de encontros: ' . $atividades->count();
+
+    $total = $atividades->count();
+    $contexto = 'Exibindo <strong>'.$total.'</strong> '.($total === 1 ? 'encontro' : 'encontros');
+    $contexto .= count($partes) ? ' '.implode(', ', $partes) : ' (sem filtros aplicados)';
+    $contexto .= '.';
 @endphp
 
-<x-pdf.header
-    title="Relatório de Participação e Avaliação por Encontro"
-    :meta="$filtrosAplicados"
-/>
+<x-pdf.header title="Relatório de Participação e Avaliação por Encontro">
+    {!! $contexto !!}
+</x-pdf.header>
 
 @if($atividades->isEmpty())
     <p style="text-align: center; color: #666;">Nenhum encontro encontrado com os filtros aplicados.</p>

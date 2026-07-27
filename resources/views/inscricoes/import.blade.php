@@ -100,7 +100,9 @@
         </div>
         <div class="mb-3">
           <div class="form-text">
-            Colunas: nome, email, cpf, telefone, municipio, tipo_de_organizacao, organizacao, tag
+            Colunas: nome, email, cpf, telefone, municipio, estado/uf (opcional), tipo_de_organizacao, organizacao, tag
+            <br>
+            Municípios ainda não cadastrados serão consultados no IBGE e criados automaticamente. Informe o estado/UF quando houver cidades com o mesmo nome.
           </div>
           <div class="mt-2">
             <a href="{{ asset('modelos/modelo_inscricoes_engaja.xlsx') }}" class="btn btn-sm btn-outline-primary">

@@ -7,6 +7,7 @@ use App\Models\AvaliacaoAtividade;
 use App\Models\Evento;
 use App\Models\Municipio;
 use App\Models\Participante;
+use App\Word\AvaliacaoAtividadeWordBuilder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -273,12 +274,17 @@ class AvaliacaoAtividadeController extends Controller
         ]);
     }
 
-    public function download(AvaliacaoAtividade $relatorio)
+    public function download(AvaliacaoAtividade $relatorio, Request $request)
     {
         $this->authorizeRelatorio($relatorio);
         $this->loadRelatorioRelations($relatorio);
 
         $resumoPublico = $this->buildResumoPublicoForRelatorio($relatorio);
+
+        if ($request->get('formato') === 'docx') {
+            return AvaliacaoAtividadeWordBuilder::single($relatorio, $resumoPublico, self::REPORT_QUESTION_FIELDS)
+                ->download('relatorio-acao-'.$relatorio->id.'.docx');
+        }
 
         return Pdf::view('avaliacao-atividade.pdf', [
             'relatorio' => $relatorio,
@@ -290,20 +296,20 @@ class AvaliacaoAtividadeController extends Controller
             ->download('relatorio-acao-'.$relatorio->id.'.pdf');
     }
 
-    public function downloadOwn(Atividade $atividade)
+    public function downloadOwn(Atividade $atividade, Request $request)
     {
         $this->authorizeReport($atividade);
 
         $relatorio = $this->getUserReport($atividade);
         abort_if(! $relatorio, 404, 'Relatório não encontrado para este momento.');
 
-        return $this->download($relatorio);
+        return $this->download($relatorio, $request);
     }
 
     /**
      * Gera PDF consolidado com todos os relatórios de um momento (atividade).
      */
-    public function baixarTodosPorAtividade(Atividade $atividade)
+    public function baixarTodosPorAtividade(Atividade $atividade, Request $request)
     {
         abort_unless(
             auth()->user()?->hasAnyRole(self::REPORT_EDIT_ROLES),
@@ -347,6 +353,11 @@ class AvaliacaoAtividadeController extends Controller
             ];
         })->values();
 
+        if ($request->get('formato') === 'docx') {
+            return AvaliacaoAtividadeWordBuilder::consolidado($atividade, $relatorios, $resumoPublico, $respostasPorPergunta)
+                ->download('relatorios-consolidado-'.Str::slug($atividade->descricao ?? 'momento').'.docx');
+        }
+
         $nomeArquivo = 'relatorios-consolidado-'.Str::slug($atividade->descricao ?? 'momento').'.pdf';
 
         return Pdf::view('avaliacao-atividade.pdf-consolidado', [
@@ -378,15 +389,18 @@ class AvaliacaoAtividadeController extends Controller
         $atividadesRelatorios = $relatorios->groupBy('atividade_id')->map(function ($relatoriosDoMomento) {
             $atividade = $relatoriosDoMomento->first()->atividade;
             $resumoPublico = $this->calcularResumoPublico($atividade, $relatoriosDoMomento->first());
-            
+
             $respostasPorPergunta = collect(self::REPORT_QUESTION_FIELDS)->map(function ($pergunta, $campo) use ($relatoriosDoMomento) {
                 return [
                     'pergunta' => $pergunta,
                     'respostas' => $relatoriosDoMomento
                         ->map(function (AvaliacaoAtividade $relatorio) use ($campo) {
                             $resposta = trim((string) ($relatorio->{$campo} ?? ''));
-                            if ($resposta === '') return null;
+                            if ($resposta === '') {
+                                return null;
+                            }
                             $nomeResponsavel = $relatorio->user->name ?? $relatorio->nome_educador ?? 'Usuário não identificado';
+
                             return [
                                 'responsavel_id' => $relatorio->user_id ?? '—',
                                 'responsavel_nome' => $nomeResponsavel,

@@ -53,11 +53,11 @@
 @endphp
 
 <div class="sheet">
-    <x-pdf.header
-        title="Relatório do Momento"
-        subtitle="Documento institucional"
-        :meta="['Preenchido por: ' . $nomeResponsavel]"
-    />
+    <x-pdf.header title="Relatório do Momento" subtitle="Documento institucional">
+        @if(filled($nomeResponsavel))
+            Preenchido por <strong>{{ $nomeResponsavel }}</strong>.
+        @endif
+    </x-pdf.header>
 
     <div class="content">
         <div class="card">

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Participante;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -47,7 +48,9 @@ class UserManagementRequest extends FormRequest
             'name'  => ['required','string','max:255'],
             'email' => [
                 'required','email','max:255',
-                Rule::unique('users','email')->ignore($managedUserId),
+                Rule::unique('users', 'email')
+                    ->where('sistema_origem', User::SISTEMA_ENGAJA)
+                    ->ignore($managedUserId),
             ],
             'password' => [$isCreate ? 'required' : 'nullable', 'confirmed', Password::defaults()],
             'role'  => ['nullable','string', Rule::in($this->assignableRoleNames())],

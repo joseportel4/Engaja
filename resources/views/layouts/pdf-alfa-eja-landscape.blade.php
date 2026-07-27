@@ -9,24 +9,26 @@
             font-size: 12px;
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            height: 150mm;
         }
         table {
             width: 100%;
             border-collapse: collapse;
         }
 
+        /* ===== Paginação: repete cabeçalho e não corta linha no meio ===== */
+        table { page-break-inside: auto; }
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
+        tr { page-break-inside: avoid; }
+
         /* ===== Cabeçalho padrão de documento (x-pdf.header) ===== */
         .pdf-header { background: #421944; color: #ffffff; padding: 10px 14px; margin-bottom: 14px; }
         .pdf-header__title { font-size: 15px; font-weight: 700; margin: 0 0 2px 0; }
         .pdf-header__subtitle { font-size: 10px; opacity: 0.9; margin-bottom: 2px; }
         .pdf-header__stamp { font-size: 9px; opacity: 0.8; }
-        .pdf-header__meta { margin: 6px 0 0 0; padding: 0; list-style: none; }
-        .pdf-header__meta li { font-size: 9px; opacity: 0.9; padding-left: 12px; position: relative; margin-top: 2px; }
-        .pdf-header__meta li::before { content: '•'; position: absolute; left: 0; }
+        /* Bloco de contexto: desacoplado da faixa, fora dela, em prosa natural */
+        .pdf-header__context { background: #fcfaff; border-left: 4px solid #421944; padding: 7px 12px; margin: -8px 0 14px 0; font-size: 10px; line-height: 1.45; color: #374151; page-break-inside: avoid; }
+        .pdf-header__context strong { color: #421944; }
 
         /* ===== Tabela padrão (visual AG-Grid em CSS) ===== */
         .pdf-table { width: 100%; border-collapse: collapse; }

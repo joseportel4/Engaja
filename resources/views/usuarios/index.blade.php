@@ -427,6 +427,7 @@
                   </div>
                   <div class="modal-footer">
                       <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                      <button type="submit" name="formato" value="docx" class="btn btn-outline-primary"><i class="bi bi-file-earmark-word"></i> Word</button>
                       <button type="submit" class="btn btn-engaja">Baixar Planilha</button>
                   </div>
               </form>

@@ -103,6 +103,7 @@
             <th style="min-width:140px;">CPF</th>
             <th style="min-width:140px;">Telefone</th>
             <th style="min-width:260px;">Município</th>
+            <th style="min-width:130px;">Estado/UF</th>
             <th style="min-width:220px;">Tipo de Organização</th>
             <th style="min-width:220px;">Organização</th>
             <th style="min-width:200px;">Tag</th>
@@ -120,13 +121,28 @@
 
             <td>
               <select class="form-select form-select-sm" name="rows[{{ $idx }}][municipio_id]">
-                <option value="">-- Nenhum --</option>
+                <option value="">
+                  @if(empty($r['municipio_id']) && !empty($r['municipio']))
+                    {{ $r['municipio'] }} (criação automática)
+                  @else
+                    -- Nenhum --
+                  @endif
+                </option>
                 @foreach($municipios as $m)
                 <option value="{{ $m->id }}" @selected(old("rows.$idx.municipio_id", $r['municipio_id'])==$m->id)>
                   {{ $m->nome_com_estado }}
                 </option>
                 @endforeach
               </select>
+            </td>
+
+            <td>
+              <input
+                class="form-control form-control-sm"
+                name="rows[{{ $idx }}][estado]"
+                value="{{ old("rows.$idx.estado", $r['estado'] ?? '') }}"
+                maxlength="255"
+                placeholder="Ex.: CE">
             </td>
 
             <td>
