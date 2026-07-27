@@ -163,10 +163,10 @@ class User extends Authenticatable
 
     public function getNomeComLocalidadeAttribute(): string
     {
-        $estado = $this->participante?->municipio?->estado?->nome;
+        $estado = $this->participante?->municipio?->estado?->sigla;
         $municipio = $this->participante?->municipio?->nome;
 
-        return collect([$this->name, $estado, $municipio])
+        return collect([$this->name, $municipio, $estado])
             ->filter()
             ->implode(' - ');
     }

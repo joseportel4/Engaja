@@ -134,7 +134,7 @@
                                     </span>
                                 </td>
                                 <td>{{ $carta->educando?->nome ?? 'Remetente' }}</td>
-                                <td>{{ $carta->educando?->municipio_estado ?? 'Não informado' }}</td>
+                                <td>{{ $carta->educando?->municipio ? collect([$carta->educando->municipio->nome, $carta->educando->municipio->estado?->sigla])->filter()->implode(' - ') : 'Não informado' }}</td>
                                 <td>{{ $carta->voluntario?->nome ?? 'Sem voluntário' }}</td>
                                 <td>{{ optional($carta->created_at)->format('d/m/Y') }}</td>
                                 <td>
@@ -596,7 +596,7 @@
         <div class="cpe-modal__backdrop"></div>
         <div class="cpe-modal__dialog">
             <h2>Confirmar envio</h2>
-            <p>Você tem certeza que deseja enviar esta carta? Esta ação não poderá ser desfeita.</p>
+            <p>Você tem certeza que deseja enviar esta carta?</p>
             <div class="cpe-modal-actions">
                 <button type="button" class="cpe-button cpe-button--ghost" data-gestor-confirm-close>Cancelar</button>
                 <button type="button" class="cpe-button" id="gestorConfirmOk">Confirmar envio</button>

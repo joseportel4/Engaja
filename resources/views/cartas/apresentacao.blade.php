@@ -531,9 +531,9 @@
         <div class="land-topbar__inner">
             <span class="land-topbar__label">Nos acompanhe nas redes:</span>
             <span class="land-social">
-                <a href="#" aria-label="YouTube"><img src="{{ asset('images/cartas/youtube.svg') }}" alt="YouTube"></a>
-                <a href="#" aria-label="Instagram"><img src="{{ asset('images/cartas/instagram.svg') }}" alt="Instagram"></a>
-                <a href="#" aria-label="Facebook"><img src="{{ asset('images/cartas/facebook.svg') }}" alt="Facebook"></a>
+                <a href="https://www.youtube.com/@alfaejabrasil" aria-label="YouTube"><img src="{{ asset('images/cartas/youtube.svg') }}" alt="YouTube"></a>
+                <a href="https://www.instagram.com/alfaejabrasil" aria-label="Instagram"><img src="{{ asset('images/cartas/instagram.svg') }}" alt="Instagram"></a>
+                <a href="https://www.facebook.com/profile.php?id=61574396997436" aria-label="Facebook"><img src="{{ asset('images/cartas/facebook.svg') }}" alt="Facebook"></a>
             </span>
         </div>
     </div>
