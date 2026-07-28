@@ -12,7 +12,7 @@ class CartasVerifyEmailNotification extends VerifyEmail
         $url = $this->verificationUrl($notifiable);
 
         return (new MailMessage)
-            ->subject('Confirme seu e-mail - Cartas para Esperançar')
+            ->subject('Cartas para Esperançar - Confirme seu e-mail.')
             ->view('emails.cartas.verify-email', [
                 'userName' => $notifiable->name,
                 'url' => $url,

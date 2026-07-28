@@ -602,6 +602,7 @@ class CartaController extends Controller
 
         $search = trim((string) $request->query('q', ''));
         $municipioId = $request->query('municipio_id');
+        $statusFilter = $request->query('status');
 
         $cartas = Carta::query()
             ->with([
@@ -624,6 +625,29 @@ class CartaController extends Controller
                 $query->whereHas('educando', function ($q) use ($municipioId) {
                     $q->where('municipio_id', $municipioId);
                 });
+            })
+            ->when($statusFilter, function ($query) use ($statusFilter) {
+                if ($statusFilter === 'respondida') {
+                    $query->where('cartas.status', 'respondida');
+                } elseif ($statusFilter === 'ajuste_solicitado') {
+                    $query->where(function ($q) {
+                        $q->where('cartas.status', 'aguardando_ajuste')
+                          ->orWhereHas('ultimaMensagem', function ($sub) {
+                              $sub->where('status', 'ajuste_solicitado');
+                          });
+                    });
+                } elseif ($statusFilter === 'pendente') {
+                    $query->whereHas('ultimaMensagem', function ($sub) {
+                        $sub->where('status', 'like', '%verificacao%');
+                    });
+                } elseif ($statusFilter === 'enviada') {
+                    $query->where('cartas.status', '!=', 'respondida')
+                          ->where('cartas.status', '!=', 'aguardando_ajuste')
+                          ->whereDoesntHave('ultimaMensagem', function ($sub) {
+                              $sub->where('status', 'ajuste_solicitado')
+                                  ->orWhere('status', 'like', '%verificacao%');
+                          });
+                }
             })
             ->latest()
             ->get();
@@ -678,6 +702,7 @@ class CartaController extends Controller
     {
         $search = trim((string) $request->query('q', ''));
         $municipioId = $request->query('municipio_id');
+        $statusFilter = $request->query('status');
 
         $cartas = Carta::query()
             ->with(['educando.user', 'educando.municipio.estado', 'voluntario.participante.municipio.estado', 'ultimaMensagem'])
@@ -694,6 +719,29 @@ class CartaController extends Controller
                     $q->where('municipio_id', $municipioId);
                 });
             })
+            ->when($statusFilter, function ($query) use ($statusFilter) {
+                if ($statusFilter === 'respondida') {
+                    $query->where('cartas.status', 'respondida');
+                } elseif ($statusFilter === 'ajuste_solicitado') {
+                    $query->where(function ($q) {
+                        $q->where('cartas.status', 'aguardando_ajuste')
+                          ->orWhereHas('ultimaMensagem', function ($sub) {
+                              $sub->where('status', 'ajuste_solicitado');
+                          });
+                    });
+                } elseif ($statusFilter === 'pendente') {
+                    $query->whereHas('ultimaMensagem', function ($sub) {
+                        $sub->where('status', 'like', '%verificacao%');
+                    });
+                } elseif ($statusFilter === 'enviada') {
+                    $query->where('cartas.status', '!=', 'respondida')
+                          ->where('cartas.status', '!=', 'aguardando_ajuste')
+                          ->whereDoesntHave('ultimaMensagem', function ($sub) {
+                              $sub->where('status', 'ajuste_solicitado')
+                                  ->orWhere('status', 'like', '%verificacao%');
+                          });
+                }
+            })
             ->latest('updated_at')
             ->paginate(9)
             ->withQueryString();
@@ -701,7 +749,7 @@ class CartaController extends Controller
         $engajaUsers = $this->remetenteCandidatosQuery()->get();
         $municipios = Municipio::orderBy('nome')->get();
 
-        return view('cartas.gestor.index', compact('cartas', 'engajaUsers', 'search', 'municipioId', 'municipios'));
+        return view('cartas.gestor.index', compact('cartas', 'engajaUsers', 'search', 'municipioId', 'statusFilter', 'municipios'));
     }
 
     private function voluntarioDashboard(Request $request): View

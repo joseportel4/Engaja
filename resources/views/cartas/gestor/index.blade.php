@@ -74,6 +74,17 @@
                         </select>
                     </div>
 
+                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 150px; max-width: 200px;">
+                        <label for="statusFilter" style="font-size: 13px; font-weight: 600; color: #111;">Status:</label>
+                        <select id="statusFilter" name="status" style="height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #111;">
+                            <option value="">Todos</option>
+                            <option value="respondida" @selected(($statusFilter ?? '') === 'respondida')>Respondida</option>
+                            <option value="ajuste_solicitado" @selected(($statusFilter ?? '') === 'ajuste_solicitado')>Ajuste solicitado</option>
+                            <option value="pendente" @selected(($statusFilter ?? '') === 'pendente')>Pendente</option>
+                            <option value="enviada" @selected(($statusFilter ?? '') === 'enviada')>Enviada</option>
+                        </select>
+                    </div>
+
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 2; min-width: 250px;">
                         <label for="search_input" style="font-size: 13px; font-weight: 600; color: #111;">Pesquisa de Remetente ou Destinatário:</label>
                         <div style="position: relative; height: 40px; display: flex; align-items: center;">
@@ -546,6 +557,13 @@
 
             if (municipioSelect && filterForm) {
                 municipioSelect.addEventListener('change', function() {
+                    filterForm.dispatchEvent(new Event('submit', { cancelable: true }));
+                });
+            }
+
+            const statusFilter = document.getElementById('statusFilter');
+            if (statusFilter && filterForm) {
+                statusFilter.addEventListener('change', function() {
                     filterForm.dispatchEvent(new Event('submit', { cancelable: true }));
                 });
             }

@@ -32,8 +32,8 @@ class CartaRecebidaNotification extends Notification implements ShouldQueue
         $isPrimeiraVez = $ultimaMensagem ? $ultimaMensagem->rodada === 1 : $this->carta->mensagens->count() <= 1;
 
         $subject = $isPrimeiraVez
-            ? 'Chegou uma carta para você!'
-            : 'Sua carta foi respondida';
+            ? 'Cartas para Esperançar - Chegou uma carta para você!'
+            : 'Cartas para Esperançar - Sua carta foi respondida!';
 
         return (new MailMessage)
             ->subject($subject)
