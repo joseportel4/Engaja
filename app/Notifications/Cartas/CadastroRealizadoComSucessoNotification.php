@@ -22,7 +22,7 @@ class CadastroRealizadoComSucessoNotification extends Notification implements Sh
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Seu cadastro no Cartas para Esperançar está confirmado')
+            ->subject('Cartas para Esperançar - Seu cadastro está confirmado!')
             ->view('emails.cartas.cadastro-sucesso', [
                 'userName' => $notifiable->name,
             ]);

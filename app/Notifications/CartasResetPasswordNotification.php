@@ -15,7 +15,7 @@ class CartasResetPasswordNotification extends ResetPassword
         ]);
 
         return (new MailMessage)
-            ->subject('Recuperação de senha - Cartas para Esperançar')
+            ->subject('Cartas para Esperançar - Recuperação de senha.')
             ->view('emails.cartas.reset-password', [
                 'userName' => $notifiable->name,
                 'url' => $url,
