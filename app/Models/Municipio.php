@@ -46,4 +46,21 @@ class Municipio extends Model
 
         return trim($this->nome.($sigla ? ' - '.$sigla : ''));
     }
+
+    public function isPrioritario(): bool
+    {
+        $regiaoId = $this->estado?->regiao_id;
+        if ($regiaoId !== null && in_array((int) $regiaoId, Regiao::PRIORITARIAS_IDS, true)) {
+            return true;
+        }
+
+        $regiaoNome = trim((string) ($this->estado?->regiao?->nome ?? ''));
+
+        return in_array($regiaoNome, Regiao::PRIORITARIAS_NOMES, true);
+    }
+
+    public function getIsPrioritarioAttribute(): bool
+    {
+        return $this->isPrioritario();
+    }
 }
