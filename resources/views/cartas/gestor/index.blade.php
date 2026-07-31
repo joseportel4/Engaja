@@ -41,9 +41,15 @@
                             value="{{ $remetenteSelecionado?->nome_com_localidade }}" data-combobox-input>
                         <ul class="cpe-combobox__list" role="listbox" data-combobox-list>
                             @foreach($engajaUsers as $engajaUser)
+                                @php($munPrioritario = $engajaUser->participante?->municipio?->isPrioritario())
                                 <li class="cpe-combobox__option" role="option"
-                                    data-value="{{ $engajaUser->id }}" data-label="{{ $engajaUser->nome_com_localidade }}">
-                                    {{ $engajaUser->nome_com_localidade }}
+                                    data-value="{{ $engajaUser->id }}" data-label="{{ $engajaUser->nome_com_localidade }}{{ $munPrioritario ? ' (Prioritário)' : '' }}">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                                        <span>{{ $engajaUser->nome_com_localidade }}</span>
+                                        @if($munPrioritario)
+                                            <span class="cpe-pill cpe-pill--priority" style="font-size: 10px; padding: 1px 6px;">★ Prioritário</span>
+                                        @endif
+                                    </div>
                                 </li>
                             @endforeach
                             <li class="cpe-combobox__empty" data-combobox-empty hidden>Nenhum participante encontrado.</li>
@@ -65,11 +71,13 @@
                 <form id="filterForm" method="GET" action="{{ route('cartas.dashboard') }}" style="display: flex; gap: 24px; align-items: stretch; flex-wrap: wrap; background: #fff; padding: 16px 20px; border-radius: 8px; border: 1px solid #eaeaea; box-shadow: 0 2px 4px rgba(0,0,0,0.02); width: 100%; justify-content: space-between;">
 
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; max-width: 300px;">
-                        <label for="municipio_id" style="font-size: 13px; font-weight: 600; color: #111;">Município do Educando:</label>
+                        <label for="municipio_id" style="font-size: 13px; font-weight: 600; color: #111;">Município do educando:</label>
                         <select id="municipio_id" name="municipio_id" style="height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #111;">
                             <option value="" style="color: #333;">Todos os municípios</option>
                             @foreach($municipios as $mun)
-                                <option value="{{ $mun->id }}" style="color: #111;" @selected($municipioId == $mun->id)>{{ $mun->nome }}</option>
+                                <option value="{{ $mun->id }}" style="color: #111;" @selected($municipioId == $mun->id)>
+                                    {{ $mun->nome }}{{ $mun->estado?->sigla ? ' - '.$mun->estado->sigla : '' }}{{ $mun->isPrioritario() ? ' ★ (Prioritário)' : '' }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
@@ -114,64 +122,79 @@
                             <th>ID</th>
                             <th>Status</th>
                             <th>Remetente</th>
-                            <th>Município do Remetente</th>
+                            <th>Município do remetente</th>
                             <th>Destinatário</th>
                             <th>Data</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($cartas as $carta)
-                            @php
-                                $ultimoStatus = $carta->ultimaMensagem?->status ?? $carta->status;
-                                $statusClass = match (true) {
-                                    $carta->status === 'respondida' => 'cpe-pill--green',
-                                    $carta->status === 'aguardando_ajuste' || $ultimoStatus === 'ajuste_solicitado' => 'cpe-pill--purple',
-                                    str_contains($ultimoStatus, 'verificacao') => 'cpe-pill--yellow',
-                                    default => 'cpe-pill--blue',
-                                };
-                                $statusLabel = match (true) {
-                                    $carta->status === 'respondida' => 'Respondida',
-                                    $carta->status === 'aguardando_ajuste' || $ultimoStatus === 'ajuste_solicitado' => 'Ajuste solicitado',
-                                    str_contains($ultimoStatus, 'verificacao') => 'Em preparação',
-                                    default => 'Enviada',
-                                };
-                            @endphp
-                            <tr>
-                                <td>{{ $carta->codigo }}</td>
-                                <td>
-                                    <span class="cpe-pill {{ $statusClass }}">
-                                        {{ $statusLabel }}
-                                    </span>
-                                </td>
-                                <td>{{ $carta->educando?->nome ?? 'Remetente' }}</td>
-                                <td>{{ $carta->educando?->municipio ? collect([$carta->educando->municipio->nome, $carta->educando->municipio->estado?->sigla])->filter()->implode(' - ') : 'Não informado' }}</td>
-                                <td>{{ $carta->voluntario?->nome ?? 'Sem voluntário' }}</td>
-                                <td>{{ optional($carta->created_at)->format('d/m/Y') }}</td>
-                                <td>
-                                    <div style="display: flex; gap: 8px;">
-                                        <a href="{{ route('cartas.cartas.show', $carta) }}" class="cpe-icon-button" aria-label="Abrir carta" title="Visualizar">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            </svg>
-                                        </a>
-                                        <button type="button" class="cpe-trash-button" aria-label="Remover carta" title="Excluir" data-modal-open="deleteCarta-{{ $carta->id }}">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                <path d="M8 6V4h8v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                <path d="M6 6l1 15h10l1-15" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                                                <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
+                        <?php if ($cartas->count() > 0): ?>
+                            <?php foreach ($cartas as $carta): ?>
+                                <?php
+                                    $ultimoStatus = $carta->ultimaMensagem?->status ?? $carta->status;
+                                    $statusClass = match (true) {
+                                        $carta->status === 'respondida' => 'cpe-pill--green',
+                                        $carta->status === 'aguardando_ajuste' || $ultimoStatus === 'ajuste_solicitado' => 'cpe-pill--purple',
+                                        str_contains($ultimoStatus, 'verificacao') => 'cpe-pill--yellow',
+                                        default => 'cpe-pill--blue',
+                                    };
+                                    $statusLabel = match (true) {
+                                        $carta->status === 'respondida' => 'Respondida',
+                                        $carta->status === 'aguardando_ajuste' || $ultimoStatus === 'ajuste_solicitado' => 'Ajuste solicitado',
+                                        str_contains($ultimoStatus, 'verificacao') => 'Em preparação',
+                                        default => 'Enviada',
+                                    };
+                                ?>
+                                <tr>
+                                    <td>{{ $carta->codigo }}</td>
+                                    <td>
+                                        <span class="cpe-pill {{ $statusClass }}">
+                                            {{ $statusLabel }}
+                                        </span>
+                                    </td>
+                                    <td>{{ $carta->educando?->nome ?? 'Remetente' }}</td>
+                                    <td>
+                                        @if($carta->educando?->municipio)
+                                            <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                                <span>{{ collect([$carta->educando->municipio->nome, $carta->educando->municipio->estado?->sigla])->filter()->implode(' - ') }}</span>
+                                                @if($carta->educando->municipio->isPrioritario())
+                                                    <span class="cpe-pill cpe-pill--priority" title="Município Prioritário ({{ $carta->educando->municipio->estado?->regiao?->nome }})">
+                                                        ★ Prioritário
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @else
+                                            Não informado
+                                        @endif
+                                    </td>
+                                    <td>{{ $carta->voluntario?->nome ?? 'Sem voluntário' }}</td>
+                                    <td>{{ optional($carta->created_at)->format('d/m/Y') }}</td>
+                                    <td>
+                                        <div style="display: flex; gap: 8px;">
+                                            <a href="{{ route('cartas.cartas.show', $carta) }}" class="cpe-icon-button" aria-label="Abrir carta" title="Visualizar">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </a>
+                                            <button type="button" class="cpe-trash-button" aria-label="Remover carta" title="Excluir" data-modal-open="deleteCarta-{{ $carta->id }}">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                    <path d="M8 6V4h8v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    <path d="M6 6l1 15h10l1-15" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                                    <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
                             <tr>
                                 <td colspan="7" class="cpe-empty">Nenhuma carta cadastrada.</td>
                             </tr>
-                        @endforelse
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
@@ -183,16 +206,16 @@
 
         @include('cartas.shared._user-menu')
 
-        @foreach($cartas as $carta)
-            <div class="cpe-modal" id="deleteCarta-{{ $carta->id }}">
+        @foreach($cartas as $cartaModal)
+            <div class="cpe-modal" id="deleteCarta-{{ $cartaModal->id }}">
                 <div class="cpe-modal__backdrop"></div>
                 <div class="cpe-modal__dialog">
                     <h2>Excluir carta</h2>
-                    <p>Tem certeza que deseja excluir a carta {{ $carta->codigo }}? Esta ação removerá a carta da listagem.</p>
+                    <p>Tem certeza que deseja excluir a carta {{ $cartaModal->codigo }}? Esta ação removerá a carta da listagem.</p>
 
                     <div class="cpe-modal-actions">
                         <button type="button" class="cpe-button cpe-button--ghost" data-modal-close>Cancelar</button>
-                        <form method="POST" action="{{ route('cartas.cartas.destroy', $carta) }}">
+                        <form method="POST" action="{{ route('cartas.cartas.destroy', $cartaModal) }}">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="cpe-button cpe-button--danger">Excluir</button>

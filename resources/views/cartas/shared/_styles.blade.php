@@ -418,6 +418,12 @@
         background: rgba(150, 2, 199, 0.12);
     }
 
+    .cpe-pill--priority {
+        color: #9a3412;
+        background: #ffedd5;
+        border: 1px solid #fed7aa;
+    }
+
     .cpe-modal {
         position: fixed;
         inset: 0;

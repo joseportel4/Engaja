@@ -230,7 +230,7 @@ class CartasVoluntarioTest extends CartasBaseTest
 
         CartaMensagem::create([
             'carta_id' => $carta->id,
-            'rodada' => 1,
+            'rodada' => 2,
             'remetente_participante_id' => $this->educando->id,
             'destinatario_user_id' => $this->voluntario->id,
             'tipo_remetente' => CartaMensagem::TIPO_REMETENTE_EDUCANDO,

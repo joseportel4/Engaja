@@ -42,15 +42,15 @@ class CartaController extends Controller
 
         $carta->load([
             'educando.user',
-            'educando.municipio.estado',
-            'voluntario.participante.municipio.estado',
+            'educando.municipio.estado.regiao',
+            'voluntario.participante.municipio.estado.regiao',
             'ultimaMensagem',
-            'mensagens.remetenteUsuario.participante.municipio.estado',
+            'mensagens.remetenteUsuario.participante.municipio.estado.regiao',
             'mensagens.remetenteParticipante.user',
-            'mensagens.remetenteParticipante.municipio.estado',
-            'mensagens.destinatarioUsuario.participante.municipio.estado',
+            'mensagens.remetenteParticipante.municipio.estado.regiao',
+            'mensagens.destinatarioUsuario.participante.municipio.estado.regiao',
             'mensagens.destinatarioParticipante.user',
-            'mensagens.destinatarioParticipante.municipio.estado',
+            'mensagens.destinatarioParticipante.municipio.estado.regiao',
         ]);
 
         $gestor = $this->isGestor($request->user());
@@ -705,7 +705,7 @@ class CartaController extends Controller
         $statusFilter = $request->query('status');
 
         $cartas = Carta::query()
-            ->with(['educando.user', 'educando.municipio.estado', 'voluntario.participante.municipio.estado', 'ultimaMensagem'])
+            ->with(['educando.user', 'educando.municipio.estado.regiao', 'voluntario.participante.municipio.estado.regiao', 'ultimaMensagem'])
             ->when($search !== '', function ($query) use ($search) {
                 $searchLower = mb_strtolower($search, 'UTF-8');
                 $query->where(function ($nested) use ($searchLower) {
@@ -747,7 +747,7 @@ class CartaController extends Controller
             ->withQueryString();
 
         $engajaUsers = $this->remetenteCandidatosQuery()->get();
-        $municipios = Municipio::orderBy('nome')->get();
+        $municipios = Municipio::with('estado.regiao')->orderBy('nome')->get();
 
         return view('cartas.gestor.index', compact('cartas', 'engajaUsers', 'search', 'municipioId', 'statusFilter', 'municipios'));
     }
@@ -755,10 +755,10 @@ class CartaController extends Controller
     private function voluntarioDashboard(Request $request): View
     {
         $user = $request->user();
-        $user->loadMissing('participante.municipio.estado');
+        $user->loadMissing('participante.municipio.estado.regiao');
 
         $cartas = Carta::query()
-            ->with(['educando.user', 'educando.municipio.estado', 'voluntario.participante.municipio.estado', 'mensagens' => fn ($q) => $q->latest('rodada'), 'ultimaMensagem'])
+            ->with(['educando.user', 'educando.municipio.estado.regiao', 'voluntario.participante.municipio.estado.regiao', 'mensagens' => fn ($q) => $q->latest('rodada'), 'ultimaMensagem'])
             ->withCount(['mensagens as mensagens_nao_lidas_count' => function ($query) use ($user) {
                 $query->where('destinatario_user_id', $user->id)
                     ->whereNull('lida_em');
@@ -784,7 +784,7 @@ class CartaController extends Controller
         return User::query()
             ->where('sistema_origem', User::SISTEMA_ENGAJA)
             ->whereHas('participante.eventos', fn ($q) => $q->where('is_cartas', true))
-            ->with('participante.municipio.estado')
+            ->with('participante.municipio.estado.regiao')
             ->orderBy('name');
     }
 
@@ -793,7 +793,7 @@ class CartaController extends Controller
         return User::query()
             ->where('sistema_origem', User::SISTEMA_ENGAJA)
             ->whereHas('participante')
-            ->with('participante.municipio.estado')
+            ->with('participante.municipio.estado.regiao')
             ->orderBy('name');
     }
 
