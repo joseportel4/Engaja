@@ -600,11 +600,16 @@ class CartaController extends Controller
     {
         abort_unless($this->isGestor($request->user()), 403);
 
-        $search = trim((string) $request->query('q', ''));
-        $municipioId = $request->query('municipio_id');
-        $statusFilter = $request->query('status');
+        $search = trim((string) $request->input('q', $request->query('q', '')));
+        $municipioId = $request->input('municipio_id', $request->query('municipio_id'));
+        $statusFilter = $request->input('status', $request->query('status'));
 
-        $cartas = Carta::query()
+        $cartaIds = $request->input('carta_ids', $request->query('carta_ids'));
+        if (is_string($cartaIds)) {
+            $cartaIds = array_filter(explode(',', $cartaIds));
+        }
+
+        $query = Carta::query()
             ->with([
                 'educando.user',
                 'educando.municipio.estado',
@@ -612,8 +617,12 @@ class CartaController extends Controller
                 'mensagens' => function ($q) {
                     $q->orderBy('rodada', 'asc');
                 },
-            ])
-            ->when($search !== '', function ($query) use ($search) {
+            ]);
+
+        if (! empty($cartaIds) && is_array($cartaIds)) {
+            $query->whereIn('cartas.id', $cartaIds);
+        } else {
+            $query->when($search !== '', function ($query) use ($search) {
                 $searchLower = mb_strtolower($search, 'UTF-8');
                 $query->where(function ($nested) use ($searchLower) {
                     $nested->whereRaw('LOWER(codigo) LIKE ?', ["%{$searchLower}%"])
@@ -621,36 +630,17 @@ class CartaController extends Controller
                         ->orWhereHas('voluntario', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]));
                 });
             })
-            ->when($municipioId, function ($query) use ($municipioId) {
-                $query->whereHas('educando', function ($q) use ($municipioId) {
-                    $q->where('municipio_id', $municipioId);
+                ->when($municipioId, function ($query) use ($municipioId) {
+                    $query->whereHas('educando', function ($q) use ($municipioId) {
+                        $q->where('municipio_id', $municipioId);
+                    });
+                })
+                ->when($statusFilter, function ($query) use ($statusFilter) {
+                    $this->applyStatusFilter($query, $statusFilter);
                 });
-            })
-            ->when($statusFilter, function ($query) use ($statusFilter) {
-                if ($statusFilter === 'respondida') {
-                    $query->where('cartas.status', 'respondida');
-                } elseif ($statusFilter === 'ajuste_solicitado') {
-                    $query->where(function ($q) {
-                        $q->where('cartas.status', 'aguardando_ajuste')
-                          ->orWhereHas('ultimaMensagem', function ($sub) {
-                              $sub->where('status', 'ajuste_solicitado');
-                          });
-                    });
-                } elseif ($statusFilter === 'pendente') {
-                    $query->whereHas('ultimaMensagem', function ($sub) {
-                        $sub->where('status', 'like', '%verificacao%');
-                    });
-                } elseif ($statusFilter === 'enviada') {
-                    $query->where('cartas.status', '!=', 'respondida')
-                          ->where('cartas.status', '!=', 'aguardando_ajuste')
-                          ->whereDoesntHave('ultimaMensagem', function ($sub) {
-                              $sub->where('status', 'ajuste_solicitado')
-                                  ->orWhere('status', 'like', '%verificacao%');
-                          });
-                }
-            })
-            ->latest()
-            ->get();
+        }
+
+        $cartas = $query->latest()->get();
 
         $zipFile = storage_path('app/temp_cartas_lote_'.uniqid().'.zip');
         $zip = new \ZipArchive;
@@ -720,36 +710,47 @@ class CartaController extends Controller
                 });
             })
             ->when($statusFilter, function ($query) use ($statusFilter) {
-                if ($statusFilter === 'respondida') {
-                    $query->where('cartas.status', 'respondida');
-                } elseif ($statusFilter === 'ajuste_solicitado') {
-                    $query->where(function ($q) {
-                        $q->where('cartas.status', 'aguardando_ajuste')
-                          ->orWhereHas('ultimaMensagem', function ($sub) {
-                              $sub->where('status', 'ajuste_solicitado');
-                          });
-                    });
-                } elseif ($statusFilter === 'pendente') {
-                    $query->whereHas('ultimaMensagem', function ($sub) {
-                        $sub->where('status', 'like', '%verificacao%');
-                    });
-                } elseif ($statusFilter === 'enviada') {
-                    $query->where('cartas.status', '!=', 'respondida')
-                          ->where('cartas.status', '!=', 'aguardando_ajuste')
-                          ->whereDoesntHave('ultimaMensagem', function ($sub) {
-                              $sub->where('status', 'ajuste_solicitado')
-                                  ->orWhere('status', 'like', '%verificacao%');
-                          });
-                }
+                $this->applyStatusFilter($query, $statusFilter);
             })
             ->latest('updated_at')
             ->paginate(9)
             ->withQueryString();
 
+        $hasActiveFilter = filled($municipioId) || filled($statusFilter) || ($search !== '');
+
+        if ($request->ajax()) {
+            return view('cartas.gestor._table', compact('cartas', 'hasActiveFilter', 'search', 'municipioId', 'statusFilter'));
+        }
+
         $engajaUsers = $this->remetenteCandidatosQuery()->get();
         $municipios = Municipio::with('estado.regiao')->orderBy('nome')->get();
 
         return view('cartas.gestor.index', compact('cartas', 'engajaUsers', 'search', 'municipioId', 'statusFilter', 'municipios'));
+    }
+
+    private function applyStatusFilter($query, string $statusFilter): void
+    {
+        if ($statusFilter === 'respondida') {
+            $query->where('cartas.status', 'respondida');
+        } elseif ($statusFilter === 'ajuste_solicitado') {
+            $query->where(function ($q) {
+                $q->where('cartas.status', 'aguardando_ajuste')
+                    ->orWhereHas('ultimaMensagem', function ($sub) {
+                        $sub->where('status', 'ajuste_solicitado');
+                    });
+            });
+        } elseif ($statusFilter === 'pendente') {
+            $query->whereHas('ultimaMensagem', function ($sub) {
+                $sub->where('status', 'like', '%verificacao%');
+            });
+        } elseif ($statusFilter === 'enviada') {
+            $query->where('cartas.status', '!=', 'respondida')
+                ->where('cartas.status', '!=', 'aguardando_ajuste')
+                ->whereDoesntHave('ultimaMensagem', function ($sub) {
+                    $sub->where('status', 'ajuste_solicitado')
+                        ->orWhere('status', 'like', '%verificacao%');
+                });
+        }
     }
 
     private function voluntarioDashboard(Request $request): View

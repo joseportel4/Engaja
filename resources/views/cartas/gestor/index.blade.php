@@ -41,7 +41,7 @@
                             value="{{ $remetenteSelecionado?->nome_com_localidade }}" data-combobox-input>
                         <ul class="cpe-combobox__list" role="listbox" data-combobox-list>
                             @foreach($engajaUsers as $engajaUser)
-                                @php($munPrioritario = $engajaUser->participante?->municipio?->isPrioritario())
+                                <?php $munPrioritario = $engajaUser->participante?->municipio?->isPrioritario(); ?>
                                 <li class="cpe-combobox__option" role="option"
                                     data-value="{{ $engajaUser->id }}" data-label="{{ $engajaUser->nome_com_localidade }}{{ $munPrioritario ? ' (Prioritário)' : '' }}">
                                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
@@ -60,6 +60,10 @@
                 </form>
             </div>
         </section>
+
+        @php
+            $hasActiveFilter = filled($municipioId) || filled($statusFilter) || ($search !== '');
+        @endphp
 
         <section class="cpe-manager__right">
             <div class="cpe-manager__header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
@@ -88,7 +92,7 @@
                             <option value="">Todos</option>
                             <option value="respondida" @selected(($statusFilter ?? '') === 'respondida')>Respondida</option>
                             <option value="ajuste_solicitado" @selected(($statusFilter ?? '') === 'ajuste_solicitado')>Ajuste solicitado</option>
-                            <option value="pendente" @selected(($statusFilter ?? '') === 'pendente')>Pendente</option>
+                            <option value="pendente" @selected(($statusFilter ?? '') === 'pendente')>Em preparação</option>
                             <option value="enviada" @selected(($statusFilter ?? '') === 'enviada')>Enviada</option>
                         </select>
                     </div>
@@ -106,102 +110,20 @@
 
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; justify-content: flex-start;">
                         <label style="font-size: 13px; font-weight: 600; color: #111;">Ações:</label>
-                        <div style="display: flex; gap: 8px;">
-                            <button type="submit" form="filterForm" formaction="{{ route('cartas.download-batch') }}" style="display: flex; align-items: center; justify-content: center; white-space: nowrap; padding: 0 16px; border-radius: 6px; height: 40px; box-sizing: border-box; text-decoration: none; background-color: var(--cartas-purple, #6a1b9a); color: white; font-weight: 500; font-size: 14px; border: none; cursor: pointer; transition: opacity 0.2s;">
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <button type="submit" id="btnDownloadBatch" form="filterForm" formaction="{{ route('cartas.download-batch') }}" style="display: flex; align-items: center; justify-content: center; white-space: nowrap; padding: 0 16px; border-radius: 6px; height: 40px; box-sizing: border-box; text-decoration: none; background-color: var(--cartas-purple, #6a1b9a); color: white; font-weight: 500; font-size: 14px; border: none; cursor: pointer; transition: opacity 0.2s;">
                                 Baixar Cartas PDF
                             </button>
+                            <span id="selectedCountBadge" style="font-size: 11px; font-weight: 600; color: #666; text-align: center;">
+                                {{ $cartas->count() }} de {{ $cartas->count() }} selecionadas
+                            </span>
                         </div>
                     </div>
                 </form>
             </div>
 
-            <div class="cpe-table-card cpe-manager-table">
-                <table class="cpe-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Status</th>
-                            <th>Remetente</th>
-                            <th>Município do remetente</th>
-                            <th>Destinatário</th>
-                            <th>Data</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if ($cartas->count() > 0): ?>
-                            <?php foreach ($cartas as $carta): ?>
-                                <?php
-                                    $ultimoStatus = $carta->ultimaMensagem?->status ?? $carta->status;
-                                    $statusClass = match (true) {
-                                        $carta->status === 'respondida' => 'cpe-pill--green',
-                                        $carta->status === 'aguardando_ajuste' || $ultimoStatus === 'ajuste_solicitado' => 'cpe-pill--purple',
-                                        str_contains($ultimoStatus, 'verificacao') => 'cpe-pill--yellow',
-                                        default => 'cpe-pill--blue',
-                                    };
-                                    $statusLabel = match (true) {
-                                        $carta->status === 'respondida' => 'Respondida',
-                                        $carta->status === 'aguardando_ajuste' || $ultimoStatus === 'ajuste_solicitado' => 'Ajuste solicitado',
-                                        str_contains($ultimoStatus, 'verificacao') => 'Em preparação',
-                                        default => 'Enviada',
-                                    };
-                                ?>
-                                <tr>
-                                    <td>{{ $carta->codigo }}</td>
-                                    <td>
-                                        <span class="cpe-pill {{ $statusClass }}">
-                                            {{ $statusLabel }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $carta->educando?->nome ?? 'Remetente' }}</td>
-                                    <td>
-                                        @if($carta->educando?->municipio)
-                                            <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                                <span>{{ collect([$carta->educando->municipio->nome, $carta->educando->municipio->estado?->sigla])->filter()->implode(' - ') }}</span>
-                                                @if($carta->educando->municipio->isPrioritario())
-                                                    <span class="cpe-pill cpe-pill--priority" title="Município Prioritário ({{ $carta->educando->municipio->estado?->regiao?->nome }})">
-                                                        ★ Prioritário
-                                                    </span>
-                                                @endif
-                                            </div>
-                                        @else
-                                            Não informado
-                                        @endif
-                                    </td>
-                                    <td>{{ $carta->voluntario?->nome ?? 'Sem voluntário' }}</td>
-                                    <td>{{ optional($carta->created_at)->format('d/m/Y') }}</td>
-                                    <td>
-                                        <div style="display: flex; gap: 8px;">
-                                            <a href="{{ route('cartas.cartas.show', $carta) }}" class="cpe-icon-button" aria-label="Abrir carta" title="Visualizar">
-                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                </svg>
-                                            </a>
-                                            <button type="button" class="cpe-trash-button" aria-label="Remover carta" title="Excluir" data-modal-open="deleteCarta-{{ $carta->id }}">
-                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                    <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                    <path d="M8 6V4h8v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                    <path d="M6 6l1 15h10l1-15" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                                                    <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="7" class="cpe-empty">Nenhuma carta cadastrada.</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+            @include('cartas.gestor._table')
 
-            <div class="cpe-pagination">
-                {{ $cartas->links('cartas.gestor.pagination') }}
-            </div>
         </section>
 
         @include('cartas.shared._user-menu')
@@ -232,7 +154,6 @@
         .cpe-manager {
             display: grid;
             grid-template-columns: minmax(420px, 1fr) minmax(520px, 1fr);
-            padding-bottom: 56px;
         }
 
         .cpe-manager__left {
@@ -263,6 +184,7 @@
             display: flex;
             flex-direction: column;
             padding-top: 76px;
+            padding-bottom: 56px;
             box-sizing: border-box;
         }
 
@@ -520,6 +442,20 @@
             const paginationContainer = document.querySelector('.cpe-pagination');
             let debounceTimer;
 
+            function updateSelectedBadge() {
+                const badge = document.getElementById('selectedCountBadge');
+                if (!badge) return;
+                const checkboxes = document.querySelectorAll('.carta-checkbox');
+                const checked = document.querySelectorAll('.carta-checkbox:checked');
+                badge.textContent = `${checked.length} de ${checkboxes.length} selecionadas`;
+            }
+
+            document.addEventListener('change', function(e) {
+                if (e.target.classList.contains('carta-checkbox')) {
+                    updateSelectedBadge();
+                }
+            });
+
             function fetchResults(url) {
                 tableContainer.style.opacity = '0.5';
 
@@ -537,6 +473,7 @@
                     paginationContainer.innerHTML = doc.querySelector('.cpe-pagination').innerHTML;
 
                     tableContainer.style.opacity = '1';
+                    updateSelectedBadge();
                 })
                 .catch(error => {
                     console.error('Erro ao buscar dados:', error);

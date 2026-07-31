@@ -49,14 +49,11 @@ class Municipio extends Model
 
     public function isPrioritario(): bool
     {
-        $regiaoId = $this->estado?->regiao_id;
-        if ($regiaoId !== null && in_array((int) $regiaoId, Regiao::PRIORITARIAS_IDS, true)) {
-            return true;
+        if ($this->relationLoaded('estado') && $this->estado && $this->estado->relationLoaded('regiao') && $this->estado->regiao) {
+            return $this->estado->regiao->isPrioritaria();
         }
 
-        $regiaoNome = trim((string) ($this->estado?->regiao?->nome ?? ''));
-
-        return in_array($regiaoNome, Regiao::PRIORITARIAS_NOMES, true);
+        return (bool) $this->estado?->regiao?->isPrioritaria();
     }
 
     public function getIsPrioritarioAttribute(): bool
