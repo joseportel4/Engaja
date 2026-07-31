@@ -26,7 +26,6 @@ class Regiao extends Model
 
     public function isPrioritaria(): bool
     {
-        return in_array($this->id, self::PRIORITARIAS_IDS, true)
-            || in_array(trim((string) $this->nome), self::PRIORITARIAS_NOMES, true);
+        return in_array($this->id, self::PRIORITARIAS_IDS, true) || in_array($this->nome, self::PRIORITARIAS_NOMES, true);
     }
 }

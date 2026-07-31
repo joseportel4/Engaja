@@ -33,7 +33,7 @@ class CartaRecebidaNotificationTest extends TestCase
         $mail = $notification->toMail($voluntario);
         $html = $mail->render();
 
-        $this->assertEquals('Chegou uma carta para você!', $mail->subject);
+        $this->assertEquals('Cartas para Esperançar - Chegou uma carta para você!', $mail->subject);
         $this->assertStringContainsString('Uma carta acabou de chegar na plataforma', $html);
         $this->assertStringContainsString('ACESSAR MINHA CARTA', $html);
         $this->assertStringContainsString('Antes de responder, algumas orientações:', $html);
@@ -67,7 +67,7 @@ class CartaRecebidaNotificationTest extends TestCase
         $mail = $notification->toMail($voluntario);
         $html = $mail->render();
 
-        $this->assertEquals('Sua carta foi respondida', $mail->subject);
+        $this->assertEquals('Cartas para Esperançar - Sua carta foi respondida!', $mail->subject);
         $this->assertStringContainsString('A conversa continua: chegou uma resposta à carta que você enviou', $html);
         $this->assertStringContainsString('LER A RESPOSTA', $html);
         $this->assertStringNotContainsString('Antes de responder, algumas orientações:', $html);

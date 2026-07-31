@@ -228,20 +228,11 @@ class CartasVoluntarioTest extends CartasBaseTest
     {
         $carta = $this->criarCartaParaVoluntario();
 
-        CartaMensagem::create([
-            'carta_id' => $carta->id,
-            'rodada' => 2,
-            'remetente_participante_id' => $this->educando->id,
-            'destinatario_user_id' => $this->voluntario->id,
-            'tipo_remetente' => CartaMensagem::TIPO_REMETENTE_EDUCANDO,
-            'canal_entrada' => CartaMensagem::CANAL_ANEXO_MANUSCRITO,
+        $carta->mensagens()->first()->update([
             'status' => CartaMensagem::STATUS_APROVADA,
             'anexo_original_path' => 'cartas/exemplo.pdf',
             'anexo_original_nome' => 'exemplo.pdf',
             'anexo_original_mime' => 'application/pdf',
-            'enviada_em' => now(),
-            'criada_por' => $this->gestor->id,
-            'atualizada_por' => $this->gestor->id,
         ]);
 
         $response = $this->actingAs($this->voluntario)->get(route('cartas.cartas.show', $carta));
