@@ -42,8 +42,9 @@
                         <ul class="cpe-combobox__list" role="listbox" data-combobox-list>
                             @foreach($engajaUsers as $engajaUser)
                                 <?php $munPrioritario = $engajaUser->participante?->municipio?->isPrioritario(); ?>
+                                <?php $cpfDigits = preg_replace('/\D/', '', (string) $engajaUser->participante?->cpf); ?>
                                 <li class="cpe-combobox__option" role="option"
-                                    data-value="{{ $engajaUser->id }}" data-label="{{ $engajaUser->nome_com_localidade }}{{ $munPrioritario ? ' (Prioritário)' : '' }}">
+                                    data-value="{{ $engajaUser->id }}" data-cpf="{{ $cpfDigits }}" data-label="{{ $engajaUser->nome_com_localidade }}{{ $munPrioritario ? ' (Prioritário)' : '' }}">
                                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
                                         <span>{{ $engajaUser->nome_com_localidade }}</span>
                                         @if($munPrioritario)
@@ -98,9 +99,9 @@
                     </div>
 
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 2; min-width: 250px;">
-                        <label for="search_input" style="font-size: 13px; font-weight: 600; color: #111;">Pesquisa de Remetente ou Destinatário:</label>
+                        <label for="search_input" style="font-size: 13px; font-weight: 600; color: #111;">Pesquisa de Remetente ou Destinatário (nome ou CPF):</label>
                         <div style="position: relative; height: 40px; display: flex; align-items: center;">
-                            <input id="search_input" type="search" name="q" value="{{ $search }}" placeholder="Digite o nome..." style="height: 100%; width: 100%; box-sizing: border-box; padding: 0 36px 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; color: #111;">
+                            <input id="search_input" type="search" name="q" value="{{ $search }}" placeholder="Digite o nome ou CPF..." style="height: 100%; width: 100%; box-sizing: border-box; padding: 0 36px 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; color: #111;">
                             <button type="submit" aria-label="Pesquisar" style="position: absolute; right: 8px; background: none; border: none; color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 100%;">
                                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </button>
