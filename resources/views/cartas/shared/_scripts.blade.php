@@ -148,10 +148,14 @@
 
             const filter = () => {
                 const term = normalize(input.value);
+                const digits = input.value.replace(/\D/g, '');
                 let visible = 0;
 
                 options.forEach((option) => {
-                    const match = term === '' || normalize(option.dataset.label).includes(term);
+                    const cpf = option.dataset.cpf || '';
+                    const match = term === ''
+                        || normalize(option.dataset.label).includes(term)
+                        || (digits.length >= 3 && cpf !== '' && cpf.includes(digits));
                     option.hidden = !match;
                     if (match) {
                         visible++;

@@ -623,12 +623,7 @@ class CartaController extends Controller
             $query->whereIn('cartas.id', $cartaIds);
         } else {
             $query->when($search !== '', function ($query) use ($search) {
-                $searchLower = mb_strtolower($search, 'UTF-8');
-                $query->where(function ($nested) use ($searchLower) {
-                    $nested->whereRaw('LOWER(codigo) LIKE ?', ["%{$searchLower}%"])
-                        ->orWhereHas('educando.user', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]))
-                        ->orWhereHas('voluntario', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]));
-                });
+                $this->applySearchFilter($query, $search);
             })
                 ->when($municipioId, function ($query) use ($municipioId) {
                     $query->whereHas('educando', function ($q) use ($municipioId) {
@@ -697,12 +692,7 @@ class CartaController extends Controller
         $cartas = Carta::query()
             ->with(['educando.user', 'educando.municipio.estado.regiao', 'voluntario.participante.municipio.estado.regiao', 'ultimaMensagem'])
             ->when($search !== '', function ($query) use ($search) {
-                $searchLower = mb_strtolower($search, 'UTF-8');
-                $query->where(function ($nested) use ($searchLower) {
-                    $nested->whereRaw('LOWER(codigo) LIKE ?', ["%{$searchLower}%"])
-                        ->orWhereHas('educando.user', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]))
-                        ->orWhereHas('voluntario', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]));
-                });
+                $this->applySearchFilter($query, $search);
             })
             ->when($municipioId, function ($query) use ($municipioId) {
                 $query->whereHas('educando', function ($q) use ($municipioId) {
@@ -726,6 +716,30 @@ class CartaController extends Controller
         $municipios = Municipio::with('estado.regiao')->orderBy('nome')->get();
 
         return view('cartas.gestor.index', compact('cartas', 'engajaUsers', 'search', 'municipioId', 'statusFilter', 'municipios'));
+    }
+
+    /**
+     * Busca livre da listagem de cartas: codigo, nome do remetente (educando),
+     * nome do destinatario (voluntario) e o CPF de ambos.
+     */
+    private function applySearchFilter($query, string $search): void
+    {
+        $searchLower = mb_strtolower($search, 'UTF-8');
+        $searchDigits = preg_replace('/\D/', '', $search);
+
+        $query->where(function ($nested) use ($searchLower, $searchDigits) {
+            $nested->whereRaw('LOWER(codigo) LIKE ?', ["%{$searchLower}%"])
+                ->orWhereHas('educando.user', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]))
+                ->orWhereHas('voluntario', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]));
+
+            // O CPF fica em participantes.cpf e pode estar gravado com ou sem pontuacao.
+            if (mb_strlen($searchDigits) >= 3) {
+                $cpfSemPontuacao = "REPLACE(REPLACE(REPLACE(participantes.cpf, '.', ''), '-', ''), ' ', '')";
+
+                $nested->orWhereHas('educando', fn ($q) => $q->whereRaw("{$cpfSemPontuacao} LIKE ?", ["%{$searchDigits}%"]))
+                    ->orWhereHas('voluntario.participante', fn ($q) => $q->whereRaw("{$cpfSemPontuacao} LIKE ?", ["%{$searchDigits}%"]));
+            }
+        });
     }
 
     private function applyStatusFilter($query, string $statusFilter): void
