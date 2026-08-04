@@ -113,7 +113,7 @@ class CertificadoController extends Controller
                 $map = [
                     '%participante%' => $participante->user->name,
                     '%acao%' => $eventoNomeFormatado,
-                    '%carga_horaria%' => CargaHoraria::formatMinutos($cargaTotal),
+                    '%carga_horaria%' => CargaHoraria::formatMinutosCompacto($cargaTotal),
                     '%cpf%' => $participante->cpf ?? '',
                 ];
 
@@ -192,7 +192,7 @@ class CertificadoController extends Controller
                     $map = [
                         '%participante%' => $participante->user->name,
                         '%acao%' => $evento->nome,
-                        '%carga_horaria%' => CargaHoraria::formatMinutos($cargaTotal),
+                        '%carga_horaria%' => CargaHoraria::formatMinutosCompacto($cargaTotal),
                         '%cpf%' => $participante->cpf ?? '',
                     ];
 
@@ -476,7 +476,7 @@ class CertificadoController extends Controller
                 $map = [
                     '%participante%' => $participante->user->name,
                     '%acao%' => $evento->nome,
-                    '%carga_horaria%' => CargaHoraria::formatMinutos($cargaTotal),
+                    '%carga_horaria%' => CargaHoraria::formatMinutosCompacto($cargaTotal),
                     '%cpf%' => $participante->cpf ?? '',
                 ];
 
@@ -899,7 +899,7 @@ class CertificadoController extends Controller
         $map = [
             '%participante%' => '[NOME DO PARTICIPANTE]',
             '%acao%' => '[NOME DA AÇÃO PEDAGÓGICA]',
-            '%carga_horaria%' => CargaHoraria::formatMinutos(600),
+            '%carga_horaria%' => CargaHoraria::formatMinutosCompacto(600),
             '%cpf%' => '[CPF DO PARTICIPANTE]',
         ];
 
