@@ -269,8 +269,9 @@
         background: var(--land-purple);
         color: var(--land-paper);
         text-align: center;
+        box-sizing: border-box;
+        height: 664px;
         padding: 64px 0;
-        min-height: 80vh;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -469,8 +470,9 @@
         background: var(--land-blue);
         color: var(--land-paper);
         text-align: center;
-        padding: 80px 0;
-        min-height: 80vh;
+        box-sizing: border-box;
+        height: 664px;
+        padding: 264px 0;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -531,9 +533,9 @@
         <div class="land-topbar__inner">
             <span class="land-topbar__label">Nos acompanhe nas redes:</span>
             <span class="land-social">
-                <a href="#" aria-label="YouTube"><img src="{{ asset('images/cartas/youtube.svg') }}" alt="YouTube"></a>
-                <a href="#" aria-label="Instagram"><img src="{{ asset('images/cartas/instagram.svg') }}" alt="Instagram"></a>
-                <a href="#" aria-label="Facebook"><img src="{{ asset('images/cartas/facebook.svg') }}" alt="Facebook"></a>
+                <a href="https://www.youtube.com/@alfaejabrasil" target="_blank" rel="noopener" aria-label="YouTube" ><img src="{{ asset('images/cartas/youtube.svg') }}" alt="YouTube"></a>
+                <a href="https://www.instagram.com/alfaejabrasil" target="_blank" rel="noopener" aria-label="Instagram"><img src="{{ asset('images/cartas/instagram.svg') }}" alt="Instagram"></a>
+                <a href="https://www.facebook.com/profile.php?id=61574396997436" target="_blank" rel="noopener" aria-label="Facebook"><img src="{{ asset('images/cartas/facebook.svg') }}" alt="Facebook"></a>
             </span>
         </div>
     </div>

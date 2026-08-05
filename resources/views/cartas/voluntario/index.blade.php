@@ -60,41 +60,9 @@
                     @endforeach
                 </div>
             @endif
-
-            <button type="button" class="cpe-button cpe-volunteer__send" data-modal-open="sendCartaModal">Enviar uma carta</button>
         </section>
 
         @include('cartas.shared._user-menu')
-
-        <div class="cpe-modal" id="sendCartaModal">
-            <div class="cpe-modal__backdrop"></div>
-            <div class="cpe-modal__dialog">
-                <h2>Enviar uma carta</h2>
-                <p>Anexe o arquivo PDF da sua carta.</p>
-                <form method="POST" action="{{ route('cartas.voluntario.cartas.store') }}" enctype="multipart/form-data">
-                    @csrf
-                    <label class="cpe-upload">
-                        <input type="file" name="arquivo" required accept=".pdf,application/pdf">
-                        <span>
-                            <span class="cpe-upload__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 9l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-                            <span class="cpe-upload__link">Clique para selecionar o arquivo</span>
-                            <span class="cpe-upload__hint">PDF (máx. 10MB)</span>
-                        </span>
-                    </label>
-                    <label style="font-size:12px;font-weight:600;margin-top:14px;display:block;">Selecione um destinatário</label>
-                    <select name="destinatario_user_id" class="cpe-select" required>
-                        <option value="">Destinatário</option>
-                        @foreach($destinatarios as $destinatario)
-                            <option value="{{ $destinatario->id }}">{{ $destinatario->nome_com_localidade }}</option>
-                        @endforeach
-                    </select>
-                    <div class="cpe-modal-actions">
-                        <button type="button" class="cpe-button cpe-button--ghost" data-modal-close>Fechar</button>
-                        <button type="submit" class="cpe-button">Enviar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
 
         @if(session('cartas_thanks'))
             <div class="cpe-modal is-open" id="thanksModal">
@@ -122,7 +90,7 @@
 
         .cpe-volunteer__content {
             width: min(100%, 940px);
-            margin: 168px auto 0;
+            margin: 120px auto 0;
             display: flex;
             flex: 1;
             flex-direction: column;
@@ -321,16 +289,6 @@
             line-height: 1.2;
         }
 
-        .cpe-volunteer__send {
-            align-self: center;
-            width: 318px;
-            max-width: 100%;
-            height: 51px;
-            margin-top: auto;
-            border-radius: 12px;
-            box-shadow: 0 8px 44px rgba(0, 0, 0, .25);
-        }
-
         .cpe-empty-card {
             width: min(100%, 432px);
             margin: 0 auto;
@@ -437,7 +395,7 @@
 
         @media (max-width: 720px) {
             .cpe-volunteer__content {
-                margin-top: 80px;
+                margin-top: 60px;
             }
 
             .cpe-stack {

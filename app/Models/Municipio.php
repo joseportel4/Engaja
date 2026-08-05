@@ -46,4 +46,18 @@ class Municipio extends Model
 
         return trim($this->nome.($sigla ? ' - '.$sigla : ''));
     }
+
+    public function isPrioritario(): bool
+    {
+        if ($this->relationLoaded('estado') && $this->estado && $this->estado->relationLoaded('regiao') && $this->estado->regiao) {
+            return $this->estado->regiao->isPrioritaria();
+        }
+
+        return (bool) $this->estado?->regiao?->isPrioritaria();
+    }
+
+    public function getIsPrioritarioAttribute(): bool
+    {
+        return $this->isPrioritario();
+    }
 }

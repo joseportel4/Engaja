@@ -88,6 +88,12 @@
       <p>
         <a class="btn" href="{{ $url }}">Confirmar e-mail</a>
       </p>
+
+      <p style="margin-top: 24px;">
+         Obrigado por esperançar com a gente.<br>
+         <strong>Projeto ALFA-EJA Brasil | Cartas para Esperançar</strong>
+      </p>
+
       <p class="muted">Se o botão não funcionar, copie e cole este link no navegador:<br>{{ $url }}</p>
       <p class="muted">Se você não criou esta conta, ignore este e-mail.</p>
     </div>

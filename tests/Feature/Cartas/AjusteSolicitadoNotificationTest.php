@@ -30,7 +30,7 @@ class AjusteSolicitadoNotificationTest extends TestCase
         $mail = $notification->toMail($voluntario);
         $html = $mail->render();
 
-        $this->assertEquals('Precisamos de um ajuste no seu envio', $mail->subject);
+        $this->assertEquals('Cartas para Esperançar - Precisamos de um ajuste no seu envio.', $mail->subject);
         $this->assertStringContainsString('Precisamos de um ajuste no seu envio', $html);
         $this->assertStringContainsString('Recebemos seu envio no', $html);
         $this->assertStringContainsString('Motivo do ajuste', $html);

@@ -42,15 +42,15 @@ class CartaController extends Controller
 
         $carta->load([
             'educando.user',
-            'educando.municipio.estado',
-            'voluntario.participante.municipio.estado',
+            'educando.municipio.estado.regiao',
+            'voluntario.participante.municipio.estado.regiao',
             'ultimaMensagem',
-            'mensagens.remetenteUsuario.participante.municipio.estado',
+            'mensagens.remetenteUsuario.participante.municipio.estado.regiao',
             'mensagens.remetenteParticipante.user',
-            'mensagens.remetenteParticipante.municipio.estado',
-            'mensagens.destinatarioUsuario.participante.municipio.estado',
+            'mensagens.remetenteParticipante.municipio.estado.regiao',
+            'mensagens.destinatarioUsuario.participante.municipio.estado.regiao',
             'mensagens.destinatarioParticipante.user',
-            'mensagens.destinatarioParticipante.municipio.estado',
+            'mensagens.destinatarioParticipante.municipio.estado.regiao',
         ]);
 
         $gestor = $this->isGestor($request->user());
@@ -159,7 +159,7 @@ class CartaController extends Controller
 
         $voluntario->notify(new CartaRecebidaNotification($carta->load('mensagens')));
 
-        return redirect()->route('cartas.dashboard')->with('status', 'Carta enviada para o voluntario.');
+        return redirect()->route('cartas.dashboard')->with('status', 'Carta enviada para o voluntário.');
     }
 
     public function storeMessage(Request $request, Carta $carta): RedirectResponse
@@ -600,10 +600,16 @@ class CartaController extends Controller
     {
         abort_unless($this->isGestor($request->user()), 403);
 
-        $search = trim((string) $request->query('q', ''));
-        $municipioId = $request->query('municipio_id');
+        $search = trim((string) $request->input('q', $request->query('q', '')));
+        $municipioId = $request->input('municipio_id', $request->query('municipio_id'));
+        $statusFilter = $request->input('status', $request->query('status'));
 
-        $cartas = Carta::query()
+        $cartaIds = $request->input('carta_ids', $request->query('carta_ids'));
+        if (is_string($cartaIds)) {
+            $cartaIds = array_filter(explode(',', $cartaIds));
+        }
+
+        $query = Carta::query()
             ->with([
                 'educando.user',
                 'educando.municipio.estado',
@@ -611,22 +617,25 @@ class CartaController extends Controller
                 'mensagens' => function ($q) {
                     $q->orderBy('rodada', 'asc');
                 },
-            ])
-            ->when($search !== '', function ($query) use ($search) {
-                $searchLower = mb_strtolower($search, 'UTF-8');
-                $query->where(function ($nested) use ($searchLower) {
-                    $nested->whereRaw('LOWER(codigo) LIKE ?', ["%{$searchLower}%"])
-                        ->orWhereHas('educando.user', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]))
-                        ->orWhereHas('voluntario', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]));
-                });
+            ]);
+
+        if (! empty($cartaIds) && is_array($cartaIds)) {
+            $query->whereIn('cartas.id', $cartaIds);
+        } else {
+            $query->when($search !== '', function ($query) use ($search) {
+                $this->applySearchFilter($query, $search);
             })
-            ->when($municipioId, function ($query) use ($municipioId) {
-                $query->whereHas('educando', function ($q) use ($municipioId) {
-                    $q->where('municipio_id', $municipioId);
+                ->when($municipioId, function ($query) use ($municipioId) {
+                    $query->whereHas('educando', function ($q) use ($municipioId) {
+                        $q->where('municipio_id', $municipioId);
+                    });
+                })
+                ->when($statusFilter, function ($query) use ($statusFilter) {
+                    $this->applyStatusFilter($query, $statusFilter);
                 });
-            })
-            ->latest()
-            ->get();
+        }
+
+        $cartas = $query->latest()->get();
 
         $zipFile = storage_path('app/temp_cartas_lote_'.uniqid().'.zip');
         $zip = new \ZipArchive;
@@ -678,39 +687,93 @@ class CartaController extends Controller
     {
         $search = trim((string) $request->query('q', ''));
         $municipioId = $request->query('municipio_id');
+        $statusFilter = $request->query('status');
 
         $cartas = Carta::query()
-            ->with(['educando.user', 'educando.municipio.estado', 'voluntario.participante.municipio.estado', 'ultimaMensagem'])
+            ->with(['educando.user', 'educando.municipio.estado.regiao', 'voluntario.participante.municipio.estado.regiao', 'ultimaMensagem'])
             ->when($search !== '', function ($query) use ($search) {
-                $searchLower = mb_strtolower($search, 'UTF-8');
-                $query->where(function ($nested) use ($searchLower) {
-                    $nested->whereRaw('LOWER(codigo) LIKE ?', ["%{$searchLower}%"])
-                        ->orWhereHas('educando.user', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]))
-                        ->orWhereHas('voluntario', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]));
-                });
+                $this->applySearchFilter($query, $search);
             })
             ->when($municipioId, function ($query) use ($municipioId) {
                 $query->whereHas('educando', function ($q) use ($municipioId) {
                     $q->where('municipio_id', $municipioId);
                 });
             })
+            ->when($statusFilter, function ($query) use ($statusFilter) {
+                $this->applyStatusFilter($query, $statusFilter);
+            })
             ->latest('updated_at')
             ->paginate(9)
             ->withQueryString();
 
-        $engajaUsers = $this->remetenteCandidatosQuery()->get();
-        $municipios = Municipio::orderBy('nome')->get();
+        $hasActiveFilter = filled($municipioId) || filled($statusFilter) || ($search !== '');
 
-        return view('cartas.gestor.index', compact('cartas', 'engajaUsers', 'search', 'municipioId', 'municipios'));
+        if ($request->ajax()) {
+            return view('cartas.gestor._table', compact('cartas', 'hasActiveFilter', 'search', 'municipioId', 'statusFilter'));
+        }
+
+        $engajaUsers = $this->remetenteCandidatosQuery()->get();
+        $municipios = Municipio::with('estado.regiao')->orderBy('nome')->get();
+
+        return view('cartas.gestor.index', compact('cartas', 'engajaUsers', 'search', 'municipioId', 'statusFilter', 'municipios'));
+    }
+
+    /**
+     * Busca livre da listagem de cartas: codigo, nome do remetente (educando),
+     * nome do destinatario (voluntario) e o CPF de ambos.
+     */
+    private function applySearchFilter($query, string $search): void
+    {
+        $searchLower = mb_strtolower($search, 'UTF-8');
+        $searchDigits = preg_replace('/\D/', '', $search);
+
+        $query->where(function ($nested) use ($searchLower, $searchDigits) {
+            $nested->whereRaw('LOWER(codigo) LIKE ?', ["%{$searchLower}%"])
+                ->orWhereHas('educando.user', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]))
+                ->orWhereHas('voluntario', fn ($q) => $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$searchLower}%"]));
+
+            // O CPF fica em participantes.cpf e pode estar gravado com ou sem pontuacao.
+            if (mb_strlen($searchDigits) >= 3) {
+                $cpfSemPontuacao = "REPLACE(REPLACE(REPLACE(participantes.cpf, '.', ''), '-', ''), ' ', '')";
+
+                $nested->orWhereHas('educando', fn ($q) => $q->whereRaw("{$cpfSemPontuacao} LIKE ?", ["%{$searchDigits}%"]))
+                    ->orWhereHas('voluntario.participante', fn ($q) => $q->whereRaw("{$cpfSemPontuacao} LIKE ?", ["%{$searchDigits}%"]));
+            }
+        });
+    }
+
+    private function applyStatusFilter($query, string $statusFilter): void
+    {
+        if ($statusFilter === 'respondida') {
+            $query->where('cartas.status', 'respondida');
+        } elseif ($statusFilter === 'ajuste_solicitado') {
+            $query->where(function ($q) {
+                $q->where('cartas.status', 'aguardando_ajuste')
+                    ->orWhereHas('ultimaMensagem', function ($sub) {
+                        $sub->where('status', 'ajuste_solicitado');
+                    });
+            });
+        } elseif ($statusFilter === 'pendente') {
+            $query->whereHas('ultimaMensagem', function ($sub) {
+                $sub->where('status', 'like', '%verificacao%');
+            });
+        } elseif ($statusFilter === 'enviada') {
+            $query->where('cartas.status', '!=', 'respondida')
+                ->where('cartas.status', '!=', 'aguardando_ajuste')
+                ->whereDoesntHave('ultimaMensagem', function ($sub) {
+                    $sub->where('status', 'ajuste_solicitado')
+                        ->orWhere('status', 'like', '%verificacao%');
+                });
+        }
     }
 
     private function voluntarioDashboard(Request $request): View
     {
         $user = $request->user();
-        $user->loadMissing('participante.municipio.estado');
+        $user->loadMissing('participante.municipio.estado.regiao');
 
         $cartas = Carta::query()
-            ->with(['educando.user', 'educando.municipio.estado', 'voluntario.participante.municipio.estado', 'mensagens' => fn ($q) => $q->latest('rodada'), 'ultimaMensagem'])
+            ->with(['educando.user', 'educando.municipio.estado.regiao', 'voluntario.participante.municipio.estado.regiao', 'mensagens' => fn ($q) => $q->latest('rodada'), 'ultimaMensagem'])
             ->withCount(['mensagens as mensagens_nao_lidas_count' => function ($query) use ($user) {
                 $query->where('destinatario_user_id', $user->id)
                     ->whereNull('lida_em');
@@ -736,7 +799,7 @@ class CartaController extends Controller
         return User::query()
             ->where('sistema_origem', User::SISTEMA_ENGAJA)
             ->whereHas('participante.eventos', fn ($q) => $q->where('is_cartas', true))
-            ->with('participante.municipio.estado')
+            ->with('participante.municipio.estado.regiao')
             ->orderBy('name');
     }
 
@@ -745,7 +808,7 @@ class CartaController extends Controller
         return User::query()
             ->where('sistema_origem', User::SISTEMA_ENGAJA)
             ->whereHas('participante')
-            ->with('participante.municipio.estado')
+            ->with('participante.municipio.estado.regiao')
             ->orderBy('name');
     }
 

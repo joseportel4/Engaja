@@ -41,9 +41,16 @@
                             value="{{ $remetenteSelecionado?->nome_com_localidade }}" data-combobox-input>
                         <ul class="cpe-combobox__list" role="listbox" data-combobox-list>
                             @foreach($engajaUsers as $engajaUser)
+                                <?php $munPrioritario = $engajaUser->participante?->municipio?->isPrioritario(); ?>
+                                <?php $cpfDigits = preg_replace('/\D/', '', (string) $engajaUser->participante?->cpf); ?>
                                 <li class="cpe-combobox__option" role="option"
-                                    data-value="{{ $engajaUser->id }}" data-label="{{ $engajaUser->nome_com_localidade }}">
-                                    {{ $engajaUser->nome_com_localidade }}
+                                    data-value="{{ $engajaUser->id }}" data-cpf="{{ $cpfDigits }}" data-label="{{ $engajaUser->nome_com_localidade }}{{ $munPrioritario ? ' (Prioritário)' : '' }}">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                                        <span>{{ $engajaUser->nome_com_localidade }}</span>
+                                        @if($munPrioritario)
+                                            <span class="cpe-pill cpe-pill--priority" style="font-size: 10px; padding: 1px 6px;">★ Prioritário</span>
+                                        @endif
+                                    </div>
                                 </li>
                             @endforeach
                             <li class="cpe-combobox__empty" data-combobox-empty hidden>Nenhum participante encontrado.</li>
@@ -55,6 +62,10 @@
             </div>
         </section>
 
+        @php
+            $hasActiveFilter = filled($municipioId) || filled($statusFilter) || ($search !== '');
+        @endphp
+
         <section class="cpe-manager__right">
             <div class="cpe-manager__header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
                 <div class="cpe-manager__titleline" style="margin: 0; display: flex; align-items: center; gap: 12px;">
@@ -65,19 +76,32 @@
                 <form id="filterForm" method="GET" action="{{ route('cartas.dashboard') }}" style="display: flex; gap: 24px; align-items: stretch; flex-wrap: wrap; background: #fff; padding: 16px 20px; border-radius: 8px; border: 1px solid #eaeaea; box-shadow: 0 2px 4px rgba(0,0,0,0.02); width: 100%; justify-content: space-between;">
 
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; max-width: 300px;">
-                        <label for="municipio_id" style="font-size: 13px; font-weight: 600; color: #111;">Município do Educando:</label>
+                        <label for="municipio_id" style="font-size: 13px; font-weight: 600; color: #111;">Município do educando:</label>
                         <select id="municipio_id" name="municipio_id" style="height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #111;">
                             <option value="" style="color: #333;">Todos os municípios</option>
                             @foreach($municipios as $mun)
-                                <option value="{{ $mun->id }}" style="color: #111;" @selected($municipioId == $mun->id)>{{ $mun->nome }}</option>
+                                <option value="{{ $mun->id }}" style="color: #111;" @selected($municipioId == $mun->id)>
+                                    {{ $mun->nome }}{{ $mun->estado?->sigla ? ' - '.$mun->estado->sigla : '' }}{{ $mun->isPrioritario() ? ' ★ (Prioritário)' : '' }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
 
+                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 150px; max-width: 200px;">
+                        <label for="statusFilter" style="font-size: 13px; font-weight: 600; color: #111;">Status:</label>
+                        <select id="statusFilter" name="status" style="height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #111;">
+                            <option value="">Todos</option>
+                            <option value="respondida" @selected(($statusFilter ?? '') === 'respondida')>Respondida</option>
+                            <option value="ajuste_solicitado" @selected(($statusFilter ?? '') === 'ajuste_solicitado')>Ajuste solicitado</option>
+                            <option value="pendente" @selected(($statusFilter ?? '') === 'pendente')>Em preparação</option>
+                            <option value="enviada" @selected(($statusFilter ?? '') === 'enviada')>Enviada</option>
+                        </select>
+                    </div>
+
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 2; min-width: 250px;">
-                        <label for="search_input" style="font-size: 13px; font-weight: 600; color: #111;">Pesquisa de Remetente ou Destinatário:</label>
+                        <label for="search_input" style="font-size: 13px; font-weight: 600; color: #111;">Pesquisa de Remetente ou Destinatário (nome ou CPF):</label>
                         <div style="position: relative; height: 40px; display: flex; align-items: center;">
-                            <input id="search_input" type="search" name="q" value="{{ $search }}" placeholder="Digite o nome..." style="height: 100%; width: 100%; box-sizing: border-box; padding: 0 36px 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; color: #111;">
+                            <input id="search_input" type="search" name="q" value="{{ $search }}" placeholder="Digite o nome ou CPF..." style="height: 100%; width: 100%; box-sizing: border-box; padding: 0 36px 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; color: #111;">
                             <button type="submit" aria-label="Pesquisar" style="position: absolute; right: 8px; background: none; border: none; color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 100%;">
                                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </button>
@@ -87,101 +111,34 @@
 
                     <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; justify-content: flex-start;">
                         <label style="font-size: 13px; font-weight: 600; color: #111;">Ações:</label>
-                        <div style="display: flex; gap: 8px;">
-                            <button type="submit" form="filterForm" formaction="{{ route('cartas.download-batch') }}" style="display: flex; align-items: center; justify-content: center; white-space: nowrap; padding: 0 16px; border-radius: 6px; height: 40px; box-sizing: border-box; text-decoration: none; background-color: var(--cartas-purple, #6a1b9a); color: white; font-weight: 500; font-size: 14px; border: none; cursor: pointer; transition: opacity 0.2s;">
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <button type="submit" id="btnDownloadBatch" form="filterForm" formaction="{{ route('cartas.download-batch') }}" style="display: flex; align-items: center; justify-content: center; white-space: nowrap; padding: 0 16px; border-radius: 6px; height: 40px; box-sizing: border-box; text-decoration: none; background-color: var(--cartas-purple, #6a1b9a); color: white; font-weight: 500; font-size: 14px; border: none; cursor: pointer; transition: opacity 0.2s;">
                                 Baixar Cartas PDF
                             </button>
+                            <span id="selectedCountBadge" style="font-size: 11px; font-weight: 600; color: #666; text-align: center;">
+                                {{ $cartas->count() }} de {{ $cartas->count() }} selecionadas
+                            </span>
                         </div>
                     </div>
                 </form>
             </div>
 
-            <div class="cpe-table-card cpe-manager-table">
-                <table class="cpe-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Status</th>
-                            <th>Remetente</th>
-                            <th>Município do Remetente</th>
-                            <th>Destinatário</th>
-                            <th>Data</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($cartas as $carta)
-                            @php
-                                $ultimoStatus = $carta->ultimaMensagem?->status ?? $carta->status;
-                                $statusClass = match (true) {
-                                    $carta->status === 'respondida' => 'cpe-pill--green',
-                                    $carta->status === 'aguardando_ajuste' || $ultimoStatus === 'ajuste_solicitado' => 'cpe-pill--purple',
-                                    str_contains($ultimoStatus, 'verificacao') => 'cpe-pill--yellow',
-                                    default => 'cpe-pill--blue',
-                                };
-                                $statusLabel = match (true) {
-                                    $carta->status === 'respondida' => 'Respondida',
-                                    $carta->status === 'aguardando_ajuste' || $ultimoStatus === 'ajuste_solicitado' => 'Ajuste solicitado',
-                                    str_contains($ultimoStatus, 'verificacao') => 'Pendente',
-                                    default => 'Enviada',
-                                };
-                            @endphp
-                            <tr>
-                                <td>{{ $carta->codigo }}</td>
-                                <td>
-                                    <span class="cpe-pill {{ $statusClass }}">
-                                        {{ $statusLabel }}
-                                    </span>
-                                </td>
-                                <td>{{ $carta->educando?->nome ?? 'Remetente' }}</td>
-                                <td>{{ $carta->educando?->municipio_estado ?? 'Não informado' }}</td>
-                                <td>{{ $carta->voluntario?->nome ?? 'Sem voluntário' }}</td>
-                                <td>{{ optional($carta->created_at)->format('d/m/Y') }}</td>
-                                <td>
-                                    <div style="display: flex; gap: 8px;">
-                                        <a href="{{ route('cartas.cartas.show', $carta) }}" class="cpe-icon-button" aria-label="Abrir carta" title="Visualizar">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            </svg>
-                                        </a>
-                                        <button type="button" class="cpe-trash-button" aria-label="Remover carta" title="Excluir" data-modal-open="deleteCarta-{{ $carta->id }}">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                                <path d="M8 6V4h8v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                <path d="M6 6l1 15h10l1-15" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                                                <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="cpe-empty">Nenhuma carta cadastrada.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+            @include('cartas.gestor._table')
 
-            <div class="cpe-pagination">
-                {{ $cartas->links('cartas.gestor.pagination') }}
-            </div>
         </section>
 
         @include('cartas.shared._user-menu')
 
-        @foreach($cartas as $carta)
-            <div class="cpe-modal" id="deleteCarta-{{ $carta->id }}">
+        @foreach($cartas as $cartaModal)
+            <div class="cpe-modal" id="deleteCarta-{{ $cartaModal->id }}">
                 <div class="cpe-modal__backdrop"></div>
                 <div class="cpe-modal__dialog">
                     <h2>Excluir carta</h2>
-                    <p>Tem certeza que deseja excluir a carta {{ $carta->codigo }}? Esta ação removerá a carta da listagem.</p>
+                    <p>Tem certeza que deseja excluir a carta {{ $cartaModal->codigo }}? Esta ação removerá a carta da listagem.</p>
 
                     <div class="cpe-modal-actions">
                         <button type="button" class="cpe-button cpe-button--ghost" data-modal-close>Cancelar</button>
-                        <form method="POST" action="{{ route('cartas.cartas.destroy', $carta) }}">
+                        <form method="POST" action="{{ route('cartas.cartas.destroy', $cartaModal) }}">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="cpe-button cpe-button--danger">Excluir</button>
@@ -198,7 +155,6 @@
         .cpe-manager {
             display: grid;
             grid-template-columns: minmax(420px, 1fr) minmax(520px, 1fr);
-            padding-bottom: 56px;
         }
 
         .cpe-manager__left {
@@ -229,6 +185,7 @@
             display: flex;
             flex-direction: column;
             padding-top: 76px;
+            padding-bottom: 56px;
             box-sizing: border-box;
         }
 
@@ -486,6 +443,20 @@
             const paginationContainer = document.querySelector('.cpe-pagination');
             let debounceTimer;
 
+            function updateSelectedBadge() {
+                const badge = document.getElementById('selectedCountBadge');
+                if (!badge) return;
+                const checkboxes = document.querySelectorAll('.carta-checkbox');
+                const checked = document.querySelectorAll('.carta-checkbox:checked');
+                badge.textContent = `${checked.length} de ${checkboxes.length} selecionadas`;
+            }
+
+            document.addEventListener('change', function(e) {
+                if (e.target.classList.contains('carta-checkbox')) {
+                    updateSelectedBadge();
+                }
+            });
+
             function fetchResults(url) {
                 tableContainer.style.opacity = '0.5';
 
@@ -503,6 +474,7 @@
                     paginationContainer.innerHTML = doc.querySelector('.cpe-pagination').innerHTML;
 
                     tableContainer.style.opacity = '1';
+                    updateSelectedBadge();
                 })
                 .catch(error => {
                     console.error('Erro ao buscar dados:', error);
@@ -546,6 +518,13 @@
 
             if (municipioSelect && filterForm) {
                 municipioSelect.addEventListener('change', function() {
+                    filterForm.dispatchEvent(new Event('submit', { cancelable: true }));
+                });
+            }
+
+            const statusFilter = document.getElementById('statusFilter');
+            if (statusFilter && filterForm) {
+                statusFilter.addEventListener('change', function() {
                     filterForm.dispatchEvent(new Event('submit', { cancelable: true }));
                 });
             }
@@ -596,7 +575,7 @@
         <div class="cpe-modal__backdrop"></div>
         <div class="cpe-modal__dialog">
             <h2>Confirmar envio</h2>
-            <p>Você tem certeza que deseja enviar esta carta? Esta ação não poderá ser desfeita.</p>
+            <p>Você tem certeza que deseja enviar esta carta?</p>
             <div class="cpe-modal-actions">
                 <button type="button" class="cpe-button cpe-button--ghost" data-gestor-confirm-close>Cancelar</button>
                 <button type="button" class="cpe-button" id="gestorConfirmOk">Confirmar envio</button>

@@ -5,6 +5,7 @@ namespace Tests\Feature\Cartas;
 use App\Models\Cartas\Carta;
 use App\Models\Cartas\CartaEvento;
 use App\Models\Cartas\CartaMensagem;
+use Illuminate\Http\UploadedFile;
 
 class CartasGestorTest extends CartasBaseTest
 {
@@ -19,7 +20,7 @@ class CartasGestorTest extends CartasBaseTest
             ]);
 
         $response->assertRedirect(route('cartas.dashboard'));
-        $response->assertSessionHas('status', 'Carta enviada para o voluntario.');
+        $response->assertSessionHas('status', 'Carta enviada para o voluntário.');
 
         $this->assertDatabaseHas('cartas', [
             'educando_participante_id' => $this->educando->id,

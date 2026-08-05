@@ -21,6 +21,17 @@
                     Cartas entre {{ $remetentePrimeiroNome }} e {{ $voluntarioPrimeiroNome }}
                 </h1>
 
+                @if($gestor && $carta->educando?->municipio)
+                    <div style="margin-top: 8px; margin-bottom: 12px; font-size: 14px; color: #444; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span>Remetente: <strong>{{ $carta->educando->nome }}</strong> ({{ collect([$carta->educando->municipio->nome, $carta->educando->municipio->estado?->sigla])->filter()->implode(' - ') }})</span>
+                        @if($carta->educando->municipio->isPrioritario())
+                            <span class="cpe-pill cpe-pill--priority" title="Município Prioritário ({{ $carta->educando->municipio->estado?->regiao?->nome }})">
+                                ★ Prioritário
+                            </span>
+                        @endif
+                    </div>
+                @endif
+
                 @if (session('status'))
                     <div class="cpe-alert">{{ session('status') }}</div>
                 @endif
@@ -42,14 +53,14 @@
                                 'aprovada' => $loop->first
                                     ? ($isVoluntario ? 'Recebida' : 'Enviada')
                                     : ($respostasExibidas === 1 ? 'Respondida' : "Respondida {$respostasExibidas}x"),
-                                'aguardando_verificacao' => 'Pendente',
+                                'aguardando_verificacao' => 'Em preparação',
                                 'ajuste_solicitado' => 'Ajuste solicitado',
                                 default => 'Enviada',
                             };
 
                             $statusClass = match (true) {
                                 str_starts_with($statusLabel, 'Respondida') || $statusLabel === 'Recebida' => 'cpe-pill--green',
-                                $statusLabel === 'Pendente' => 'cpe-pill--yellow',
+                                $statusLabel === 'Em preparação' => 'cpe-pill--yellow',
                                 $statusLabel === 'Ajuste solicitado' => 'cpe-pill--purple',
                                 default => 'cpe-pill--blue',
                             };
