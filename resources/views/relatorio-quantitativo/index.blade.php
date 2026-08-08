@@ -426,8 +426,8 @@
                     row-class-field="_rowClass"
                 />
                 <p class="text-muted small mt-2 mb-0 px-3 pb-2">
-                    <strong>Participantes distintos</strong> conta pessoas — cada pessoa uma vez por município —, diferente de <em>Qtd Presentes</em> da aba "Por Momento", que conta registros de presença.
-                    A linha <strong>TOTAL</strong> soma os participantes distintos de cada município; quem participou em mais de um município é contado em cada um deles.
+                    <strong>Participantes distintos</strong> conta pessoas pelo <strong>município do participante</strong> (não pelo local do momento) — diferente de <em>Qtd Presentes</em> da aba "Por Momento", que conta registros de presença.
+                    <strong>Previstos</strong> reflete o público esperado dos momentos (pelo município do momento), então pode não bater com os presentes de uma mesma linha.
                 </p>
             @endif
         </div>

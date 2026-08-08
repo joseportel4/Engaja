@@ -152,10 +152,11 @@ class RelatorioQuantitativoController extends Controller
             }
         }
 
-        // Query 2: Contagens de CPF e métricas demográficas por município
+        // Query 2: Contagens de CPF e métricas demográficas.
+        // A presença é atribuída ao município DO PARTICIPANTE (participantes.municipio_id),
+        // não ao do momento — igual às telas de ação, que exibem o município da pessoa.
         $cpfCountsRaw = \DB::table('presencas')
-            ->selectRaw('atividades.municipio_id')
-            ->selectRaw('atividades.abrangencia_nacional::int as abrangencia_nacional')
+            ->selectRaw('participantes.municipio_id')
             ->selectRaw('COUNT(DISTINCT CASE WHEN participantes.cpf IS NOT NULL AND participantes.cpf != \'\' THEN participantes.id END) as com_cpf')
             ->selectRaw('COUNT(DISTINCT CASE WHEN participantes.cpf IS NULL OR participantes.cpf = \'\' THEN participantes.id END) as sem_cpf')
             ->selectRaw("COUNT(DISTINCT CASE WHEN users.raca_cor = 'Branca'   THEN participantes.id END) as raca_branca")
@@ -181,24 +182,29 @@ class RelatorioQuantitativoController extends Controller
             ->when($de && $ate, fn ($q) => $q->whereBetween('atividades.dia', [$de, $ate]))
             ->when($de && ! $ate, fn ($q) => $q->where('atividades.dia', '>=', $de))
             ->when(! $de && $ate, fn ($q) => $q->where('atividades.dia', '<=', $ate))
-            ->groupBy('atividades.municipio_id', 'atividades.abrangencia_nacional')
+            ->groupBy('participantes.municipio_id')
             ->get();
 
-        $cpfCounts = collect();  // municipio_id => counts (município definido)
-        $countsNacional = null;  // abrangência nacional (município nulo intencional)
-        $countsNaoIdent = null;  // sem município e sem abrangência nacional
+        $cpfCounts = collect();  // municipio_id do participante => counts
+        $countsNaoIdent = null;  // presenças de participantes sem município cadastrado
         foreach ($cpfCountsRaw as $r) {
-            if ((int) $r->abrangencia_nacional === 1) {
-                $countsNacional = $r;
-            } elseif ($r->municipio_id === null) {
+            if ($r->municipio_id === null) {
                 $countsNaoIdent = $r;
             } else {
                 $cpfCounts->put($r->municipio_id, $r);
             }
         }
 
-        // Aplicar filtro de região
-        $municipiosQuery = Municipio::query()->with('estado.regiao');
+        // Só carrega municípios que têm dado (previstos de momento OU presença de
+        // participante) — evita renderizar milhares de linhas zeradas, já que a
+        // tabela `municipios` cobre todo o Brasil.
+        $idsComDados = $previstos->keys()
+            ->merge($cpfCounts->keys())
+            ->filter(fn ($id) => $id !== null)
+            ->unique()
+            ->values();
+
+        $municipiosQuery = Municipio::query()->with('estado.regiao')->whereIn('id', $idsComDados);
         if ($regiaoId) {
             $municipiosQuery->whereHas('estado', fn ($q) => $q->where('regiao_id', $regiaoId));
         }
@@ -294,40 +300,24 @@ class RelatorioQuantitativoController extends Controller
             $totais['tag_movimento_social'] += (int) ($counts?->tag_movimento_social ?? 0);
         }
 
-        // Linha "Brasil (abrangência nacional)" — município nulo intencional,
-        // separada dos casos de dado ausente.
-        $comCpfBr = (int) ($countsNacional?->com_cpf ?? 0);
-        $semCpfBr = (int) ($countsNacional?->sem_cpf ?? 0);
-        $tpBr = $comCpfBr + $semCpfBr;
-
-        if ($previstosNacional > 0 || $tpBr > 0) {
+        // Linha "Brasil (abrangência nacional)": mostra os PREVISTOS dos momentos
+        // nacionais (atributo do momento). Os presentes desses momentos são contados
+        // na cidade de cada participante, então esta linha não tem métrica de presença.
+        if ($previstosNacional > 0) {
             $rows[] = [
                 'municipio_id' => 'brasil',
                 'municipio_nome' => 'Brasil (abrangência nacional)',
                 'regiao' => '',
                 'previstos' => $previstosNacional,
-                'metricas' => $buildMetricas($tpBr, $countsNacional),
+                'metricas' => $buildMetricas(0, null),
                 '_is_brasil' => true,
             ];
 
             $totais['previstos'] += $previstosNacional;
-            $totais['com_cpf'] += $comCpfBr;
-            $totais['sem_cpf'] += $semCpfBr;
-            $totais['raca_branca'] += (int) ($countsNacional?->raca_branca ?? 0);
-            $totais['raca_parda'] += (int) ($countsNacional?->raca_parda ?? 0);
-            $totais['raca_preta'] += (int) ($countsNacional?->raca_preta ?? 0);
-            $totais['raca_amarela'] += (int) ($countsNacional?->raca_amarela ?? 0);
-            $totais['raca_indigena'] += (int) ($countsNacional?->raca_indigena ?? 0);
-            $totais['genero_mulheres'] += (int) ($countsNacional?->genero_mulheres ?? 0);
-            $totais['genero_homens'] += (int) ($countsNacional?->genero_homens ?? 0);
-            $totais['genero_outros'] += (int) ($countsNacional?->genero_outros ?? 0);
-            $totais['pcd'] += (int) ($countsNacional?->com_pcd ?? 0);
-            $totais['certificados'] += (int) ($countsNacional?->certificados_emitidos ?? 0);
-            $totais['tag_rede_ensino'] += (int) ($countsNacional?->tag_rede_ensino ?? 0);
-            $totais['tag_movimento_social'] += (int) ($countsNacional?->tag_movimento_social ?? 0);
         }
 
-        // Linha "Municípios não identificados" — sem município e sem abrangência nacional.
+        // Linha "Municípios não identificados": previstos de momentos sem município
+        // (e sem abrangência nacional) + presenças de participantes sem município cadastrado.
         $comCpfNull = (int) ($countsNaoIdent?->com_cpf ?? 0);
         $semCpfNull = (int) ($countsNaoIdent?->sem_cpf ?? 0);
         $tpNull = $comCpfNull + $semCpfNull;
