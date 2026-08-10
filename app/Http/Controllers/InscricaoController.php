@@ -1626,10 +1626,10 @@ class InscricaoController extends Controller
                 );
             }
 
-            //persistir dados demográficos na tabela users
-            $demograficoNormalizer = new DemograficoNormalizerService;
+            // Persistir dados demográficos na tabela users.
+            // Os valores já foram normalizados pela preview (ParticipantesPreviewImport/parseParticipantesSpreadsheetFallback)
+            // Não normalizamos novamente aqui para evitar perda do texto original de "outro".
             $demograficosConfig = config('engaja.demograficos', []);
-            $camposDemograficos = array_keys($demograficosConfig);
 
             foreach ($rows as $row) {
                 $email = strtolower(trim((string) ($row['email'] ?? '')));
@@ -1642,20 +1642,21 @@ class InscricaoController extends Controller
                 }
 
                 $dadosDemograficos = [];
-                foreach ($camposDemograficos as $campo) {
+                foreach ($demograficosConfig as $campo => $definicao) {
                     $valor = $row[$campo] ?? null;
                     if (! is_string($valor) || trim($valor) === '') {
-                        continue; // Campo vazio na planilha → não sobrescreve dado existente
+                        continue;
                     }
 
-                    $resultado = $demograficoNormalizer->normalize($campo, $valor);
-                    if ($resultado['campo'] !== null) {
-                        $dadosDemograficos[$campo] = $resultado['campo'];
+                    $dadosDemograficos[$campo] = $valor;
 
-                        $campoOutro = $demograficosConfig[$campo]['campo_outro'] ?? null;
-                        if ($campoOutro !== null) {
-                            $dadosDemograficos[$campoOutro] = $resultado['campo_outro'];
-                        }
+                    // Ler também o campo_outro diretamente da sessão
+                    $campoOutro = $definicao['campo_outro'] ?? null;
+                    if ($campoOutro !== null) {
+                        $valorOutro = $row[$campoOutro] ?? null;
+                        $dadosDemograficos[$campoOutro] = is_string($valorOutro) && trim($valorOutro) !== ''
+                            ? $valorOutro
+                            : null;
                     }
                 }
 
