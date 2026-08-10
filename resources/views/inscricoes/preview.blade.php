@@ -94,7 +94,18 @@
     @endunless
 
     <div class="table-responsive">
-      @php $tagOptions = $participanteTags ?? config('engaja.participante_tags', \App\Models\Participante::TAGS); @endphp
+      @php
+        $tagOptions = $participanteTags ?? config('engaja.participante_tags', \App\Models\Participante::TAGS);
+        $demograficosConfig = $demograficos ?? config('engaja.demograficos', []);
+        $demograficoLabels = [
+            'identidade_genero'      => 'Id. Gênero',
+            'raca_cor'               => 'Raça/Cor',
+            'comunidade_tradicional' => 'Comunidade',
+            'faixa_etaria'           => 'Faixa Etária',
+            'pcd'                    => 'PcD',
+            'orientacao_sexual'      => 'Orient. Sexual',
+        ];
+      @endphp
       <table class="table table-sm align-middle table-bordered bg-white">
         <thead class="table-light">
           <tr>
@@ -107,6 +118,9 @@
             <th style="min-width:220px;">Tipo de Organização</th>
             <th style="min-width:220px;">Organização</th>
             <th style="min-width:200px;">Tag</th>
+            @foreach($demograficoLabels as $campoDemo => $labelDemo)
+            <th style="min-width:180px;">{{ $labelDemo }}</th>
+            @endforeach
             <!-- <th style="min-width:140px;">Data de entrada</th> -->
           </tr>
         </thead>
@@ -185,6 +199,45 @@
               <div class="invalid-feedback">Selecione uma tag válida.</div>
               @endif
             </td>
+
+            {{-- Campos demográficos --}}
+            @foreach($demograficosConfig as $campoDemo => $defDemo)
+              @php
+                $valorDemo = old("rows.$idx.$campoDemo", $r[$campoDemo] ?? null);
+                $okDemo = $r[$campoDemo . '_ok'] ?? true;
+                $temOutro = !empty($defDemo['campo_outro']);
+                $campoOutroName = $defDemo['campo_outro'] ?? null;
+                $valorOutro = $defDemo['valor_outro'] ?? null;
+                $valorCampoOutro = old("rows.$idx.$campoOutroName", $r[$campoOutroName] ?? null);
+                $outroId = "demo_{$campoDemo}_{$idx}";
+              @endphp
+              <td>
+                <select
+                  name="rows[{{ $idx }}][{{ $campoDemo }}]"
+                  class="form-select form-select-sm {{ (!empty($r[$campoDemo]) && !$okDemo) ? 'is-invalid' : '' }}"
+                  @if($temOutro) onchange="document.getElementById('{{ $outroId }}').style.display = this.value === '{{ $valorOutro }}' ? 'block' : 'none'" @endif>
+                  <option value="">Selecione...</option>
+                  @foreach($defDemo['opcoes'] as $opcaoDemo)
+                  <option value="{{ $opcaoDemo }}" @selected($valorDemo === $opcaoDemo)>{{ $opcaoDemo }}</option>
+                  @endforeach
+                </select>
+
+                @if(!empty($r[$campoDemo]) && !$okDemo)
+                <div class="invalid-feedback">Valor não reconhecido.</div>
+                @endif
+
+                @if($temOutro)
+                <input
+                  type="text"
+                  id="{{ $outroId }}"
+                  name="rows[{{ $idx }}][{{ $campoOutroName }}]"
+                  value="{{ $valorCampoOutro }}"
+                  class="form-control form-control-sm mt-1"
+                  placeholder="Especifique..."
+                  style="display: {{ $valorDemo === $valorOutro ? 'block' : 'none' }}">
+                @endif
+              </td>
+            @endforeach
 
             <!-- <td><input class="form-control form-control-sm" name="rows[{{ $idx }}][data_entrada]" value="{{ old("rows.$idx.data_entrada", $r['data_entrada']) }}" placeholder="YYYY-MM-DD"></td> -->
           </tr>

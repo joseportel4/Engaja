@@ -100,7 +100,7 @@
         </div>
         <div class="mb-3">
           <div class="form-text">
-            Colunas: nome, email, cpf, telefone, municipio, estado/uf (opcional), tipo_de_organizacao, organizacao, tag
+            Colunas: nome, email, cpf, telefone, municipio, estado/uf (opcional), tipo_de_organizacao, organizacao, tag, identidade_genero, raca_cor, comunidade_tradicional, faixa_etaria, pcd, orientacao_sexual.
             <br>
             Municípios ainda não cadastrados serão consultados no IBGE e criados automaticamente. Informe o estado/UF quando houver cidades com o mesmo nome.
           </div>
