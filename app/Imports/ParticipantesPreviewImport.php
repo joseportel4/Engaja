@@ -4,6 +4,7 @@ namespace App\Imports;
 
 use App\Models\Municipio;
 use App\Models\Participante;
+use App\Services\DemograficoNormalizerService;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToCollection;
@@ -29,12 +30,15 @@ class ParticipantesPreviewImport implements SkipsEmptyRows, ToCollection, WithHe
     /** @var array<string,string> */
     protected array $tagsMap = [];
 
+    protected DemograficoNormalizerService $demograficoNormalizer;
+
     protected int $headerRow = 1;
 
     public function __construct(int $headerRow = 1)
     {
         $this->rows = collect();
         $this->headerRow = $headerRow > 0 ? $headerRow : 1;
+        $this->demograficoNormalizer = new DemograficoNormalizerService;
 
         // Pré-carrega municípios para não consultar a cada linha
         $this->municipiosCache = Municipio::query()
@@ -132,7 +136,13 @@ class ParticipantesPreviewImport implements SkipsEmptyRows, ToCollection, WithHe
             $tagOut = $tagCanon;
             $tagOk = ($tagRaw === '') ? true : ($tagCanon !== null);
 
-            return [
+            $demograficosRaw = [];
+            foreach (DemograficoNormalizerService::headerAliases() as $campo => $aliases) {
+                $demograficosRaw[$campo] = $this->firstValue($raw, $aliases);
+            }
+            $demograficosNormalizados = $this->demograficoNormalizer->normalizeRow($demograficosRaw);
+
+            return array_merge([
                 'nome' => (string) $nome,
                 'email' => (string) $email,
                 'cpf' => preg_replace('/\D+/', '', (string) $cpfRaw) ?: null,
@@ -146,7 +156,7 @@ class ParticipantesPreviewImport implements SkipsEmptyRows, ToCollection, WithHe
                 'tag' => $tagOut,
                 'tag_ok' => $tagOk,
                 'data_entrada' => $this->firstValue($raw, ['data_entrada', 'data entrada', 'data-de-entrada']) ?? '',
-            ];
+            ], $demograficosNormalizados);
         })->values();
     }
 
@@ -194,10 +204,10 @@ class ParticipantesPreviewImport implements SkipsEmptyRows, ToCollection, WithHe
     private function slugify(string $s): string
     {
         $s = trim(mb_strtolower($s));
-        $s = iconv('UTF-8', 'ASCII//TRANSLIT', $s) ?: $s;
+        $s = preg_replace('/\p{Mn}/u', '', \Normalizer::normalize($s, \Normalizer::NFD) ?: $s);
         $s = preg_replace('/[^a-z0-9]+/', ' ', $s);
 
-        return trim($s);
+        return trim((string) $s);
     }
 
     private function normalizeTipoOrganizacao(?string $raw): ?string
