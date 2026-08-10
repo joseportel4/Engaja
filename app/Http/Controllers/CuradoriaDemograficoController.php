@@ -29,6 +29,11 @@ class CuradoriaDemograficoController extends Controller
 
         $usuario = $curadoria->user;
         if ($usuario) {
+            if ($usuario->demograficosCompletos()) {
+                $curadoria->delete();
+                return redirect()->route('curadoria.index')->with('success', 'O usuário já possuía os dados completos');
+            }
+
             $usuario->update([
                 'identidade_genero' => $curadoria->identidade_genero,
                 'identidade_genero_outro' => $curadoria->identidade_genero_outro,

@@ -50,9 +50,16 @@ class PresencaController extends Controller
             $participante = Participante::where('user_id', $usuario->id)->first();
         }
 
-        // Se dados demográficos incompletos, abre o modal de preenchimento
-        // para qualquer pessoa (mesmo deslogada) completar os dados do participante
+        // Se o usuário ainda não tem dados completos, verifica se já preencheu na curadoria hoje/anteriormente
+        $temCuradoriaPendente = false;
         if ($usuario && ! $usuario->demograficosCompletos()) {
+            $temCuradoriaPendente = \App\Models\CuradoriaDemografico::where('user_id', $usuario->id)
+                ->where('vinculado', false)
+                ->exists();
+        }
+
+        // Só abre o modal se os dados estiverem incompletos E não houver uma curadoria já pendente
+        if ($usuario && ! $usuario->demograficosCompletos() && ! $temCuradoriaPendente) {
             return redirect()
                 ->back()
                 ->withInput()
