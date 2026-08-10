@@ -45,6 +45,98 @@ class PresencaController extends Controller
         if ($usuario && !$participante) {
             $participante = Participante::where('user_id', $usuario->id)->first();
         }
+
+        // Se o usuário ainda não tem dados completos, verifica se já preencheu na curadoria hoje/anteriormente
+        $temCuradoriaPendente = false;
+        if ($usuario && ! $usuario->demograficosCompletos()) {
+            $temCuradoriaPendente = \App\Models\CuradoriaDemografico::where('user_id', $usuario->id)
+                ->where('vinculado', false)
+                ->exists();
+        }
+
+        // Só abre o modal se os dados estiverem incompletos E não houver uma curadoria já pendente
+        if ($usuario && ! $usuario->demograficosCompletos() && ! $temCuradoriaPendente) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('demograficos_pendentes', true)
+                ->with('demograficos_user_token', encrypt($usuario->id))
+                ->with('demograficos_user_nome', $usuario->name)
+                ->with('demograficos_campo_input', $request->campo);
+        }
+
+        return $this->confirmarPresencaParaUsuario($atividade, $usuario, $participante);
+    }
+
+    /**
+     * Salva os dados demográficos do usuário identificado pelo token criptografado
+     * e em seguida confirma a presença na atividade.
+     */
+    public function salvarDemograficosEConfirmar(Request $request, Atividade $atividade)
+    {
+        $request->validate([
+            'user_token'                   => 'required|string',
+            'identidade_genero'            => 'required|string',
+            'identidade_genero_outro'      => 'nullable|string|max:255|required_if:identidade_genero,Outro',
+            'raca_cor'                     => 'required|string',
+            'comunidade_tradicional'       => 'required|string',
+            'comunidade_tradicional_outro' => 'nullable|string|max:255|required_if:comunidade_tradicional,Outro',
+            'faixa_etaria'                 => 'required|string',
+            'pcd'                          => 'required|string',
+            'orientacao_sexual'            => 'required|string',
+            'orientacao_sexual_outra'      => 'nullable|string|max:255|required_if:orientacao_sexual,Outra',
+        ], [
+            'identidade_genero.required'       => 'Identidade de gênero é obrigatória.',
+            'raca_cor.required'                => 'Raça/Cor é obrigatória.',
+            'comunidade_tradicional.required'  => 'Pertencimento a comunidade é obrigatório.',
+            'faixa_etaria.required'            => 'Faixa etária é obrigatória.',
+            'pcd.required'                     => 'Campo PcD é obrigatório.',
+            'orientacao_sexual.required'       => 'Orientação sexual é obrigatória.',
+        ]);
+
+        // Resolve o usuário de forma segura via token criptografado
+        try {
+            $userId = decrypt($request->user_token);
+        } catch (Throwable) {
+            return redirect()
+                ->route('presenca.confirmar', $atividade)
+                ->with('error', 'Token inválido. Por favor, reinicie o processo de confirmação de presença.');
+        }
+
+        $usuario = User::find($userId);
+        if (! $usuario) {
+            return redirect()
+                ->route('presenca.confirmar', $atividade)
+                ->with('error', 'Usuário não encontrado. Por favor, reinicie o processo.');
+        }
+
+        // Salva os dados demográficos na tabela de curadoria
+        CuradoriaDemografico::create([
+            'user_id'                      => $usuario->id,
+            'identidade_genero'            => $request->identidade_genero,
+            'identidade_genero_outro'      => $request->identidade_genero_outro,
+            'raca_cor'                     => $request->raca_cor,
+            'comunidade_tradicional'       => $request->comunidade_tradicional,
+            'comunidade_tradicional_outro' => $request->comunidade_tradicional_outro,
+            'faixa_etaria'                 => $request->faixa_etaria,
+            'pcd'                          => $request->pcd,
+            'orientacao_sexual'            => $request->orientacao_sexual,
+            'orientacao_sexual_outra'      => $request->orientacao_sexual_outra,
+        ]);
+
+        $participante = Participante::where('user_id', $usuario->id)->first();
+        if (! $participante) {
+            $participante = Participante::firstOrCreate(['user_id' => $usuario->id]);
+        }
+
+        return $this->confirmarPresencaParaUsuario($atividade, $usuario, $participante);
+    }
+
+    /**
+     * Lógica compartilhada de confirmação de presença para um usuário/participante já resolvido.
+     */
+    private function confirmarPresencaParaUsuario(Atividade $atividade, User $usuario, ?Participante $participante)
+    {
         $evento = $atividade->evento;
 
         $inscricao = Inscricao::withTrashed()
