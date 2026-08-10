@@ -12,13 +12,27 @@
             <p class="mb-3">Para confirmar a sua presença nesta atividade e/ou responder a avaliação, preencha o campo com
               o seu e-mail, CPF ou
               telefone e clique no botão.<br /></p>
-            <form method="POST" action="{{ route('presenca.store', $atividade) }}">
+
+            {{-- Erro genérico / usuário não encontrado --}}
+            @if (session('error') && !session('demograficos_pendentes'))
+              <div class="alert alert-danger" role="alert">
+                {{ session('error') }}
+              </div>
+            @endif
+
+            {{-- Formulário principal de busca --}}
+            <form method="POST" action="{{ route('presenca.store', $atividade) }}" id="form-busca-presenca">
               @csrf
               <div class="mb-3">
-                <label for="email" class="form-label">E-mail, CPF ou telefone</label>
-                <input type="text" class="form-control" id="campo" name="campo" required>
+                <label for="campo" class="form-label">E-mail, CPF ou telefone</label>
+                <input type="text"
+                       class="form-control @error('campo') is-invalid @enderror"
+                       id="campo"
+                       name="campo"
+                       value="{{ old('campo', session('demograficos_campo_input')) }}"
+                       required>
                 @error('campo')
-                  <div class="text-danger mt-1">{{ $message }}</div>
+                  <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
               </div>
               <div class="d-flex justify-content-end">
@@ -38,6 +52,236 @@
     </div>
   </div>
 
+  {{-- ================================================================
+       MODAL: Dados Demográficos Pendentes
+       Abre automaticamente quando o usuário é encontrado mas não tem
+       os dados demográficos preenchidos.
+  ================================================================ --}}
+  <div class="modal fade"
+       id="modalDemograficos"
+       tabindex="-1"
+       aria-labelledby="modalDemograficosLabel"
+       aria-modal="true"
+       role="dialog"
+       data-bs-backdrop="static"
+       data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+
+        <div class="modal-header bg-engaja text-white">
+          <h5 class="modal-title fw-bold" id="modalDemograficosLabel">
+            📋 Dados demográficos pendentes
+          </h5>
+        </div>
+
+        <div class="modal-body">
+          {{-- Banner identificando o usuário --}}
+          <div class="alert alert-info d-flex align-items-center gap-2 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-person-fill flex-shrink-0" viewBox="0 0 16 16">
+              <path d="M3 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>
+            </svg>
+            <div>
+              Preenchendo dados de: <strong>{{ session('demograficos_user_nome') }}</strong><br>
+              <small class="text-muted">Para confirmar a presença deste participante, preencha as informações abaixo.</small>
+            </div>
+          </div>
+
+          @if ($errors->any())
+            <div class="alert alert-danger">
+              <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                  <li>{{ $error }}</li>
+                @endforeach
+              </ul>
+            </div>
+          @endif
+
+          <form method="POST"
+                action="{{ route('presenca.demograficos', $atividade) }}"
+                id="form-demograficos-presenca">
+            @csrf
+
+            {{-- Token seguro do usuário (criptografado) --}}
+            <input type="hidden"
+                   name="user_token"
+                   value="{{ session('demograficos_user_token', old('user_token')) }}">
+
+            {{-- 1. Identidade de Gênero --}}
+            <div class="mb-3">
+              <label for="identidade_genero_qr" class="form-label fw-semibold">
+                Identidade de Gênero <span class="text-danger">*</span>
+              </label>
+              <select name="identidade_genero" id="identidade_genero_qr"
+                      class="form-select @error('identidade_genero') is-invalid @enderror"
+                      required onchange="toggleOutroQr(this, 'ig_outro_wrap_qr')">
+                <option value="" disabled selected>Selecione...</option>
+                <option value="Mulher Cisgênero"   {{ old('identidade_genero') == 'Mulher Cisgênero'   ? 'selected' : '' }}>Mulher Cisgênero</option>
+                <option value="Mulher Transsexual" {{ old('identidade_genero') == 'Mulher Transsexual' ? 'selected' : '' }}>Mulher Transsexual</option>
+                <option value="Homem Cisgênero"    {{ old('identidade_genero') == 'Homem Cisgênero'    ? 'selected' : '' }}>Homem Cisgênero</option>
+                <option value="Homem Transsexual"  {{ old('identidade_genero') == 'Homem Transsexual'  ? 'selected' : '' }}>Homem Transsexual</option>
+                <option value="Travesti"           {{ old('identidade_genero') == 'Travesti'           ? 'selected' : '' }}>Travesti</option>
+                <option value="Não binárie"        {{ old('identidade_genero') == 'Não binárie'        ? 'selected' : '' }}>Não binárie</option>
+                <option value="Prefiro não responder" {{ old('identidade_genero') == 'Prefiro não responder' ? 'selected' : '' }}>Prefiro não responder</option>
+                <option value="Outro"              {{ old('identidade_genero') == 'Outro'              ? 'selected' : '' }}>Outro</option>
+              </select>
+              @error('identidade_genero')
+                <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+              <div id="ig_outro_wrap_qr" class="mt-2" style="display:none">
+                <input type="text" name="identidade_genero_outro"
+                       class="form-control @error('identidade_genero_outro') is-invalid @enderror"
+                       placeholder="Especifique sua identidade de gênero"
+                       value="{{ old('identidade_genero_outro') }}">
+                @error('identidade_genero_outro')
+                  <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+              </div>
+            </div>
+
+            {{-- 2. Raça / Cor --}}
+            <div class="mb-3">
+              <label for="raca_cor_qr" class="form-label fw-semibold">
+                Raça / Cor <span class="text-danger">*</span>
+              </label>
+              <select name="raca_cor" id="raca_cor_qr"
+                      class="form-select @error('raca_cor') is-invalid @enderror"
+                      required>
+                <option value="" disabled selected>Selecione...</option>
+                <option value="Preta"                {{ old('raca_cor') == 'Preta'                ? 'selected' : '' }}>Preta</option>
+                <option value="Parda"                {{ old('raca_cor') == 'Parda'                ? 'selected' : '' }}>Parda</option>
+                <option value="Branca"               {{ old('raca_cor') == 'Branca'               ? 'selected' : '' }}>Branca</option>
+                <option value="Amarela"              {{ old('raca_cor') == 'Amarela'              ? 'selected' : '' }}>Amarela</option>
+                <option value="Indígena"             {{ old('raca_cor') == 'Indígena'             ? 'selected' : '' }}>Indígena</option>
+                <option value="Prefere não declarar" {{ old('raca_cor') == 'Prefere não declarar' ? 'selected' : '' }}>Prefere não declarar</option>
+              </select>
+              @error('raca_cor')
+                <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+            </div>
+
+            {{-- 3. Comunidade Tradicional --}}
+            <div class="mb-3">
+              <label for="comunidade_tradicional_qr" class="form-label fw-semibold">
+                Pertencimento a Povos ou Comunidades Tradicionais <span class="text-danger">*</span>
+              </label>
+              <select name="comunidade_tradicional" id="comunidade_tradicional_qr"
+                      class="form-select @error('comunidade_tradicional') is-invalid @enderror"
+                      required onchange="toggleOutroQr(this, 'ct_outro_wrap_qr')">
+                <option value="" disabled selected>Selecione...</option>
+                <option value="Não"                    {{ old('comunidade_tradicional') == 'Não'                    ? 'selected' : '' }}>Não</option>
+                <option value="Povos indígenas"        {{ old('comunidade_tradicional') == 'Povos indígenas'        ? 'selected' : '' }}>Povos indígenas</option>
+                <option value="Comunidades Quilombolas" {{ old('comunidade_tradicional') == 'Comunidades Quilombolas' ? 'selected' : '' }}>Comunidades Quilombolas</option>
+                <option value="Povos Ciganos"          {{ old('comunidade_tradicional') == 'Povos Ciganos'          ? 'selected' : '' }}>Povos Ciganos</option>
+                <option value="Ribeirinhos"            {{ old('comunidade_tradicional') == 'Ribeirinhos'            ? 'selected' : '' }}>Ribeirinhos</option>
+                <option value="Extrativistas"          {{ old('comunidade_tradicional') == 'Extrativistas'          ? 'selected' : '' }}>Extrativistas</option>
+                <option value="Outro"                  {{ old('comunidade_tradicional') == 'Outro'                  ? 'selected' : '' }}>Outro</option>
+              </select>
+              @error('comunidade_tradicional')
+                <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+              <div id="ct_outro_wrap_qr" class="mt-2" style="display:none">
+                <input type="text" name="comunidade_tradicional_outro"
+                       class="form-control @error('comunidade_tradicional_outro') is-invalid @enderror"
+                       placeholder="Especifique a comunidade tradicional"
+                       value="{{ old('comunidade_tradicional_outro') }}">
+                @error('comunidade_tradicional_outro')
+                  <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+              </div>
+            </div>
+
+            {{-- 4. Faixa Etária --}}
+            <div class="mb-3">
+              <label for="faixa_etaria_qr" class="form-label fw-semibold">
+                Faixa Etária <span class="text-danger">*</span>
+              </label>
+              <select name="faixa_etaria" id="faixa_etaria_qr"
+                      class="form-select @error('faixa_etaria') is-invalid @enderror"
+                      required>
+                <option value="" disabled selected>Selecione...</option>
+                <option value="Primeira infância (0 a 6 anos)"  {{ old('faixa_etaria') == 'Primeira infância (0 a 6 anos)'  ? 'selected' : '' }}>Primeira infância (0 a 6 anos)</option>
+                <option value="Criança (7 a 11 anos)"           {{ old('faixa_etaria') == 'Criança (7 a 11 anos)'           ? 'selected' : '' }}>Criança (7 a 11 anos)</option>
+                <option value="Adolescente (12 a 17 anos)"      {{ old('faixa_etaria') == 'Adolescente (12 a 17 anos)'      ? 'selected' : '' }}>Adolescente (12 a 17 anos)</option>
+                <option value="Adulto (18 a 59 anos)"           {{ old('faixa_etaria') == 'Adulto (18 a 59 anos)'           ? 'selected' : '' }}>Adulto (18 a 59 anos)</option>
+                <option value="Idoso (a partir dos 60 anos)"    {{ old('faixa_etaria') == 'Idoso (a partir dos 60 anos)'    ? 'selected' : '' }}>Idoso (a partir dos 60 anos)</option>
+              </select>
+              @error('faixa_etaria')
+                <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+            </div>
+
+            {{-- 5. PcD --}}
+            <div class="mb-3">
+              <label for="pcd_qr" class="form-label fw-semibold">
+                Pessoa com Deficiência (PcD) <span class="text-danger">*</span>
+              </label>
+              <select name="pcd" id="pcd_qr"
+                      class="form-select @error('pcd') is-invalid @enderror"
+                      required>
+                <option value="" disabled selected>Selecione...</option>
+                <option value="Não"         {{ old('pcd') == 'Não'         ? 'selected' : '' }}>Não</option>
+                <option value="Física"      {{ old('pcd') == 'Física'      ? 'selected' : '' }}>Física</option>
+                <option value="Auditiva"    {{ old('pcd') == 'Auditiva'    ? 'selected' : '' }}>Auditiva</option>
+                <option value="Visual"      {{ old('pcd') == 'Visual'      ? 'selected' : '' }}>Visual</option>
+                <option value="Intelectual" {{ old('pcd') == 'Intelectual' ? 'selected' : '' }}>Intelectual</option>
+                <option value="Múltipla"    {{ old('pcd') == 'Múltipla'    ? 'selected' : '' }}>Múltipla</option>
+              </select>
+              @error('pcd')
+                <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+            </div>
+
+            {{-- 6. Orientação Sexual --}}
+            <div class="mb-3">
+              <label for="orientacao_sexual_qr" class="form-label fw-semibold">
+                Orientação Sexual <span class="text-danger">*</span>
+              </label>
+              <select name="orientacao_sexual" id="orientacao_sexual_qr"
+                      class="form-select @error('orientacao_sexual') is-invalid @enderror"
+                      required onchange="toggleOutroQr(this, 'os_outra_wrap_qr')">
+                <option value="" disabled selected>Selecione...</option>
+                <option value="Lésbica"              {{ old('orientacao_sexual') == 'Lésbica'              ? 'selected' : '' }}>Lésbica</option>
+                <option value="Gay"                  {{ old('orientacao_sexual') == 'Gay'                  ? 'selected' : '' }}>Gay</option>
+                <option value="Bissexual"            {{ old('orientacao_sexual') == 'Bissexual'            ? 'selected' : '' }}>Bissexual</option>
+                <option value="Heterossexual"        {{ old('orientacao_sexual') == 'Heterossexual'        ? 'selected' : '' }}>Heterossexual</option>
+                <option value="Prefere não declarar" {{ old('orientacao_sexual') == 'Prefere não declarar' ? 'selected' : '' }}>Prefere não declarar</option>
+                <option value="Outra"                {{ old('orientacao_sexual') == 'Outra'                ? 'selected' : '' }}>Outra</option>
+              </select>
+              @error('orientacao_sexual')
+                <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+              <div id="os_outra_wrap_qr" class="mt-2" style="display:none">
+                <input type="text" name="orientacao_sexual_outra"
+                       class="form-control @error('orientacao_sexual_outra') is-invalid @enderror"
+                       placeholder="Especifique sua orientação sexual"
+                       value="{{ old('orientacao_sexual_outra') }}">
+                @error('orientacao_sexual_outra')
+                  <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+              </div>
+            </div>
+
+          </form>
+        </div>
+
+        <div class="modal-footer flex-column gap-2">
+          <button type="submit" form="form-demograficos-presenca" class="btn btn-engaja w-100 fw-bold">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check2-circle me-1" viewBox="0 0 16 16">
+              <path d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0"/>
+              <path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z"/>
+            </svg>
+            Salvar dados e confirmar presença
+          </button>
+          <small class="text-muted text-center">
+            Esses dados são utilizados apenas para fins estatísticos e de políticas públicas.
+          </small>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  {{-- Modal de confirmação de presença bem-sucedida --}}
   <div class="modal fade" id="confirmacaoPresencaModal" tabindex="-1" aria-labelledby="confirmacaoPresencaModalLabel"
     aria-hidden="true">
     @php
@@ -82,6 +326,7 @@
     </div>
   </div>
 
+  {{-- Modal de cadastro no sistema --}}
   <div class="modal fade" id="cadastroSistemaModal" tabindex="-1" aria-labelledby="cadastroSistemaModalLabel"
     aria-hidden="true">
     <div class="modal-dialog modal modal-dialog-centered mt-1">
@@ -114,6 +359,7 @@
     </div>
   </div>
 
+  {{-- Scripts de controle dos modais --}}
   @if(session('success-presenca'))
     <script>
       document.addEventListener('DOMContentLoaded', function () {
@@ -137,4 +383,57 @@
       });
     </script>
   @endif
+
+  @if(session('demograficos_pendentes'))
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const modalEl = document.getElementById('modalDemograficos');
+        if (modalEl) {
+          const modal = new bootstrap.Modal(modalEl);
+          modal.show();
+          restoreOutroFieldsQr();
+        }
+      });
+    </script>
+  @endif
+
+  {{-- Também abre o modal se houve erro de validação no formulário demográfico --}}
+  @if($errors->any() && old('user_token'))
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const modalEl = document.getElementById('modalDemograficos');
+        if (modalEl) {
+          const modal = new bootstrap.Modal(modalEl);
+          modal.show();
+          restoreOutroFieldsQr();
+        }
+      });
+    </script>
+  @endif
+
+  <script>
+    function toggleOutroQr(select, wrapId) {
+      const wrap = document.getElementById(wrapId);
+      if (!wrap) return;
+      const mostrar = select.value === 'Outro' || select.value === 'Outra';
+      wrap.style.display = mostrar ? 'block' : 'none';
+      const input = wrap.querySelector('input');
+      if (input) input.required = mostrar;
+    }
+
+    function restoreOutroFieldsQr() {
+      [
+        { selectId: 'identidade_genero_qr',      wrapId: 'ig_outro_wrap_qr' },
+        { selectId: 'comunidade_tradicional_qr',  wrapId: 'ct_outro_wrap_qr' },
+        { selectId: 'orientacao_sexual_qr',       wrapId: 'os_outra_wrap_qr' },
+      ].forEach(({ selectId, wrapId }) => {
+        const select = document.getElementById(selectId);
+        if (select && (select.value === 'Outro' || select.value === 'Outra')) {
+          const wrap = document.getElementById(wrapId);
+          if (wrap) wrap.style.display = 'block';
+        }
+      });
+    }
+  </script>
+
 @endsection
