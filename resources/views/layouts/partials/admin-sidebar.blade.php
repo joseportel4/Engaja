@@ -188,7 +188,7 @@
                   Usuários sem vínculo
                 </a>
                 <a class="admin-nav-link {{ request()->routeIs('curadoria.index') ? 'active' : '' }}" href="{{ route('curadoria.index') }}">
-                  Curadoria de Demográficos
+                  Curadoria de demográficos
                 </a>
               @endhasanyrole
             </div>
