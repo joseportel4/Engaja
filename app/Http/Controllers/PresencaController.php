@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Atividade;
 use App\Models\Inscricao;
 use App\Models\Participante;
+use App\Models\Presenca;
 use App\Models\User;
+use App\Models\CuradoriaDemografico;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Throwable;
 
 class PresencaController extends Controller
 {
@@ -29,8 +33,7 @@ class PresencaController extends Controller
             ->orWhere('telefone', $campo)
             ->first();
 
-        if(!$usuario && $participante)
-        {
+        if (!$usuario && $participante) {
             $usuario = User::find($participante->user_id);
         }
 
@@ -42,6 +45,7 @@ class PresencaController extends Controller
                 ->with('error', 'Seus dados não foram encontrados no sistema. Solicitamos, por gentileza, que registre sua presença no formulário impresso.')
                 ->with('show_register_button', true);
         }
+
         if ($usuario && !$participante) {
             $participante = Participante::where('user_id', $usuario->id)->first();
         }
@@ -178,24 +182,23 @@ class PresencaController extends Controller
             $presenca->avaliacao_respondida = false;
             $presenca->save();
         }
-        $dia = \Carbon\Carbon::parse($atividade->dia)
+
+        $dia = Carbon::parse($atividade->dia)
             ->locale('pt_BR')
-            ->translatedFormat('l, d \\d\\e F \\d\\e Y');
+            ->translatedFormat('l, d \d\e F \d\e Y');
 
         return redirect()
             ->route('presenca.confirmar', $atividade->id)
             ->with([
-                'usuario_nome' => $usuario->name,
-                'evento_nome' => $evento->nome,
-                'atividade_nome' => $atividade->descricao,
-                'dia' => $dia,
-                'success-presenca' => 'Presença confirmada com sucesso!',
-                // 'status_presenca_label' => $inscricao->ouvinte ? 'Ouvinte' : 'Presença',
-                // 'artigo_status_presenca' => $inscricao->ouvinte ? 'sua participação como ouvinte' : 'sua presença',
-                'status_presenca_label' => 'Sua presença foi confirmada!',
+                'usuario_nome'           => $usuario->name,
+                'evento_nome'            => $evento->nome,
+                'atividade_nome'         => $atividade->descricao,
+                'dia'                    => $dia,
+                'success-presenca'       => 'Presença confirmada com sucesso!',
+                'status_presenca_label'  => 'Sua presença foi confirmada!',
                 'artigo_status_presenca' => 'sua presença',
-                'avaliacao_token' => $presenca->avaliacao_respondida ? null : encrypt($presenca->id),
-                'avaliacao_disponivel' => ! $presenca->avaliacao_respondida,
+                'avaliacao_token'        => $presenca->avaliacao_respondida ? null : encrypt($presenca->id),
+                'avaliacao_disponivel'   => ! $presenca->avaliacao_respondida,
             ]);
     }
 }

@@ -367,6 +367,7 @@ Route::post('/eventos/cadastro-e-inscricao/store', [EventoController::class, 'st
 
 Route::get('/presenca/{atividade}/confirmar', [PresencaController::class, 'confirmarPresenca'])->name('presenca.confirmar');
 Route::post('/presenca/{atividade}/confirmar', [PresencaController::class, 'store'])->name('presenca.store');
+Route::post('/presenca/{atividade}/demograficos', [PresencaController::class, 'salvarDemograficosEConfirmar'])->name('presenca.demograficos');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/meus-certificados', [ProfileController::class, 'certificados'])->name('profile.certificados');
@@ -392,6 +393,10 @@ Route::middleware(['auth', 'role:administrador|gerente'])->group(function () {
     Route::put('/certificados/{certificado}', [CertificadoController::class, 'update'])
         ->whereNumber('certificado')
         ->name('certificados.update');
+
+    Route::get('/curadoria-demograficos', [\App\Http\Controllers\CuradoriaDemograficoController::class, 'index'])->name('curadoria.index');
+    Route::post('/curadoria-demograficos/{curadoria}/vincular', [\App\Http\Controllers\CuradoriaDemograficoController::class, 'vincular'])->name('curadoria.vincular');
+    Route::delete('/curadoria-demograficos/{curadoria}', [\App\Http\Controllers\CuradoriaDemograficoController::class, 'destroy'])->name('curadoria.destroy');
 });
 
 Route::get('/formulario-avaliacao/{avaliacao}', [AvaliacaoController::class, 'formularioAvaliacao'])->name('avaliacao.formulario');
