@@ -318,6 +318,10 @@ class AtividadeController extends Controller
 
         $user = auth()->user();
 
+        if (! $user->demograficosCompletos()) {
+            return back()->with('erro_demograficos', 'Para confirmar sua presença, é necessário preencher seus dados demográficos no Engaja. Por favor, preencha o formulário acima e tente novamente.');
+        }
+
         // 1) Garante Participante para o usuário
         $participante = Participante::firstOrCreate(['user_id' => $user->id], []);
 

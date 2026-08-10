@@ -36,7 +36,7 @@
                     @endphp
                     <div class="cpe-combobox" data-combobox>
                         <input type="hidden" name="remetente_user_id" value="{{ old('remetente_user_id') }}" data-combobox-value>
-                        <input type="text" class="cpe-field cpe-combobox__input" placeholder="Remetente"
+                        <input type="text" class="cpe-field cpe-combobox__input" placeholder="Nome ou CPF do remetente" id="remetente_user_id" name="remetente_user_id_input"
                             autocomplete="off" role="combobox" aria-expanded="false"
                             value="{{ $remetenteSelecionado?->nome_com_localidade }}" data-combobox-input>
                         <ul class="cpe-combobox__list" role="listbox" data-combobox-list>

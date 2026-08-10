@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Imports\ParticipantesPreviewImport;
+use App\Services\DemograficoNormalizerService;
 use App\Models\Atividade;
 use App\Models\Evento;
 use App\Models\Inscricao;
@@ -1146,7 +1147,10 @@ class InscricaoController extends Controller
             'organizacao' => ['organizacao', 'organização', 'escola_unidade', 'escola unidade', 'organizacao_nome'],
             'tag' => ['tag'],
             'data_entrada' => ['data_entrada', 'data entrada', 'data de entrada'],
+            ...DemograficoNormalizerService::headerAliases(),
         ];
+
+        $demograficoNormalizer = new DemograficoNormalizerService;
 
         $aliasLookup = [];
         foreach ($aliases as $field => $terms) {
@@ -1252,7 +1256,16 @@ class InscricaoController extends Controller
                         $organizacao = '';
                     }
 
-                    $rows->push([
+                    $demograficosRaw = [];
+                    foreach (DemograficoNormalizerService::headerAliases() as $campo => $campoAliases) {
+                        $demograficosRaw[$campo] = $this->sheetCellValue($sheet, $fieldToColumn[$campo] ?? null, $rowNumber);
+                        if ($demograficosRaw[$campo] === '') {
+                            $demograficosRaw[$campo] = null;
+                        }
+                    }
+                    $demograficosNormalizados = $demograficoNormalizer->normalizeRow($demograficosRaw);
+
+                    $rows->push(array_merge([
                         'nome' => $nome,
                         'email' => $email,
                         'cpf' => preg_replace('/\D+/', '', $cpfRaw) ?: null,
@@ -1266,7 +1279,7 @@ class InscricaoController extends Controller
                         'tag' => $tag !== '' ? $tag : null,
                         'tag_ok' => true,
                         'data_entrada' => $dataEntrada,
-                    ]);
+                    ], $demograficosNormalizados));
                 }
 
                 $score = $rows->filter(fn ($row) => trim((string) ($row['nome'] ?? '')) !== '' || trim((string) ($row['email'] ?? '')) !== '')->count();
@@ -1397,6 +1410,7 @@ class InscricaoController extends Controller
             'municipios' => $municipios,
             'organizacoes' => $organizacoes,
             'participanteTags' => $participanteTags,
+            'demograficos' => config('engaja.demograficos'),
             'usuariosExistentesCount' => $resumoImportacao['usuariosExistentesCount'],
             'usuariosNovosCount' => $resumoImportacao['usuariosNovosCount'],
             'origemImportacao' => $origemImportacao,
@@ -1610,6 +1624,45 @@ class InscricaoController extends Controller
                     ['evento_id', 'user_id'],
                     ['origem', 'updated_at']
                 );
+            }
+
+            // Persistir dados demográficos na tabela users.
+            // Os valores já foram normalizados pela preview (ParticipantesPreviewImport/parseParticipantesSpreadsheetFallback)
+            // Não normalizamos novamente aqui para evitar perda do texto original de "outro".
+            $demograficosConfig = config('engaja.demograficos', []);
+
+            foreach ($rows as $row) {
+                $email = strtolower(trim((string) ($row['email'] ?? '')));
+                if (! $email) {
+                    continue;
+                }
+                $user = $usersExistentes[$email] ?? null;
+                if (! $user) {
+                    continue;
+                }
+
+                $dadosDemograficos = [];
+                foreach ($demograficosConfig as $campo => $definicao) {
+                    $valor = $row[$campo] ?? null;
+                    if (! is_string($valor) || trim($valor) === '') {
+                        continue;
+                    }
+
+                    $dadosDemograficos[$campo] = $valor;
+
+                    // Ler também o campo_outro diretamente da sessão
+                    $campoOutro = $definicao['campo_outro'] ?? null;
+                    if ($campoOutro !== null) {
+                        $valorOutro = $row[$campoOutro] ?? null;
+                        $dadosDemograficos[$campoOutro] = is_string($valorOutro) && trim($valorOutro) !== ''
+                            ? $valorOutro
+                            : null;
+                    }
+                }
+
+                if (! empty($dadosDemograficos)) {
+                    $user->update($dadosDemograficos);
+                }
             }
 
             $userIds = $usersExistentes->pluck('id')->values();

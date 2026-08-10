@@ -190,6 +190,24 @@ class User extends Authenticatable
             ->implode(' - ');
     }
 
+    /**
+     * Verifica se todos os campos demográficos obrigatórios estão preenchidos.
+     */
+    public function demograficosCompletos(): bool
+    {
+        $camposObrigatorios = [
+            'identidade_genero',
+            'raca_cor',
+            'comunidade_tradicional',
+            'faixa_etaria',
+            'pcd',
+            'orientacao_sexual',
+        ];
+
+        return ! collect($camposObrigatorios)
+            ->some(fn($campo) => empty($this->$campo));
+    }
+
     protected static function booted(): void
     {
         static::created(function (User $user) {
