@@ -54,10 +54,10 @@
             }
 
             $columns = [
-                ['field' => 'nome', 'headerHtml' => evento_sort_link('Nome', 'nome'), 'flex' => 3, 'html' => true],
-                ['field' => 'periodo', 'headerHtml' => evento_sort_link('Período', 'periodo'), 'flex' => 1, 'html' => true],
-                ['field' => 'criado_por', 'headerHtml' => evento_sort_link('Criado por', 'criado_por'), 'flex' => 1],
-                ['field' => 'acoes', 'headerName' => 'Ações', 'flex' => 1, 'html' => true],
+                ['field' => 'nome', 'headerHtml' => evento_sort_link('Nome', 'nome'), 'flex' => 1, 'minWidth' => 300, 'html' => true],
+                ['field' => 'periodo', 'headerHtml' => evento_sort_link('Período', 'periodo'), 'width' => 90, 'minWidth' => 75, 'html' => true],
+                ['field' => 'criado_por', 'headerHtml' => evento_sort_link('Criado por', 'criado_por'), 'width' => 90, 'minWidth' => 75],
+                ['field' => 'acoes', 'headerName' => 'Ações', 'width' => 95, 'minWidth' => 85, 'html' => true, 'overflow' => 'visible'],
             ];
 
             $rows = $eventos->map(function ($ev) {
@@ -65,10 +65,12 @@
                 $checklistsMarcados = is_array($checklistSalvo) ? count($checklistSalvo) : null;
                 $isPlanejamentoIncompleto = $checklistsMarcados !== null && $checklistsMarcados < 13;
 
-                $nomeHtml = '<span class="fw-semibold">' . e($ev->nome) . '</span>';
+                $nomeHtml = '<div style="min-width: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="' . e($ev->nome) . '">'
+                    . '<span class="fw-semibold text-truncate d-block mw-100" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' . e($ev->nome) . '</span>';
                 if ($isPlanejamentoIncompleto) {
-                    $nomeHtml .= '<br><a href="' . route('eventos.edit', $ev) . '#checklist" class="badge bg-warning text-dark border-0 fw-normal text-decoration-none" style="font-size: 0.75rem;" title="Clique para retomar e concluir o checklist de planejamento (' . $checklistsMarcados . '/13 itens marcados).">⚠️ Planejamento incompleto</a>';
+                    $nomeHtml .= '<a href="' . route('eventos.edit', $ev) . '#checklist" class="badge bg-warning text-dark border-0 fw-normal text-decoration-none text-truncate d-inline-block mw-100" style="font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="Clique para retomar e concluir o checklist de planejamento (' . $checklistsMarcados . '/13 itens marcados).">⚠️ Planejamento incompleto</a>';
                 }
+                $nomeHtml .= '</div>';
 
                 $inicio = $ev->data_inicio ? \Carbon\Carbon::parse($ev->data_inicio)->format('d/m/Y') : null;
                 $fim = $ev->data_fim ? \Carbon\Carbon::parse($ev->data_fim)->format('d/m/Y') : null;
@@ -285,5 +287,6 @@
             syncGlobalState();
         });
     </script>
+
 @endpush
 @endsection
