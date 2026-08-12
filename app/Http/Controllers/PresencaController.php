@@ -7,7 +7,7 @@ use App\Models\Inscricao;
 use App\Models\Participante;
 use App\Models\Presenca;
 use App\Models\User;
-use App\Models\CuradoriaDemografico;
+
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Throwable;
@@ -50,16 +50,8 @@ class PresencaController extends Controller
             $participante = Participante::where('user_id', $usuario->id)->first();
         }
 
-        // Se o usuário ainda não tem dados completos, verifica se já preencheu na curadoria hoje/anteriormente
-        $temCuradoriaPendente = false;
+        // Só abre o modal se os dados demográficos estiverem incompletos na tabela users
         if ($usuario && ! $usuario->demograficosCompletos()) {
-            $temCuradoriaPendente = \App\Models\CuradoriaDemografico::where('user_id', $usuario->id)
-                ->where('vinculado', false)
-                ->exists();
-        }
-
-        // Só abre o modal se os dados estiverem incompletos E não houver uma curadoria já pendente
-        if ($usuario && ! $usuario->demograficosCompletos() && ! $temCuradoriaPendente) {
             return redirect()
                 ->back()
                 ->withInput()
@@ -114,9 +106,8 @@ class PresencaController extends Controller
                 ->with('error', 'Usuário não encontrado. Por favor, reinicie o processo.');
         }
 
-        // Salva os dados demográficos na tabela de curadoria
-        CuradoriaDemografico::create([
-            'user_id'                      => $usuario->id,
+        // Salva os dados demográficos diretamente na tabela users
+        $usuario->update([
             'identidade_genero'            => $request->identidade_genero,
             'identidade_genero_outro'      => $request->identidade_genero_outro,
             'raca_cor'                     => $request->raca_cor,

@@ -187,9 +187,8 @@
                 <a class="admin-nav-link {{ request()->routeIs('usuarios.sem-vinculo.*') ? 'active' : '' }}" href="{{ route('usuarios.sem-vinculo.index') }}">
                   Usuários sem vínculo
                 </a>
-                <a class="admin-nav-link {{ request()->routeIs('curadoria.index') ? 'active' : '' }}" href="{{ route('curadoria.index') }}">
-                  Curadoria de Demográficos
-                </a>
+
+
               @endhasanyrole
             </div>
           </div>
