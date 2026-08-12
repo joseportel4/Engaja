@@ -77,6 +77,7 @@
                 </div>
             </div>
         @endif
+        @include('cartas.shared._help_fab')
     </main>
 
     @include('cartas.shared._scripts')
