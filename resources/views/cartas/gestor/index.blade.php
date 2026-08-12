@@ -41,15 +41,11 @@
                             value="{{ $remetenteSelecionado?->nome_com_localidade }}" data-combobox-input>
                         <ul class="cpe-combobox__list" role="listbox" data-combobox-list>
                             @foreach($engajaUsers as $engajaUser)
-                                <?php $munPrioritario = $engajaUser->participante?->municipio?->isPrioritario(); ?>
                                 <?php $cpfDigits = preg_replace('/\D/', '', (string) $engajaUser->participante?->cpf); ?>
                                 <li class="cpe-combobox__option" role="option"
-                                    data-value="{{ $engajaUser->id }}" data-cpf="{{ $cpfDigits }}" data-label="{{ $engajaUser->nome_com_localidade }}{{ $munPrioritario ? ' (Prioritário)' : '' }}">
+                                    data-value="{{ $engajaUser->id }}" data-cpf="{{ $cpfDigits }}" data-label="{{ $engajaUser->nome_com_localidade }}">
                                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
                                         <span>{{ $engajaUser->nome_com_localidade }}</span>
-                                        @if($munPrioritario)
-                                            <span class="cpe-pill cpe-pill--priority" style="font-size: 10px; padding: 1px 6px;">★ Prioritário</span>
-                                        @endif
                                     </div>
                                 </li>
                             @endforeach
@@ -73,10 +69,10 @@
                     <span style="margin: 0; font-size: 16px; font-weight: 500; color: #222; background: #f4f4f4; padding: 4px 16px; border-radius: 999px;">{{ $cartas->total() }} cartas</span>
                 </div>
 
-                <form id="filterForm" method="GET" action="{{ route('cartas.dashboard') }}" style="display: flex; gap: 24px; align-items: stretch; flex-wrap: wrap; background: #fff; padding: 16px 20px; border-radius: 8px; border: 1px solid #eaeaea; box-shadow: 0 2px 4px rgba(0,0,0,0.02); width: 100%; justify-content: space-between;">
+                <form id="filterForm" method="GET" action="{{ route('cartas.dashboard') }}" style="display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; background: #fff; padding: 16px 20px; border-radius: 8px; border: 1px solid #eaeaea; box-shadow: 0 2px 4px rgba(0,0,0,0.02); width: 100%; justify-content: space-between;">
 
-                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; max-width: 300px;">
-                        <label for="municipio_id" style="font-size: 13px; font-weight: 600; color: #111;">Município do educando:</label>
+                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 180px;">
+                        <label for="municipio_id" style="font-size: 13px; font-weight: 600; color: #111; height: 20px; display: flex; align-items: center; white-space: nowrap;">Município do educando:</label>
                         <select id="municipio_id" name="municipio_id" style="height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #111;">
                             <option value="" style="color: #333;">Todos os municípios</option>
                             @foreach($municipios as $mun)
@@ -87,8 +83,8 @@
                         </select>
                     </div>
 
-                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 150px; max-width: 200px;">
-                        <label for="statusFilter" style="font-size: 13px; font-weight: 600; color: #111;">Status:</label>
+                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 140px; max-width: 180px;">
+                        <label for="statusFilter" style="font-size: 13px; font-weight: 600; color: #111; height: 20px; display: flex; align-items: center; white-space: nowrap;">Status:</label>
                         <select id="statusFilter" name="status" style="height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; background: #fff; color: #111;">
                             <option value="">Todos</option>
                             <option value="respondida" @selected(($statusFilter ?? '') === 'respondida')>Respondida</option>
@@ -98,10 +94,10 @@
                         </select>
                     </div>
 
-                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 2; min-width: 250px;">
-                        <label for="search_input" style="font-size: 13px; font-weight: 600; color: #111;">Pesquisa de Remetente ou Destinatário (nome ou CPF):</label>
+                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 2; min-width: 220px;">
+                        <label for="search_input" style="font-size: 13px; font-weight: 600; color: #111; height: 20px; display: flex; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Pesquisar por nome ou CPF do remetente ou destinatário">Buscar por nome ou CPF:</label>
                         <div style="position: relative; height: 40px; display: flex; align-items: center;">
-                            <input id="search_input" type="search" name="q" value="{{ $search }}" placeholder="Digite o nome ou CPF..." style="height: 100%; width: 100%; box-sizing: border-box; padding: 0 36px 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; color: #111;">
+                            <input id="search_input" type="search" name="q" value="{{ $search }}" placeholder="Nome ou CPF do remetente ou destinatário..." style="height: 100%; width: 100%; box-sizing: border-box; padding: 0 36px 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; color: #111;">
                             <button type="submit" aria-label="Pesquisar" style="position: absolute; right: 8px; background: none; border: none; color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 100%;">
                                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </button>
@@ -109,8 +105,8 @@
                         <span style="font-size: 11px; color: #666;">Instantâneo (digite 2 letras)</span>
                     </div>
 
-                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; justify-content: flex-start;">
-                        <label style="font-size: 13px; font-weight: 600; color: #111;">Ações:</label>
+                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 180px; justify-content: flex-start;">
+                        <label style="font-size: 13px; font-weight: 600; color: #111; height: 20px; display: flex; align-items: center; white-space: nowrap;">Ações:</label>
                         <div style="display: flex; flex-direction: column; gap: 4px;">
                             <button type="submit" id="btnDownloadBatch" form="filterForm" formaction="{{ route('cartas.download-batch') }}" style="display: flex; align-items: center; justify-content: center; white-space: nowrap; padding: 0 16px; border-radius: 6px; height: 40px; box-sizing: border-box; text-decoration: none; background-color: var(--cartas-purple, #6a1b9a); color: white; font-weight: 500; font-size: 14px; border: none; cursor: pointer; transition: opacity 0.2s;">
                                 Baixar Cartas PDF
