@@ -154,12 +154,12 @@
     <style>
         .cpe-manager {
             display: grid;
-            grid-template-columns: minmax(420px, 1fr) minmax(520px, 1fr);
+            grid-template-columns: minmax(320px, 26%) minmax(0, 1fr);
         }
 
         .cpe-manager__left {
             min-height: 100%;
-            padding: 0 72px;
+            padding: 0 36px;
             display: flex;
             flex-direction: column;
             border-right: 1px solid #dfd7d2;

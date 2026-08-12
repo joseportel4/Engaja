@@ -418,6 +418,11 @@
         background: rgba(150, 2, 199, 0.12);
     }
 
+    .cpe-pill--red {
+        color: #b42318;
+        background: rgba(180, 35, 24, 0.12);
+    }
+
     .cpe-pill--priority {
         color: #9a3412;
         background: #ffedd5;
