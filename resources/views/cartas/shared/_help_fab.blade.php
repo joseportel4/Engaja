@@ -111,7 +111,7 @@
         position: absolute;
         bottom: calc(100% + 14px);
         right: 0;
-        width: 340px;
+        width: 400px;
         background: #fff;
         border-radius: 14px;
         padding: 22px;
