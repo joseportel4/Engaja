@@ -539,7 +539,7 @@
 
         .cpe-letter-stage > .cpe-verification-box,
         .cpe-letter-stage > .cpe-verification-note {
-            margin: 8px 0 0;
+
         }
 
         .cpe-letter-stage > .cpe-verification-note .cpe-button {

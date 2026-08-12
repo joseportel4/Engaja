@@ -54,9 +54,7 @@
             }
 
             $columns = [
-                ['field' => 'nome', 'headerHtml' => evento_sort_link('Nome', 'nome'), 'flex' => 2, 'html' => true],
-                ['field' => 'subacao', 'headerName' => 'Sub-Ação', 'flex' => 2, 'html' => true],
-                ['field' => 'tipo', 'headerHtml' => evento_sort_link('Tipo', 'tipo'), 'flex' => 1],
+                ['field' => 'nome', 'headerHtml' => evento_sort_link('Nome', 'nome'), 'flex' => 3, 'html' => true],
                 ['field' => 'periodo', 'headerHtml' => evento_sort_link('Período', 'periodo'), 'flex' => 1, 'html' => true],
                 ['field' => 'criado_por', 'headerHtml' => evento_sort_link('Criado por', 'criado_por'), 'flex' => 1],
                 ['field' => 'acoes', 'headerName' => 'Ações', 'flex' => 1, 'html' => true],
@@ -70,14 +68,6 @@
                 $nomeHtml = '<span class="fw-semibold">' . e($ev->nome) . '</span>';
                 if ($isPlanejamentoIncompleto) {
                     $nomeHtml .= '<br><a href="' . route('eventos.edit', $ev) . '#checklist" class="badge bg-warning text-dark border-0 fw-normal text-decoration-none" style="font-size: 0.75rem;" title="Clique para retomar e concluir o checklist de planejamento (' . $checklistsMarcados . '/13 itens marcados).">⚠️ Planejamento incompleto</a>';
-                }
-
-                if ($ev->subacao) {
-                    $subacaoHtml = '<span class="badge bg-secondary-subtle text-secondary border fw-normal" title="' . e($ev->subacao) . '">' . e(\Illuminate\Support\Str::limit($ev->subacao, 45)) . '</span>';
-                } elseif ($ev->acao_geral) {
-                    $subacaoHtml = '<small class="text-muted">Ação Geral ' . e($ev->acao_geral) . '</small>';
-                } else {
-                    $subacaoHtml = '<span class="text-muted">-</span>';
                 }
 
                 $inicio = $ev->data_inicio ? \Carbon\Carbon::parse($ev->data_inicio)->format('d/m/Y') : null;
@@ -124,8 +114,6 @@
                 return [
                     'id' => $ev->id,
                     'nome' => $nomeHtml,
-                    'subacao' => $subacaoHtml,
-                    'tipo' => $ev->tipo ?? '-',
                     'periodo' => $periodoHtml,
                     'criado_por' => $ev->user->name ?? '-',
                     'acoes' => $acoesHtml,
