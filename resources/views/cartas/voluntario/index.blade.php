@@ -31,7 +31,7 @@
                     </div>
                 </div>
             @else
-                <div class="cpe-stack" data-cpe-stack tabindex="0" role="group" aria-label="Suas cartas — use as setas do teclado para navegar">
+                <div class="cpe-envelope-grid" role="region" aria-label="Suas cartas">
                     @foreach($cartas as $carta)
                         @php
                             $primeira = $carta->mensagens->sortBy('rodada')->first();
@@ -53,7 +53,10 @@
                                 @endif
                             </a>
                             <div class="cpe-envelope__meta">
-                                <span class="cpe-envelope__party">De: {{ $carta->educando?->nome ?? 'Remetente' }}<br>Para: {{ Auth::user()->name }}</span>
+                                <div class="cpe-envelope__party">
+                                    <span class="cpe-envelope__line" title="De: {{ $carta->educando?->nome ?? 'Remetente' }}">De: {{ $carta->educando?->nome ?? 'Remetente' }}</span>
+                                    <span class="cpe-envelope__line" title="Para: {{ Auth::user()->name }}">Para: {{ Auth::user()->name }}</span>
+                                </div>
                                 <span class="cpe-envelope__date">{{ $dataCarta }}</span>
                             </div>
                         </article>
@@ -87,15 +90,11 @@
             padding: 0 28px 56px;
             display: flex;
             flex-direction: column;
-            /* Contem o carrossel full-bleed (100vw) na largura real da
-               viewport. Precisa ficar aqui, e nao no __content (940px),
-               senao as cartas das pontas seriam cortadas pela coluna. */
-            overflow-x: clip;
         }
 
         .cpe-volunteer__content {
-            width: min(100%, 940px);
-            margin: 120px auto 0;
+            width: min(100%, 1200px);
+            margin: 90px auto 0;
             display: flex;
             flex: 1;
             flex-direction: column;
@@ -117,82 +116,29 @@
             line-height: 1;
         }
 
-        /* --- Carrossel de envelopes (full-bleed) ---
-           Sem scroll nativo: cada envelope e posicionado por transform a
-           partir do centro, conforme sua distancia (--cpe-offset) ate o
-           item em foco. Isso mantem o ativo sempre no centro exato da tela
-           e elimina as condicoes de corrida entre scroll-snap e scrollTo
-           que vinham quebrando a navegacao. */
-        .cpe-stack {
-            /* O deslocamento de cada carta nao e linear (ver POSICOES no JS):
-               as pontas sao comprimidas para caberem inteiras na tela. A carta
-               mais externa termina em vw/2 + 1.15 * --cpe-card-w, entao manter
-               a carta em <=43vw garante que nenhuma das 5 seja cortada — e o
-               fade de entrada/saida acontece todo dentro da area visivel.
-               O teto de 600px acompanha a arte do envelope (606px), evitando
-               ampliar a imagem alem do tamanho nativo. */
-            --cpe-card-w: min(43vw, 600px);
-            position: relative;
-            width: 100vw;
-            margin-left: calc(50% - 50vw);
-            margin-right: calc(50% - 50vw);
-            height: calc(var(--cpe-card-w) * 326 / 606 + 96px);
-            overflow: hidden;
-            touch-action: pan-y;
-        }
-
-        .cpe-stack:focus-visible {
-            outline: 2px solid var(--cpe-purple);
-            outline-offset: -4px;
+        /* --- Lista estática de cartas (até 3 cartas por fileira) --- */
+        .cpe-envelope-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 32px 20px;
+            width: 100%;
+            margin: 0 auto;
         }
 
         .cpe-envelope {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: var(--cpe-card-w);
+            position: relative;
+            width: min(100%, 360px);
             aspect-ratio: 606 / 326;
             container-type: inline-size;
-            transform: translate(-50%, -50%) translateX(calc(var(--cpe-x, 0) * var(--cpe-card-w))) scale(.5);
-            opacity: 0;
-            z-index: 1;
-            transition: transform .45s cubic-bezier(.22, .61, .36, 1), opacity .45s ease;
-            will-change: transform, opacity;
+            filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.12));
+            transition: transform .25s ease, filter .25s ease;
         }
 
-        /* Vizinhos: ficam atras e sao parcialmente cobertos pelo item em foco.
-           A profundidade vem so de escala + opacidade (sem blur). */
-        .cpe-envelope[data-cpe-dist="1"] {
-            transform: translate(-50%, -50%) translateX(calc(var(--cpe-x) * var(--cpe-card-w))) scale(.84);
-            opacity: .7;
-            z-index: 2;
-        }
-
-        .cpe-envelope[data-cpe-dist="2"] {
-            transform: translate(-50%, -50%) translateX(calc(var(--cpe-x) * var(--cpe-card-w))) scale(.58);
-            opacity: .45;
-            z-index: 1;
-        }
-
-        /* Item em foco: centro exato da tela, por cima dos vizinhos. */
-        .cpe-envelope.is-active {
-            transform: translate(-50%, -50%) scale(1);
-            opacity: 1;
-            z-index: 3;
-        }
-
-        /* Fora da janela de 5: fade out deslizando para fora do carrossel. */
-        .cpe-envelope[data-cpe-hidden] {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .cpe-envelope:not(.is-active) {
-            cursor: pointer;
-        }
-
-        .cpe-envelope:not(.is-active) .cpe-envelope__open {
-            pointer-events: none;
+        .cpe-envelope:hover {
+            transform: translateY(-4px);
+            filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.18));
         }
 
         .cpe-envelope__bg {
@@ -259,32 +205,39 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            gap: 12px;
+            gap: 8px;
             color: #008BBC;
             font-weight: 500;
-            line-height: 1.2;
+            line-height: 1.25;
+            overflow: hidden;
         }
 
         .cpe-envelope__party {
             font-size: clamp(11px, 2.64cqi, 16px);
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .cpe-envelope__line {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+            max-width: 100%;
         }
 
         .cpe-envelope__date {
             font-size: clamp(11px, 2.64cqi, 16px);
             text-align: right;
             white-space: nowrap;
-        }
-
-        /* O transform carrega o posicionamento do carrossel, entao aqui so
-           removemos a animacao — nunca o transform em si. */
-        @media (prefers-reduced-motion: reduce) {
-            .cpe-envelope {
-                transition: none;
-            }
+            flex-shrink: 0;
         }
 
         .cpe-volunteer h1 {
-            margin: 0 0 40px;
+            margin: 0 0 20px;
             text-align: center;
             font-size: 32px;
             font-weight: 600;
@@ -400,11 +353,8 @@
                 margin-top: 60px;
             }
 
-            /* Em telas estreitas nao ha espaco para as 5 cartas inteiras; a
-               carta em foco tem prioridade e as extremas sangram na borda. */
-            .cpe-stack {
-                --cpe-card-w: min(76vw, 320px);
-                height: calc(var(--cpe-card-w) * 326 / 606 + 64px);
+            .cpe-envelope-grid {
+                gap: 20px;
             }
 
             .cpe-modal-actions--three {
@@ -412,141 +362,4 @@
             }
         }
     </style>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const stack = document.querySelector('[data-cpe-stack]');
-            if (!stack) {
-                return;
-            }
-
-            const cards = Array.from(stack.querySelectorAll('.cpe-envelope'));
-            if (!cards.length) {
-                return;
-            }
-
-            // Quantos envelopes aparecem de cada lado do que esta em foco:
-            // 2 + 1 + 2 = 5 renderizados simultaneamente.
-            const LADO = 2;
-
-            // Deslocamento de cada carta ate o centro, em larguras de carta,
-            // indexado pela distancia (0 = em foco, 3 = fora da janela).
-            // Nao e linear de proposito: comprimir as pontas e o que permite
-            // aumentar a carta em foco sem que as extremas saiam da tela.
-            const POSICOES = [0, 0.63, 0.86, 1.12];
-            const ultimo = cards.length - 1;
-            const limitar = (i) => Math.max(0, Math.min(ultimo, i));
-            let indice = 0;
-
-            /**
-             * Reposiciona todos os envelopes em funcao do indice em foco.
-             * O CSS cuida da transicao (fade in/out, escala e deslocamento);
-             * aqui so declaramos a distancia de cada carta ate o centro.
-             */
-            const aplicar = () => {
-                cards.forEach((card, i) => {
-                    const offset = i - indice;
-                    const distancia = Math.abs(offset);
-                    const visivel = distancia <= LADO;
-                    const ativo = offset === 0;
-
-                    // Cartas fora da janela param na posicao de borda (LADO + 1)
-                    // e ficam invisiveis: ao entrar/sair da janela elas deslizam
-                    // de la, o que produz o fade in/out nas pontas.
-                    const banda = Math.min(distancia, LADO + 1);
-
-                    card.style.setProperty('--cpe-x', POSICOES[banda] * Math.sign(offset));
-                    card.dataset.cpeDist = String(banda);
-                    card.classList.toggle('is-active', ativo);
-                    card.setAttribute('aria-hidden', visivel ? 'false' : 'true');
-
-                    if (visivel) {
-                        delete card.dataset.cpeHidden;
-                    } else {
-                        card.dataset.cpeHidden = '';
-                    }
-
-                    // So a carta em foco e acionavel; as demais recebem clique
-                    // para virem ao centro (ver handler abaixo).
-                    const link = card.querySelector('.cpe-envelope__open');
-                    if (link) {
-                        link.tabIndex = ativo ? 0 : -1;
-                    }
-                });
-            };
-
-            const irPara = (i) => {
-                const alvo = limitar(i);
-                if (alvo === indice) {
-                    return;
-                }
-                indice = alvo;
-                aplicar();
-            };
-
-            // Roda do mouse / trackpad: um passo por "clique" (usa o eixo de
-            // maior magnitude — deltaY na roda comum, deltaX em gestos
-            // horizontais — so a direcao importa, nunca a magnitude, que varia
-            // por dispositivo/navegador).
-            const ESPERA = 90; // ms
-            let ultimoGiro = 0;
-            stack.addEventListener('wheel', (event) => {
-                // Sempre cancelado: com o cursor sobre o carrossel a rolagem
-                // fica presa a ele, inclusive nos extremos — o gesto nunca
-                // vaza para a pagina.
-                event.preventDefault();
-
-                const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-                const direcao = Math.sign(delta);
-                if (direcao === 0) {
-                    return;
-                }
-                const agora = event.timeStamp || performance.now();
-                if (agora - ultimoGiro < ESPERA) {
-                    return;
-                }
-                ultimoGiro = agora;
-                irPara(indice + direcao);
-            }, { passive: false });
-
-            stack.addEventListener('keydown', (event) => {
-                if (event.key === 'ArrowRight') {
-                    event.preventDefault();
-                    irPara(indice + 1);
-                } else if (event.key === 'ArrowLeft') {
-                    event.preventDefault();
-                    irPara(indice - 1);
-                }
-            });
-
-            // Clique em um vizinho traz ele para o centro (o link "Abrir carta"
-            // so responde na carta em foco, via pointer-events no CSS).
-            cards.forEach((card, i) => {
-                card.addEventListener('click', (event) => {
-                    if (i !== indice) {
-                        event.preventDefault();
-                        irPara(i);
-                    }
-                });
-            });
-
-            let toqueX = null;
-            stack.addEventListener('touchstart', (event) => {
-                toqueX = event.touches[0].clientX;
-            }, { passive: true });
-
-            stack.addEventListener('touchend', (event) => {
-                if (toqueX === null) {
-                    return;
-                }
-                const dx = event.changedTouches[0].clientX - toqueX;
-                toqueX = null;
-                if (Math.abs(dx) > 40) {
-                    irPara(indice + (dx < 0 ? 1 : -1));
-                }
-            }, { passive: true });
-
-            aplicar();
-        });
-    </script>
 @endsection

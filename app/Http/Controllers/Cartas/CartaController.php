@@ -787,7 +787,10 @@ class CartaController extends Controller
             Carta::STATUS_AGUARDANDO_VOLUNTARIO => 0,
             Carta::STATUS_AGUARDANDO_AJUSTE => 1,
         ];
-        $cartas = $cartas->sortBy(fn (Carta $carta) => $prioridade[$carta->status] ?? 2)->values();
+        $cartas = $cartas->sortBy(fn (Carta $carta) => [
+            $prioridade[$carta->status] ?? 2,
+            -($carta->updated_at?->timestamp ?? $carta->created_at?->timestamp ?? 0),
+        ])->values();
 
         $destinatarios = $this->engajaUsersQuery()->limit(80)->get();
 

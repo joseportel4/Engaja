@@ -118,10 +118,11 @@
                     @php($destinatarioPanelNome = $mensagem->destinatarioUsuario?->nome ?? $mensagem->destinatarioParticipante?->nome ?? 'Destinatário')
                     <div class="cpe-letter-stage">
                         <div class="cpe-letter-header">
-                            <span class="cpe-letter-header__party">
-                                De: {{ $remetentePanelNome }}<br>Para: {{ $destinatarioPanelNome }}
+                            <div class="cpe-letter-header__party">
+                                <span class="cpe-letter-header__line" title="De: {{ $remetentePanelNome }}">De: {{ $remetentePanelNome }}</span>
+                                <span class="cpe-letter-header__line" title="Para: {{ $destinatarioPanelNome }}">Para: {{ $destinatarioPanelNome }}</span>
                                 <span class="cpe-letter-header__date">{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y') }}</span>
-                            </span>
+                            </div>
 
                             @if(! ($gestor && $mensagem->status === 'aguardando_verificacao'))
                                 <div class="cpe-letter-actions">
@@ -538,9 +539,7 @@
 
         .cpe-letter-stage > .cpe-verification-box,
         .cpe-letter-stage > .cpe-verification-note {
-            border-top: 0;
-            margin: -12px 0 0;
-            padding-top: 0;
+            margin: 8px 0 0;
         }
 
         .cpe-letter-stage > .cpe-verification-note .cpe-button {
@@ -571,11 +570,24 @@
 
         .cpe-letter-header__party {
             min-width: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .cpe-letter-header__line {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+            max-width: 100%;
         }
 
         .cpe-letter-header__date {
             display: block;
             margin-top: 4px;
+            white-space: nowrap;
         }
 
         .cpe-conversation .cpe-letter-preview--media {
@@ -727,7 +739,7 @@
             border: 1px solid #dfd8d3;
             border-radius: 8px;
             background: #faf8f6;
-            padding: 16px;
+            padding: 18px 20px;
             display: grid;
             gap: 10px;
             margin: 14px 0;
