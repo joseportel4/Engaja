@@ -261,6 +261,10 @@
         </aside>
 
         @include('cartas.shared._user-menu')
+
+        @unless($gestor)
+            @include('cartas.shared._help_fab')
+        @endunless
     </main>
 
     @if($gestor)
