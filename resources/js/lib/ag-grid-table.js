@@ -102,7 +102,9 @@ const buildColumnDefs = (columns, rowClassField) =>
                 alignItems: "center",
                 justifyContent: ALIGN_TO_JUSTIFY[col.align] ?? "flex-start",
                 height: "100%",
-                overflow: "visible",
+                minWidth: "0",
+                width: "100%",
+                overflow: col.overflow ?? "hidden",
                 // O tema do AG Grid aplica line-height pensado pra texto de uma
                 // linha só; quando o HTML da célula tem 2+ linhas (ex.: data e
                 // "até X" embaixo), isso dobra a altura do conteúdo e o conteúdo
@@ -163,6 +165,9 @@ const initTable = (el) => {
         domLayout,
         rowHeight: hasHtmlColumn ? 52 : undefined,
         suppressCellFocus: true,
+        autoSizeStrategy: {
+            type: "fitGridWidth",
+        },
         tooltipShowMode: "whenTruncated",
         tooltipShowDelay: 300,
         localeText: {
@@ -175,6 +180,17 @@ const initTable = (el) => {
             next: "Próxima",
             last: "Última",
         },
+        onGridReady: (event) => {
+            event.api.sizeColumnsToFit();
+            if (rowSelectionMode && selectedIds.length) {
+                event.api.forEachNode((node) => {
+                    if (selectedIds.includes(String(node.data?.[idField]))) {
+                        node.setSelected(true);
+                    }
+                });
+            }
+            el.dispatchEvent(new CustomEvent("datatable:ready", { detail: { api: event.api } }));
+        },
     };
 
     if (rowSelectionMode) {
@@ -182,6 +198,12 @@ const initTable = (el) => {
             mode: rowSelectionMode === "multiple" ? "multiRow" : "singleRow",
             checkboxes: true,
             headerCheckbox: rowSelectionMode === "multiple",
+        };
+        gridOptions.selectionColumnDef = {
+            width: 38,
+            minWidth: 38,
+            maxWidth: 38,
+            resizable: false,
         };
         gridOptions.getRowId = (params) => String(params.data?.[idField]);
 
@@ -194,22 +216,6 @@ const initTable = (el) => {
             el.dispatchEvent(
                 new CustomEvent("datatable:selection-changed", { detail: { rows: selectedRows } }),
             );
-        };
-
-        // Dispara um evento próprio porque a ordem entre o script inline da
-        // página e a inicialização (assíncrona) do AG Grid não é garantida —
-        // páginas que precisam agir assim que o grid estiver pronto (ex.:
-        // pré-selecionar linhas a partir do sessionStorage) escutam isso em
-        // vez de assumir que `el._agGridApi` já existe.
-        gridOptions.onGridReady = (event) => {
-            if (selectedIds.length) {
-                event.api.forEachNode((node) => {
-                    if (selectedIds.includes(String(node.data?.[idField]))) {
-                        node.setSelected(true);
-                    }
-                });
-            }
-            el.dispatchEvent(new CustomEvent("datatable:ready", { detail: { api: event.api } }));
         };
     }
 
