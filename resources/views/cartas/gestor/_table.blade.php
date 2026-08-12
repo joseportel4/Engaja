@@ -20,7 +20,7 @@
                         $ultimoStatus = $carta->ultimaMensagem?->status ?? $carta->status;
                         $statusClass = match (true) {
                             $carta->status === 'respondida' => 'cpe-pill--green',
-                            $carta->status === 'aguardando_ajuste' || $ultimoStatus === 'ajuste_solicitado' => 'cpe-pill--purple',
+                            $carta->status === 'aguardando_ajuste' || $ultimoStatus === 'ajuste_solicitado' => 'cpe-pill--red',
                             str_contains($ultimoStatus, 'verificacao') => 'cpe-pill--yellow',
                             default => 'cpe-pill--blue',
                         };
