@@ -24,11 +24,6 @@
                 @if($gestor && $carta->educando?->municipio)
                     <div style="margin-top: 8px; margin-bottom: 12px; font-size: 14px; color: #444; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <span>Remetente: <strong>{{ $carta->educando->nome }}</strong> ({{ collect([$carta->educando->municipio->nome, $carta->educando->municipio->estado?->sigla])->filter()->implode(' - ') }})</span>
-                        @if($carta->educando->municipio->isPrioritario())
-                            <span class="cpe-pill cpe-pill--priority" title="Município Prioritário ({{ $carta->educando->municipio->estado?->regiao?->nome }})">
-                                ★ Prioritário
-                            </span>
-                        @endif
                     </div>
                 @endif
 
@@ -61,7 +56,7 @@
                             $statusClass = match (true) {
                                 str_starts_with($statusLabel, 'Respondida') || $statusLabel === 'Recebida' => 'cpe-pill--green',
                                 $statusLabel === 'Em preparação' => 'cpe-pill--yellow',
-                                $statusLabel === 'Ajuste solicitado' => 'cpe-pill--purple',
+                                $statusLabel === 'Ajuste solicitado' => 'cpe-pill--red',
                                 default => 'cpe-pill--blue',
                             };
 
@@ -123,9 +118,59 @@
                     @php($destinatarioPanelNome = $mensagem->destinatarioUsuario?->nome ?? $mensagem->destinatarioParticipante?->nome ?? 'Destinatário')
                     <div class="cpe-letter-stage">
                         <div class="cpe-letter-header">
-                            <span class="cpe-letter-header__party">De: {{ $remetentePanelNome }}<br>Para: {{ $destinatarioPanelNome }}</span>
-                            <span class="cpe-letter-header__date">{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y') }}</span>
+                            <div class="cpe-letter-header__party">
+                                <span class="cpe-letter-header__line" title="De: {{ $remetentePanelNome }}">De: {{ $remetentePanelNome }}</span>
+                                <span class="cpe-letter-header__line" title="Para: {{ $destinatarioPanelNome }}">Para: {{ $destinatarioPanelNome }}</span>
+                                <span class="cpe-letter-header__date">{{ optional($mensagem->enviada_em ?? $mensagem->created_at)->format('d/m/Y') }}</span>
+                            </div>
+
+                            @if(! ($gestor && $mensagem->status === 'aguardando_verificacao'))
+                                <div class="cpe-letter-actions">
+                                    @if($mensagem->anexo_original_path || $mensagem->arquivo_final_path)
+                                        <button type="button" class="cpe-button cpe-button--ghost" data-print-src="{{ route('cartas.mensagens.preview', $mensagem) }}">Imprimir</button>
+                                    @else
+                                        <button type="button" class="cpe-button cpe-button--ghost">Imprimir</button>
+                                    @endif
+
+                                    @if($loop->last)
+                                        @if($gestor)
+                                            @if($carta->podeEducandoEnviar())
+                                                <button type="button" class="cpe-button" data-modal-open="addCartaModal">Adicionar carta</button>
+                                            @endif
+                                        @else
+                                            @if($carta->podeVoluntarioEnviar())
+                                                <button type="button" class="cpe-button" data-modal-open="respondCartaModal">Responder {{ $remetentePrimeiroNome }}</button>
+                                            @endif
+                                        @endif
+                                    @endif
+                                </div>
+                            @endif
                         </div>
+
+                        @if($gestor && $mensagem->status === 'aguardando_verificacao')
+                            <div class="cpe-verification-box">
+                                <form method="POST" class="cpe-adjustment-form">
+                                    @csrf
+                                    <textarea name="parecer_verificacao" class="cpe-textarea" placeholder="Informe o ajuste solicitado ao voluntário, caso seja necessário."></textarea>
+                                    <div class="cpe-letter-actions">
+                                        <button type="button" class="cpe-button cpe-button--ghost" data-aside-close>Fechar</button>
+                                        <button type="submit" formaction="{{ route('cartas.mensagens.adjustment', $mensagem) }}" class="cpe-button cpe-button--ghost">Solicitar ajuste</button>
+                                        <button type="submit" formaction="{{ route('cartas.mensagens.approve', $mensagem) }}" class="cpe-button">Aprovar resposta</button>
+                                    </div>
+                                </form>
+                            </div>
+                        @elseif($mensagem->status === 'ajuste_solicitado')
+                            <div class="cpe-verification-note">
+                                <strong>Ajuste solicitado:</strong>
+                                <span>{{ $mensagem->parecer_verificacao ?: 'Revise sua resposta e envie novamente para verificação.' }}</span>
+
+                                @if(! $gestor && $mensagem->isEditavelPor(Auth::user()))
+                                    <button type="button" class="cpe-button" data-aside-open="aside-adjustMensagem-{{ $mensagem->id }}">
+                                        Realizar ajuste
+                                    </button>
+                                @endif
+                            </div>
+                        @endif
 
                         @if($mensagem->anexo_original_path || $mensagem->arquivo_final_path)
                             @if(str_starts_with((string) $mensagemMime, 'image/'))
@@ -143,53 +188,6 @@
                             <div class="cpe-letter-preview cpe-aside-preview">{{ $mensagem->texto ?? 'Carta sem visualização disponível.' }}</div>
                         @endif
                     </div>
-
-                    @if(! ($gestor && $mensagem->status === 'aguardando_verificacao'))
-                        <div class="cpe-modal-actions">
-                            @if($mensagem->anexo_original_path || $mensagem->arquivo_final_path)
-                                <button type="button" class="cpe-button cpe-button--ghost" data-print-src="{{ route('cartas.mensagens.preview', $mensagem) }}">Imprimir</button>
-                            @else
-                                <button type="button" class="cpe-button cpe-button--ghost">Imprimir</button>
-                            @endif
-
-                            @if($loop->last)
-                                @if($gestor)
-                                    @if($carta->podeEducandoEnviar())
-                                        <button type="button" class="cpe-button" data-modal-open="addCartaModal">Adicionar carta</button>
-                                    @endif
-                                @else
-                                    @if($carta->podeVoluntarioEnviar())
-                                        <button type="button" class="cpe-button" data-modal-open="respondCartaModal">Responder {{ $remetentePrimeiroNome }}</button>
-                                    @endif
-                                @endif
-                            @endif
-                        </div>
-                    @endif
-
-                    @if($gestor && $mensagem->status === 'aguardando_verificacao')
-                        <div class="cpe-verification-box">
-                            <form method="POST" class="cpe-adjustment-form">
-                                @csrf
-                                <textarea name="parecer_verificacao" class="cpe-textarea" placeholder="Informe o ajuste solicitado ao voluntário, caso seja necessário."></textarea>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
-                                    <button type="button" class="cpe-button cpe-button--ghost" data-aside-close>Fechar</button>
-                                    <button type="submit" formaction="{{ route('cartas.mensagens.adjustment', $mensagem) }}" class="cpe-button cpe-button--ghost">Solicitar ajuste</button>
-                                    <button type="submit" formaction="{{ route('cartas.mensagens.approve', $mensagem) }}" class="cpe-button">Aprovar resposta</button>
-                                </div>
-                            </form>
-                        </div>
-                    @elseif($mensagem->status === 'ajuste_solicitado')
-                        <div class="cpe-verification-note">
-                            <strong>Ajuste solicitado:</strong>
-                            <span>{{ $mensagem->parecer_verificacao ?: 'Revise sua resposta e envie novamente para verificação.' }}</span>
-
-                            @if(! $gestor && $mensagem->isEditavelPor(Auth::user()))
-                                <button type="button" class="cpe-button" data-aside-open="aside-adjustMensagem-{{ $mensagem->id }}">
-                                    Realizar ajuste
-                                </button>
-                            @endif
-                        </div>
-                    @endif
                 </div>
             @endforeach
 
@@ -259,6 +257,10 @@
         </aside>
 
         @include('cartas.shared._user-menu')
+
+        @unless($gestor)
+            @include('cartas.shared._help_fab')
+        @endunless
     </main>
 
     @if($gestor)
@@ -355,6 +357,7 @@
 
         .cpe-conversation > .cpe-logo-top {
             width: 100%;
+            margin-bottom: 24px;
         }
 
         /* Nesta tela o titulo compete com a lista de mensagens na barra lateral estreita */
@@ -447,10 +450,14 @@
             align-self: center;
         }
 
-        /* Visualizador da carta: centralizado na tela inteira */
+        /* Visualizador da carta: centralizado na tela inteira.
+           A margem direita espelha a largura da barra lateral, entao o eixo
+           central do painel coincide com o centro da viewport, e nao com o
+           centro do espaco que sobra ao lado da lista de mensagens. */
         .cpe-conversation__aside {
             flex: 1;
             min-width: 0;
+            margin-right: var(--cpe-sidebar-w);
             background: transparent;
             min-height: calc(100vh - 130px);
             border-left: 0;
@@ -501,6 +508,48 @@
             font-size: 14px;
         }
 
+        /* Acoes logo abaixo do "De:/Para:", com botoes compactos alinhados a direita */
+        .cpe-letter-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        /* Informacoes e botoes formam uma linha unica, com as bases alinhadas */
+        .cpe-letter-header .cpe-letter-actions {
+            flex: none;
+            align-self: flex-end;
+        }
+
+        /* Respiro entre o parecer e os botoes de decisao do gestor */
+        .cpe-adjustment-form .cpe-letter-actions {
+            margin-top: 6px;
+        }
+
+        .cpe-letter-stage .cpe-letter-actions .cpe-button {
+            width: auto;
+            min-width: 0;
+            height: 34px;
+            padding: 0 14px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .cpe-letter-stage > .cpe-verification-box,
+        .cpe-letter-stage > .cpe-verification-note {
+
+        }
+
+        .cpe-letter-stage > .cpe-verification-note .cpe-button {
+            justify-self: end;
+            width: auto;
+            height: 34px;
+            padding: 0 14px;
+            font-size: 13px;
+        }
+
         .cpe-letter-stage {
             display: flex;
             flex-direction: column;
@@ -509,18 +558,36 @@
 
         .cpe-letter-header {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
-            align-items: flex-end;
-            gap: 24px;
+            align-items: center;
+            gap: 16px 24px;
             color: #008bbc;
             font-weight: 500;
             font-size: 19px;
             line-height: 1.2;
         }
 
+        .cpe-letter-header__party {
+            min-width: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .cpe-letter-header__line {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+            max-width: 100%;
+        }
+
         .cpe-letter-header__date {
-            flex: none;
-            text-align: right;
+            display: block;
+            margin-top: 4px;
+            white-space: nowrap;
         }
 
         .cpe-conversation .cpe-letter-preview--media {
@@ -672,7 +739,7 @@
             border: 1px solid #dfd8d3;
             border-radius: 8px;
             background: #faf8f6;
-            padding: 16px;
+            padding: 18px 20px;
             display: grid;
             gap: 10px;
             margin: 14px 0;
@@ -703,6 +770,7 @@
             .cpe-conversation__aside {
                 width: 100%;
                 min-height: 0;
+                margin-right: 0;
             }
         }
 

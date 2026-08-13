@@ -394,9 +394,6 @@ Route::middleware(['auth', 'role:administrador|gerente'])->group(function () {
         ->whereNumber('certificado')
         ->name('certificados.update');
 
-    Route::get('/curadoria-demograficos', [\App\Http\Controllers\CuradoriaDemograficoController::class, 'index'])->name('curadoria.index');
-    Route::post('/curadoria-demograficos/{curadoria}/vincular', [\App\Http\Controllers\CuradoriaDemograficoController::class, 'vincular'])->name('curadoria.vincular');
-    Route::delete('/curadoria-demograficos/{curadoria}', [\App\Http\Controllers\CuradoriaDemograficoController::class, 'destroy'])->name('curadoria.destroy');
 });
 
 Route::get('/formulario-avaliacao/{avaliacao}', [AvaliacaoController::class, 'formularioAvaliacao'])->name('avaliacao.formulario');
