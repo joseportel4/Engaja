@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Notifications\Cartas\AjusteSolicitadoNotification;
 use App\Notifications\Cartas\CartaRecebidaNotification;
 use App\Services\Cartas\CartaTimbradoService;
+use App\Services\Cartas\CartaViewerLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,10 @@ use Illuminate\View\View;
 
 class CartaController extends Controller
 {
-    public function __construct(private CartaTimbradoService $timbrado) {}
+    public function __construct(
+        private CartaTimbradoService $timbrado,
+        private CartaViewerLogger $viewerLog,
+    ) {}
 
     public function dashboard(Request $request): View
     {
@@ -61,6 +65,8 @@ class CartaController extends Controller
 
         $engajaUsers = $gestor ? $this->engajaUsersQuery()->get() : collect();
         $voluntarios = $gestor ? $this->voluntariosQuery()->get() : collect();
+
+        $this->viewerLog->aberturaDaCarta($carta, $gestor ? 'gestor' : 'voluntario', $request->user()->id);
 
         return view('cartas.cartas.show', compact('carta', 'gestor', 'engajaUsers', 'voluntarios'));
     }
@@ -572,28 +578,47 @@ class CartaController extends Controller
         $this->authorizeCartaAccess($request, $mensagem->carta);
 
         $path = $mensagem->arquivo_final_path ?: $mensagem->anexo_original_path;
-        abort_unless($path && Storage::disk('local')->exists($path), 404);
 
-        $filename = $this->gerarNomeArquivo($mensagem, $path);
+        if (! $path || ! Storage::disk('local')->exists($path)) {
+            abort(404);
+        }
 
-        return Storage::disk('local')->download($path, $filename);
+        return Storage::disk('local')->download($path, $this->gerarNomeArquivo($mensagem, $path));
     }
 
     public function preview(Request $request, CartaMensagem $mensagem)
     {
         $mensagem->load('carta.voluntario', 'carta.educando.user', 'carta.educando.municipio');
+
         $this->authorizeCartaAccess($request, $mensagem->carta);
+        $this->viewerLog->passo(CartaViewerLogger::ETAPA_AUTORIZACAO, true, 'usuario#'.$request->user()->id, $mensagem->id);
+
+        $arquivo = $this->viewerLog->inspecionarArquivo($mensagem);
+        $this->viewerLog->passo(CartaViewerLogger::ETAPA_ARQUIVO, $arquivo['existe'], $arquivo['detalhe'], $mensagem->id);
+
+        if (! $arquivo['existe']) {
+            abort(404);
+        }
+
+        $this->viewerLog->passo(
+            CartaViewerLogger::ETAPA_CONTEUDO,
+            $arquivo['parece_pdf'],
+            $arquivo['parece_pdf'] ? 'assinatura %PDF- encontrada' : 'o arquivo nao comeca com %PDF- (corrompido, truncado ou nao e PDF)',
+            $mensagem->id
+        );
 
         $path = $mensagem->arquivo_final_path ?: $mensagem->anexo_original_path;
-        abort_unless($path && Storage::disk('local')->exists($path), 404);
-
         $filename = $this->gerarNomeArquivo($mensagem, $path);
         $mime = $mensagem->arquivo_final_mime ?: $mensagem->anexo_original_mime ?: Storage::disk('local')->mimeType($path);
 
-        return response()->file(Storage::disk('local')->path($path), [
+        $resposta = response()->file(Storage::disk('local')->path($path), [
             'Content-Type' => $mime,
             'Content-Disposition' => 'inline; filename="'.str_replace('"', '', $filename).'"',
         ]);
+
+        $this->viewerLog->passo(CartaViewerLogger::ETAPA_ENTREGA, true, "HTTP 200, {$mime}", $mensagem->id);
+
+        return $resposta;
     }
 
     public function downloadBatch(Request $request)
@@ -857,6 +882,12 @@ class CartaController extends Controller
         if ($this->isGestor($user) || $carta->voluntario_user_id === $user->id) {
             return;
         }
+
+        $this->viewerLog->passo(
+            CartaViewerLogger::ETAPA_AUTORIZACAO,
+            false,
+            "usuario#{$user->id} nao e gestor nem o voluntario da carta #".($carta->codigo ?? $carta->id)
+        );
 
         abort(403);
     }

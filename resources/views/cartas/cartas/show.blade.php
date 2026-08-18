@@ -178,7 +178,11 @@
                                     <img class="cpe-letter-media" src="{{ route('cartas.mensagens.preview', $mensagem) }}" alt="Carta enviada">
                                 </div>
                             @elseif($mensagemMime === 'application/pdf')
-                                <div class="cpe-letter-doc" data-pdf-src="{{ route('cartas.mensagens.preview', $mensagem) }}" role="img" aria-label="Carta enviada">
+                                <div class="cpe-letter-doc"
+                                     data-pdf-src="{{ route('cartas.mensagens.preview', $mensagem) }}"
+                                     data-mensagem-id="{{ $mensagem->id }}"
+                                     data-diag-url="{{ route('cartas.diagnostico.visualizador') }}"
+                                     role="img" aria-label="Carta enviada">
                                     <div class="cpe-letter-doc__loading">Carregando carta…</div>
                                 </div>
                             @else
