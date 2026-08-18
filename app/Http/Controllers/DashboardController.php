@@ -12,12 +12,15 @@ use App\Models\RespostaAvaliacao;
 use App\Models\SubmissaoAvaliacao;
 use App\Models\TemplateAvaliacao;
 use App\Services\AvaliacaoRespostasDashboardService;
+use App\Services\LimeSurvey\LimeSurveyClient;
+use App\Services\LimeSurvey\LimeSurveyDashboardService;
 use App\Word\MatrizPresencaWordBuilder;
 use App\Word\WordDocument;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -47,6 +50,45 @@ class DashboardController extends Controller
     public function bi()
     {
         return view('dashboards.bi');
+    }
+
+    public function leituraMundo()
+    {
+        $surveys = collect();
+        $erro = null;
+
+        try {
+            $client = app(LimeSurveyClient::class);
+            $raw = $client->listSurveys();
+
+            $surveys = collect($raw)
+                ->filter(fn ($item) => is_array($item) && ! empty($item['sid']))
+                ->map(function (array $item) {
+                    $sid = (int) ($item['sid'] ?? 0);
+                    $titulo = trim((string) ($item['surveyls_title'] ?? "Survey {$sid}"));
+                    $ativo = strtoupper((string) ($item['active'] ?? 'N')) === 'Y';
+
+                    $start = $this->formatSurveyDate($item['startdate'] ?? null);
+                    $expires = $this->formatSurveyDate($item['expires'] ?? null);
+
+                    $cachedAt = Cache::get("limesurvey:{$sid}:cached_at");
+
+                    return [
+                        'sid' => $sid,
+                        'titulo' => $titulo !== '' ? $titulo : "Survey {$sid}",
+                        'ativo' => $ativo,
+                        'startdate' => $start,
+                        'expires' => $expires,
+                        'cached_at' => $cachedAt ? $cachedAt->format('d/m/Y H:i') : null,
+                    ];
+                })
+                ->sortBy('titulo', SORT_NATURAL | SORT_FLAG_CASE)
+                ->values();
+        } catch (\Throwable $exception) {
+            $erro = $exception->getMessage();
+        }
+
+        return view('dashboards.leitura-mundo', compact('surveys', 'erro'));
     }
 
     public function index(Request $request)
@@ -202,13 +244,27 @@ class DashboardController extends Controller
             ->orderByDesc('created_at')
             ->get(['id', 'template_avaliacao_id', 'descricao_universal', 'created_at']);
 
-        return view('dashboards.avaliacoes', compact('templates', 'eventos', 'atividades', 'avaliacoesUniversais'));
+        $cachedAt = null;
+        if ($request->query('fonte') === 'limesurvey') {
+            $surveyId = (int) ($request->integer('survey_id') ?: config('services.limesurvey.survey_id'));
+            if ($surveyId > 0) {
+                $ts = Cache::get("limesurvey:{$surveyId}:cached_at");
+                $cachedAt = $ts ? $ts->format('d/m/Y H:i') : null;
+            }
+        }
+
+        return view('dashboards.avaliacoes', compact('templates', 'eventos', 'atividades', 'avaliacoesUniversais', 'cachedAt'));
     }
 
     public function avaliacoesData(Request $request, AvaliacaoRespostasDashboardService $avaliacaoRespostas)
     {
-        $this->validateAvaliacoesDashboardFilters($request);
         $this->authorizeAvaliacoesDashboardRequest($request);
+
+        if ($request->query('fonte') === 'limesurvey') {
+            return $this->avaliacoesDataLimeSurvey($request);
+        }
+
+        $this->validateAvaliacoesDashboardFilters($request);
 
         return response()->json($avaliacaoRespostas->buildDashboardPayload($request));
     }
@@ -320,6 +376,97 @@ class DashboardController extends Controller
             if ($evento) {
                 $this->authorize('update', $evento);
             }
+        }
+    }
+
+    private function avaliacoesDataLimeSurvey(Request $request)
+    {
+        try {
+            $surveyId = (int) ($request->integer('survey_id') ?: config('services.limesurvey.survey_id'));
+
+            if ($request->query('debug_lime') === 'export_responses') {
+                $client = app(LimeSurveyClient::class);
+
+                return response()->json($client->exportResponses($surveyId));
+            }
+
+            if (! Cache::has("limesurvey:{$surveyId}:questions") || ! Cache::has("limesurvey:{$surveyId}:responses")) {
+                return response()->json([
+                    'sem_dados' => true,
+                    'mensagem' => 'Este survey ainda não possui dados importados. Execute o importador de dados ou aguarde a atualização automática diária.',
+                ]);
+            }
+
+            $service = app(LimeSurveyDashboardService::class);
+            $payload = $service->buildPayload($request);
+
+            if ($request->boolean('debug_lime')) {
+                return response()->json([
+                    'debug' => true,
+                    'payload' => $payload,
+                ]);
+            }
+
+            return response()->json($payload);
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'totais' => [
+                    'submissoes' => 0,
+                    'atividades' => 0,
+                    'eventos' => 0,
+                    'respostas' => 0,
+                    'questoes' => 0,
+                    'ultima' => null,
+                ],
+                'perguntas' => [],
+                'recentes' => [],
+                'erro' => $exception->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function limesurveyListQuestions(Request $request)
+    {
+        try {
+            $surveyId = (int) ($request->integer('survey_id') ?: config('services.limesurvey.survey_id'));
+            $client = app(LimeSurveyClient::class);
+
+            return response()->json($client->listQuestions($surveyId));
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'erro' => $exception->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function limesurveyListParticipants(Request $request)
+    {
+        try {
+            $surveyId = (int) ($request->integer('survey_id') ?: config('services.limesurvey.survey_id'));
+            $start = max(0, (int) $request->integer('start', 0));
+            $limit = max(1, min(10000, (int) $request->integer('limit', 1000)));
+            $unused = $request->boolean('unused', false);
+
+            $client = app(LimeSurveyClient::class);
+
+            return response()->json($client->listParticipants($surveyId, $start, $limit, $unused));
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'erro' => $exception->getMessage(),
+            ], 422);
+        }
+    }
+
+    private function formatSurveyDate(mixed $value): ?string
+    {
+        if (! is_string($value) || trim($value) === '' || $value === '0000-00-00 00:00:00') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->format('d/m/Y H:i');
+        } catch (\Throwable) {
+            return null;
         }
     }
 

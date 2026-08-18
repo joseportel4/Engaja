@@ -96,6 +96,9 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
     Route::get('/dashboards/avaliacoes', [DashboardController::class, 'avaliacoes'])->middleware(['auth', 'verified'])->name('dashboards.avaliacoes');
     Route::get('/dashboards/avaliacoes/dados', [DashboardController::class, 'avaliacoesData'])->middleware(['auth', 'verified'])->name('dashboards.avaliacoes.data');
     Route::get('/dashboards/avaliacoes/pdf', [DashboardController::class, 'avaliacoesPdf'])->middleware(['auth', 'verified'])->name('dashboards.avaliacoes.pdf');
+    Route::get('/dashboards/avaliacoes/dados/limesurvey/list-questions', [DashboardController::class, 'limesurveyListQuestions'])->middleware(['auth', 'verified'])->name('dashboards.avaliacoes.limesurvey.list-questions');
+    Route::get('/dashboards/avaliacoes/dados/limesurvey/list-participants', [DashboardController::class, 'limesurveyListParticipants'])->middleware(['auth', 'verified'])->name('dashboards.avaliacoes.limesurvey.list-participants');
+    Route::get('/dashboards/leitura-mundo', [DashboardController::class, 'leituraMundo'])->middleware(['auth', 'verified'])->name('dashboards.leitura-mundo');
     Route::get('/dashboards/bi', [DashboardController::class, 'bi'])->middleware(['auth', 'verified'])->name('dashboards.bi');
 });
 
