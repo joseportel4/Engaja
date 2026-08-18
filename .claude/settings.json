@@ -25,6 +25,18 @@
       "Read(./.env)"
     ]
   },
+  "sandbox": {
+    "filesystem": {
+      "allowRead": [
+        "./storage/**/.gitignore",
+        "./bootstrap/cache/.gitignore",
+        "./package-lock.json",
+        "./composer.lock",
+        "./vendor/**",
+        "./node_modules/**"
+      ]
+    }
+  },
   "hooks": {
     "PreToolUse": [
       {
