@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container py-4" id="avaliacoes-dashboard" data-endpoint="{{ route('dashboards.avaliacoes.data') }}">
+<div class="container py-4" id="avaliacoes-dashboard" data-endpoint="{{ route('dashboards.avaliacoes.data', request()->only(['fonte', 'survey_id'])) }}">
   <div class="mb-4">
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
       <div>
@@ -16,6 +16,24 @@
       </div>
     </div>
   </div>
+
+  @if(request('fonte') === 'limesurvey')
+    <div class="alert alert-info border-0 shadow-sm py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <span>
+        Fonte ativa: <strong>LimeSurvey</strong>
+        @if(request('survey_id'))
+          (survey_id={{ request('survey_id') }})
+        @endif
+      </span>
+      @if(!empty($cachedAt))
+        <span class="text-muted small">
+          Dados atualizados em: <strong>{{ $cachedAt }}</strong>
+        </span>
+      @else
+        <span class="text-muted small">Dados ao vivo (sem cache)</span>
+      @endif
+    </div>
+  @endif
 
   <div class="card shadow-sm border-0 mb-3">
     <div class="card-body">
@@ -90,44 +108,50 @@
 
   <div id="dashboard-avaliacoes-notice" class="alert alert-info border-0 shadow-sm py-2 px-3 small mb-3 d-none" role="alert" aria-live="polite"></div>
 
-  <div class="row g-3 mb-3" id="cards-totais">
-    <div class="col-lg-3 col-sm-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1">Submissões</p>
-          <div class="h3 fw-bold mb-0" data-total="submissoes">-</div>
-          <small class="text-muted">Respostas completas registradas</small>
+  @if(request('fonte') === 'limesurvey')
+    @include('dashboards.avaliacoes._filtros')
+    @include('dashboards.avaliacoes._cards-totais')
+    @include('dashboards.avaliacoes._bi-matriz')
+  @else
+    <div class="row g-3 mb-3" id="cards-totais">
+      <div class="col-lg-3 col-sm-6">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body">
+            <p class="text-uppercase small text-muted mb-1">Submissões</p>
+            <div class="h3 fw-bold mb-0" data-total="submissoes">-</div>
+            <small class="text-muted">Respostas completas registradas</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-sm-6">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body">
+            <p class="text-uppercase small text-muted mb-1">Questões</p>
+            <div class="h3 fw-bold mb-0" data-total="questoes">-</div>
+            <small class="text-muted">Com alguma resposta</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-sm-6">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body">
+            <p class="text-uppercase small text-muted mb-1" data-total-label="eventos">Ações Pedagógicas</p>
+            <div class="h3 fw-bold mb-0" data-total="eventos">-</div>
+            <small class="text-muted" data-total-help="eventos">Com respostas vinculadas</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-sm-6">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body">
+            <p class="text-uppercase small text-muted mb-1">Última resposta</p>
+            <div class="h3 fw-bold mb-0" data-total="ultima">-</div>
+            <small class="text-muted">Horário da última entrada</small>
+          </div>
         </div>
       </div>
     </div>
-    <div class="col-lg-3 col-sm-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1">Questões</p>
-          <div class="h3 fw-bold mb-0" data-total="questoes">-</div>
-          <small class="text-muted">Com alguma resposta</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-3 col-sm-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1" data-total-label="eventos">Ações Pedagógicas</p>
-          <div class="h3 fw-bold mb-0" data-total="eventos">-</div>
-          <small class="text-muted" data-total-help="eventos">Com respostas vinculadas</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-3 col-sm-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1">Última resposta</p>
-          <div class="h3 fw-bold mb-0" data-total="ultima">-</div>
-          <small class="text-muted">Horário da última entrada</small>
-        </div>
-      </div>
-    </div>
-  </div>
+  @endif
 
   <div class="row g-3">
     <div class="col-12">
@@ -155,20 +179,7 @@
   </div>
 </div>
 
-<div class="modal fade" id="textAnswersModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title js-text-modal-title">Respostas</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="text-muted small mb-2 js-text-modal-count"></div>
-        <div class="vstack gap-2 js-text-modal-list" style="max-height: 60vh; overflow: auto;"></div>
-      </div>
-    </div>
-  </div>
-</div>
+@include('dashboards.avaliacoes._modal-respostas')
 
 @push('styles')
 <style>
@@ -213,7 +224,7 @@
 @endpush
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+@vite('resources/js/dashboards/avaliacoes.js')
 @endpush
 
 <script>
