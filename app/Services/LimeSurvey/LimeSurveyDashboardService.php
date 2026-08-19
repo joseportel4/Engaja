@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Schema;
 
 class LimeSurveyDashboardService
 {
+    /** Tamanho máximo do rótulo de uma opção antes de virar descrição no tooltip. */
+    private const OPTION_LABEL_MAX_LENGTH = 70;
+
     public function __construct(private readonly LimeSurveyClient $client) {}
 
     public function buildPayload(Request $request): array
@@ -85,6 +88,8 @@ class LimeSurveyDashboardService
     ): array {
         $simpleByCode = $perguntas->keyBy('id');
         $matrixByCode = collect($biMatrizes)->keyBy('codigo');
+        $firstRow = is_array($responses->first()) ? $responses->first() : [];
+        $municipioField = $this->resolveMunicipioField($request, $questionList, $firstRow);
         $singleSubquestionGrouped = $this->groupSingleSubquestionQuestions(
             $perguntas,
             $questionList,
@@ -168,12 +173,20 @@ class LimeSurveyDashboardService
             if ($simpleByCode->has($code)) {
                 $simple = $simpleByCode->get($code);
                 if (is_array($simple)) {
+                    $classificado = $this->buildMunicipioClassificationForSimpleQuestion(
+                        $simple,
+                        $code,
+                        $responses,
+                        $municipioField,
+                        $tokenMunicipioMap
+                    );
+
                     $blocks[] = [
                         'id' => $code,
                         'order' => $orderBase,
                         'kind' => 'simple',
                         'title' => $root['text'] ?? $code,
-                        'question' => $simple,
+                        'question' => $classificado ?? $simple,
                     ];
                     $usedSimple[$code] = true;
 
@@ -184,12 +197,21 @@ class LimeSurveyDashboardService
             if ($singleSubquestionGrouped->has($code)) {
                 $grouped = $singleSubquestionGrouped->get($code);
                 if (is_array($grouped)) {
+                    $classificado = $this->buildMunicipioClassificationForSingleSeries(
+                        $grouped,
+                        $code,
+                        $responses,
+                        $municipioField,
+                        $tokenMunicipioMap,
+                        $answerOptionsMap[$code] ?? []
+                    );
+
                     $blocks[] = [
                         'id' => $code,
                         'order' => $orderBase,
                         'kind' => 'simple',
                         'title' => $root['text'] ?? $code,
-                        'question' => $grouped,
+                        'question' => $classificado ?? $grouped,
                     ];
 
                     foreach (($grouped['source_ids'] ?? []) as $sourceId) {
@@ -263,18 +285,53 @@ class LimeSurveyDashboardService
         }
 
         $municipioField = $this->resolveMunicipioField($request, $questionList, $firstRow);
+
+        return $this->buildMunicipioClassificationBlock(
+            $rootCode,
+            $rootCode,
+            (string) ($root['text'] ?? $rootCode),
+            $responses,
+            $municipioField,
+            $tokenMunicipioMap,
+            $answerOptionsMap[$rootCode] ?? [],
+            fn (mixed $value) => $this->toLikertLevel($value)
+        );
+    }
+
+    /**
+     * Agrupa municípios pela classificação predominante de uma questão (código ordinal
+     * ou boolean), em vez de por um valor médio contínuo por município. Municípios com
+     * mais de uma resposta têm suas respostas reduzidas à classificação mais próxima
+     * da média, e o resultado final é agrupado por classificação (não por município).
+     *
+     * @param  list<array{nivel: int, label: string}>  $opcoes
+     * @return array<string, mixed>|null
+     */
+    private function buildMunicipioClassificationBlock(
+        string $id,
+        string $column,
+        string $texto,
+        Collection $responses,
+        ?string $municipioField,
+        array $tokenMunicipioMap,
+        array $opcoes,
+        \Closure $toLevel
+    ): ?array {
         $sumByMunicipio = [];
         $countByMunicipio = [];
+        $niveisVistos = [];
 
         foreach ($responses as $row) {
             if (! is_array($row)) {
                 continue;
             }
 
-            $level = $this->toLikertLevel($row[$rootCode] ?? null);
+            $level = $toLevel($row[$column] ?? null);
             if ($level === null) {
                 continue;
             }
+
+            $niveisVistos[(int) round($level)] = true;
 
             $municipio = $this->resolveMunicipioFromResponse($row, $municipioField, $tokenMunicipioMap);
             $sumByMunicipio[$municipio] = ($sumByMunicipio[$municipio] ?? 0.0) + $level;
@@ -285,31 +342,178 @@ class LimeSurveyDashboardService
             return null;
         }
 
+        if (empty($opcoes)) {
+            $codigos = array_keys($niveisVistos);
+            sort($codigos, SORT_NUMERIC);
+            $opcoes = array_map(fn (int $codigo) => ['nivel' => $codigo, 'label' => (string) $codigo], $codigos);
+        }
+
+        $grupos = [];
+        foreach ($opcoes as $opcao) {
+            $grupos[$opcao['nivel']] = [
+                'nivel' => $opcao['nivel'],
+                'label' => $opcao['label'],
+                'descricao' => $opcao['descricao'] ?? '',
+                'municipios' => [],
+            ];
+        }
+
         $municipios = array_keys($sumByMunicipio);
         sort($municipios, SORT_NATURAL | SORT_FLAG_CASE);
-        $levels = array_map(function (string $municipio) use ($sumByMunicipio, $countByMunicipio) {
+
+        foreach ($municipios as $municipio) {
             $count = max((int) ($countByMunicipio[$municipio] ?? 0), 1);
-
-            return round(((float) ($sumByMunicipio[$municipio] ?? 0)) / $count, 2);
-        }, $municipios);
-
-        $opcoes = $answerOptionsMap[$rootCode] ?? [];
+            $media = ((float) ($sumByMunicipio[$municipio] ?? 0)) / $count;
+            $nivel = $this->nearestNivel($media, $opcoes);
+            $grupos[$nivel]['municipios'][] = $municipio;
+        }
 
         return [
-            'id' => $rootCode,
-            'texto' => $root['text'] ?? $rootCode,
+            'id' => $id,
+            'texto' => $texto,
             'tipo' => 'municipio_level',
             'total' => array_sum($countByMunicipio),
             'labels' => [],
             'values' => [],
             'media' => null,
-            'resumo' => 'Nivel medio por municipio',
+            'resumo' => 'Classificação por município',
             'exemplos' => [],
             'respostas' => [],
-            'municipio_labels' => $municipios,
-            'municipio_levels' => $levels,
-            'opcoes_nivel' => $opcoes,
+            'grupos_nivel' => array_values($grupos),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $simple
+     * @return array<string, mixed>|null
+     */
+    private function buildMunicipioClassificationForSimpleQuestion(
+        array $simple,
+        string $code,
+        Collection $responses,
+        ?string $municipioField,
+        array $tokenMunicipioMap
+    ): ?array {
+        $tipo = $simple['tipo'] ?? null;
+
+        if ($tipo === 'boolean') {
+            $opcoes = [['nivel' => 0, 'label' => 'Não'], ['nivel' => 1, 'label' => 'Sim']];
+            $toLevel = function (mixed $value): ?float {
+                if ($value === null || trim((string) $value) === '') {
+                    return null;
+                }
+
+                return $this->toBoolSelection($value) ? 1.0 : 0.0;
+            };
+        } elseif ($tipo === 'escala') {
+            $opcoes = [];
+            $toLevel = fn (mixed $value) => $this->toLikertLevel($value);
+        } else {
+            return null;
+        }
+
+        return $this->buildMunicipioClassificationBlock(
+            $code,
+            $code,
+            (string) ($simple['texto'] ?? $code),
+            $responses,
+            $municipioField,
+            $tokenMunicipioMap,
+            $opcoes,
+            $toLevel
+        );
+    }
+
+    /**
+     * Questões array com uma única subquestão têm exatamente um valor por município,
+     * então podem ser agrupadas por classificação em vez de exibir um nível médio
+     * (ilegível, pois o eixo mostra um código numérico sem rótulo).
+     *
+     * @param  array<string, mixed>  $grouped
+     * @param  list<array{nivel: int, label: string}>  $opcoes
+     * @return array<string, mixed>|null
+     */
+    private function buildMunicipioClassificationForSingleSeries(
+        array $grouped,
+        string $code,
+        Collection $responses,
+        ?string $municipioField,
+        array $tokenMunicipioMap,
+        array $opcoes
+    ): ?array {
+        $sourceIds = array_values($grouped['source_ids'] ?? []);
+        if (count($sourceIds) !== 1) {
+            return null;
+        }
+
+        return $this->buildMunicipioClassificationBlock(
+            $code,
+            (string) $sourceIds[0],
+            (string) ($grouped['texto'] ?? $code),
+            $responses,
+            $municipioField,
+            $tokenMunicipioMap,
+            $opcoes,
+            fn (mixed $value) => $this->toLikertLevel($value)
+        );
+    }
+
+    /**
+     * As opções de resposta do LimeSurvey podem vir como HTML longo, no formato
+     * "<p><strong>Nível 0 – Título</strong></p><p>parágrafo explicativo…</p>".
+     * O trecho em <strong> vira o rótulo do gráfico e o restante, a descrição
+     * mostrada no tooltip — senão a legenda da pizza fica ilegível.
+     *
+     * @return array{label: string, descricao: string}
+     */
+    private function splitOptionLabel(string $raw): array
+    {
+        $completo = $this->normalizeHtmlText($raw);
+
+        $curto = $completo;
+        if (preg_match('/<strong[^>]*>(.*?)<\/strong>/is', $raw, $match)) {
+            $curto = $this->normalizeHtmlText($match[1]);
+        }
+
+        if ($curto === '') {
+            $curto = $completo;
+        }
+
+        if (mb_strlen($curto) > self::OPTION_LABEL_MAX_LENGTH) {
+            $curto = mb_substr($curto, 0, self::OPTION_LABEL_MAX_LENGTH - 1).'…';
+        }
+
+        return [
+            'label' => $curto,
+            'descricao' => $completo !== $curto ? $completo : '',
+        ];
+    }
+
+    private function normalizeHtmlText(string $raw): string
+    {
+        $comEspacos = preg_replace('/<(br|\/p|\/div|\/li)[^>]*>/i', ' ', $raw) ?? $raw;
+        $texto = html_entity_decode(strip_tags($comEspacos), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return trim(preg_replace('/\s+/u', ' ', $texto) ?? $texto);
+    }
+
+    /**
+     * @param  list<array{nivel: int, label: string}>  $opcoes
+     */
+    private function nearestNivel(float $media, array $opcoes): int
+    {
+        $melhorNivel = (int) $opcoes[0]['nivel'];
+        $menorDiferenca = null;
+
+        foreach ($opcoes as $opcao) {
+            $diferenca = abs($opcao['nivel'] - $media);
+            if ($menorDiferenca === null || $diferenca < $menorDiferenca) {
+                $menorDiferenca = $diferenca;
+                $melhorNivel = (int) $opcao['nivel'];
+            }
+        }
+
+        return $melhorNivel;
     }
 
     /**
@@ -425,7 +629,7 @@ class LimeSurveyDashboardService
             'labels' => [],
             'values' => [],
             'media' => null,
-            'resumo' => 'Articulacao por secretaria e municipio',
+            'resumo' => 'Articulação por secretaria e município',
             'exemplos' => [],
             'respostas' => [],
             'source_ids' => array_values(array_unique($sourceIds)),
@@ -970,14 +1174,14 @@ class LimeSurveyDashboardService
 
             $item['labels'] = array_values(array_map(fn (array $i) => (string) $i['sub_label'], $item['__items']));
             $item['values'] = array_values(array_map(fn (array $i) => (int) $i['total'], $item['__items']));
-            $item['resumo'] = 'Campos preenchidos por subquestao';
+            $item['resumo'] = 'Campos preenchidos por subquestão';
 
             $rootType = (string) ($item['__root_type'] ?? '');
             $isArrayColumnLikert = $rootType === 'H';
             $item['tipo'] = 'municipio_series';
             $item['chart_mode'] = $isArrayColumnLikert ? 'grouped' : 'stacked';
             if ($isArrayColumnLikert) {
-                $item['resumo'] = 'Nivel medio por subquestao em cada municipio';
+                $item['resumo'] = 'Nível médio por subquestão em cada município';
             }
             $item['municipio_labels'] = [];
             $item['municipio_series'] = [];
@@ -1148,7 +1352,7 @@ class LimeSurveyDashboardService
     }
 
     /**
-     * Busca as opções de resposta (código → label, nível) para questões do tipo L (List Radio).
+     * Busca as opções de resposta (código → label, nível) das questões que as possuem.
      * Retorna um mapa indexado pelo código da questão: ['Q1' => [{nivel: 1, label: 'Texto'}]].
      *
      * @param  Collection<int, array<string, mixed>>  $questionList
@@ -1156,17 +1360,21 @@ class LimeSurveyDashboardService
      */
     private function buildAnswerOptionsMap(Collection $questionList, int $surveyId): array
     {
-        $lTypeQuestions = $questionList->filter(
-            fn (array $q) => strtoupper((string) ($q['type'] ?? '')) === 'L' && $q['parent_qid'] === '0'
+        // Tipos do LimeSurvey que guardam opções de resposta na questão raiz:
+        // L/!/O (lista) e F/H/1 (array), que são as questões com subquestões.
+        $tiposComOpcoes = ['L', '!', 'O', 'F', 'H', '1'];
+
+        $questoesComOpcoes = $questionList->filter(
+            fn (array $q) => in_array(strtoupper((string) ($q['type'] ?? '')), $tiposComOpcoes, true) && $q['parent_qid'] === '0'
         );
 
-        if ($lTypeQuestions->isEmpty()) {
+        if ($questoesComOpcoes->isEmpty()) {
             return [];
         }
 
         $map = [];
 
-        foreach ($lTypeQuestions as $question) {
+        foreach ($questoesComOpcoes as $question) {
             $code = (string) ($question['code'] ?? '');
             $qid = (int) ($question['qid'] ?? 0);
             if ($code === '' || $qid <= 0) {
@@ -1194,12 +1402,11 @@ class LimeSurveyDashboardService
                 if (! is_array($optionData)) {
                     continue;
                 }
-                $label = trim((string) ($optionData['answer'] ?? $optionCode));
                 $nivel = $this->toLikertLevel($optionCode);
                 if ($nivel === null) {
                     $nivel = $this->toLikertLevel($optionData['assessment_value'] ?? null) ?? count($opcoes) + 1;
                 }
-                $opcoes[] = ['nivel' => (int) $nivel, 'label' => $label];
+                $opcoes[] = ['nivel' => (int) $nivel] + $this->splitOptionLabel((string) ($optionData['answer'] ?? $optionCode));
             }
 
             usort($opcoes, fn (array $a, array $b) => $a['nivel'] <=> $b['nivel']);
