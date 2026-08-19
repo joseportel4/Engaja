@@ -51,25 +51,92 @@ function createCanvas(parent, height = 120) {
   return canvas;
 }
 
+/**
+ * Gráficos circulares usam legenda em HTML ao lado do canvas: a legenda nativa do
+ * Chart.js corta rótulos longos na borda do canvas, e aqui ainda cabem contagem e
+ * percentual. Devolve o container do canvas, já dimensionado pelo CSS.
+ */
+function buildCircularChartLayout(body) {
+  const layout = document.createElement('div');
+  layout.className = 'chart-layout';
+  const canvasBox = document.createElement('div');
+  canvasBox.className = 'chart-canvas';
+  const legend = document.createElement('ul');
+  legend.className = 'chart-legend';
+  layout.appendChild(canvasBox);
+  layout.appendChild(legend);
+  body.appendChild(layout);
+  return { canvasBox, legend };
+}
+
+function fillChartLegend(legend, items, chart) {
+  const total = items.reduce((soma, item) => soma + item.value, 0);
+
+  items.forEach((item, index) => {
+    const percentual = total ? Math.round((item.value / total) * 100) : 0;
+    const li = document.createElement('li');
+    if (!item.value) li.classList.add('is-empty');
+
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.background = item.color;
+
+    const label = document.createElement('span');
+    label.className = 'lbl';
+    label.textContent = item.label;
+
+    const valor = document.createElement('span');
+    valor.className = 'val';
+    valor.textContent = String(item.value);
+    const pct = document.createElement('em');
+    pct.textContent = `${percentual}%`;
+    valor.appendChild(pct);
+
+    li.append(dot, label, valor);
+
+    // Destaca a fatia correspondente ao passar o mouse na linha da legenda.
+    li.addEventListener('mouseenter', () => {
+      chart.setActiveElements([{ datasetIndex: 0, index }]);
+      chart.update('none');
+    });
+    li.addEventListener('mouseleave', () => {
+      chart.setActiveElements([]);
+      chart.update('none');
+    });
+
+    legend.appendChild(li);
+  });
+}
+
+// Os enunciados vêm prefixados pela numeração da questão ("15 O Plano de Cargos…",
+// "17.1 Ano:"). Separá-la deixa o título livre para ocupar a largura inteira do card.
+function splitQuestionNumber(titulo) {
+  const match = /^(\d+(?:\.\d+)*)\s+([\s\S]+)$/.exec(String(titulo).trim());
+  return match ? { numero: match[1], texto: match[2] } : { numero: '', texto: titulo };
+}
+
 function buildCardShell(titulo, totalRespostas, resumo) {
+  const { numero, texto } = splitQuestionNumber(titulo);
   const wrapper = document.createElement('div');
   wrapper.className = 'col-12';
   const card = document.createElement('div');
-  card.className = 'card border-0 shadow-sm h-100';
+  card.className = 'card border-0 shadow-sm h-100 question-card';
   card.innerHTML = `
     <div class="card-body d-flex flex-column">
-      <div class="d-flex justify-content-between align-items-start mb-2 question-header">
-        <div>
-          <div class="fw-bold">${titulo}</div>
-          <small class="text-muted">${totalRespostas} resposta(s)</small>
-        </div>
-        <div class="d-flex align-items-start gap-2 controls-slot question-controls">
-          ${resumo ? `<span class="badge bg-primary-subtle text-primary">${resumo}</span>` : ''}
-        </div>
+      <div class="question-head">
+        ${numero ? `<span class="question-num">${numero}</span>` : ''}
+        <h3 class="question-title"></h3>
       </div>
-      <div class="question-body mt-2"></div>
+      <div class="question-meta">
+        <span class="question-count">${totalRespostas} resposta(s)</span>
+        ${resumo ? '<span class="question-tag"></span>' : ''}
+        <div class="d-flex align-items-center gap-2 controls-slot question-controls"></div>
+      </div>
+      <div class="question-body"></div>
     </div>
   `;
+  card.querySelector('.question-title').textContent = texto;
+  if (resumo) card.querySelector('.question-tag').textContent = resumo;
   wrapper.appendChild(card);
   return {
     wrapper,
@@ -238,8 +305,8 @@ function renderGenericChart(body, controls, pergunta, chartInstances, chartPrefe
   const base = chartType === 'bar-horizontal' ? 'bar' : chartType;
   const isCircular = base === 'doughnut' || base === 'polarArea';
 
-  const canvas = createCanvas(body, isCircular ? 320 : 120);
-  if (isCircular) canvas.style.height = '320px';
+  const layout = isCircular ? buildCircularChartLayout(body) : null;
+  const canvas = createCanvas(layout ? layout.canvasBox : body, isCircular ? 290 : 120);
 
   if (controls) {
     controls.appendChild(makeSelect(
@@ -259,6 +326,8 @@ function renderGenericChart(body, controls, pergunta, chartInstances, chartPrefe
       data: pergunta.values,
       backgroundColor: base === 'line' ? 'rgba(66,25,68,0.15)' : colors,
       borderColor: PALETTE[0],
+      borderWidth: isCircular ? 2 : 1,
+      hoverOffset: isCircular ? 8 : 0,
       tension: 0.2,
       fill: base === 'line',
     }],
@@ -277,23 +346,50 @@ function renderGenericChart(body, controls, pergunta, chartInstances, chartPrefe
   const autoH = !userPref && base === 'bar' && labels.length > 4;
   if (base === 'bar' && (chartType === 'bar-horizontal' || autoH)) options.indexAxis = 'y';
 
-  chartInstances.set(pergunta.id, new Chart(canvas, { type: base, data, options }));
+  const chart = new Chart(canvas, { type: base, data, options });
+  chartInstances.set(pergunta.id, chart);
+
+  if (layout) {
+    fillChartLegend(
+      layout.legend,
+      labels.map((label, i) => ({ label, value: Number((pergunta.values || [])[i] || 0), color: colors[i] })),
+      chart,
+    );
+  }
 }
 
-function renderNivelLegend(body, opcoes) {
-  if (!Array.isArray(opcoes) || !opcoes.length) return;
-  const legend = document.createElement('div');
-  legend.className = 'mt-3 small text-muted';
-  const rows = opcoes.map((o) => `<span class="me-3"><strong>${o.nivel}</strong> — ${cleanText(o.label)}</span>`).join('');
-  legend.innerHTML = `<div class="fw-semibold mb-1">Legenda dos níveis:</div><div class="d-flex flex-wrap gap-1">${rows}</div>`;
-  body.appendChild(legend);
+// Tipo padrão dos gráficos de classificação por município (ver renderMunicipioLevel).
+const LEVEL_CHART_DEFAULT = 'doughnut';
+
+// O tooltip do Chart.js não quebra linha sozinho: textos longos precisam virar
+// um array de linhas curtas, senão vazam para fora do gráfico.
+function wrapLines(texto, largura = 60) {
+  const palavras = cleanText(texto).split(' ').filter(Boolean);
+  if (!palavras.length) return [];
+
+  return palavras.reduce((linhas, palavra) => {
+    const atual = linhas[linhas.length - 1];
+    if (atual && `${atual} ${palavra}`.length <= largura) {
+      linhas[linhas.length - 1] = `${atual} ${palavra}`;
+    } else {
+      linhas.push(palavra);
+    }
+    return linhas;
+  }, []);
+}
+
+function levelChartType(pergunta, chartPreferences) {
+  return chartPreferences.get(`${pergunta.id}::level_type`) || LEVEL_CHART_DEFAULT;
 }
 
 function renderMunicipioLevel(body, controls, pergunta, chartInstances, chartPreferences, rerender) {
   const chartKey = `${pergunta.id}::level`;
   const prefKey = `${pergunta.id}::level_type`;
-  const labels = (pergunta.municipio_labels || []).map(cleanText);
-  const values = (pergunta.municipio_levels || []).map((v) => Number(v || 0));
+  const grupos = Array.isArray(pergunta.grupos_nivel) ? pergunta.grupos_nivel : [];
+  const labels = grupos.map((g) => cleanText(g.label));
+  const values = grupos.map((g) => (Array.isArray(g.municipios) ? g.municipios.length : 0));
+  const municipiosPorGrupo = grupos.map((g) => (Array.isArray(g.municipios) ? g.municipios.map(cleanText) : []));
+  const descricoes = grupos.map((g) => wrapLines(g.descricao || ''));
 
   if (!labels.length) {
     body.innerHTML = '<div class="text-muted">Sem dados para esta questão.</div>';
@@ -303,35 +399,76 @@ function renderMunicipioLevel(body, controls, pergunta, chartInstances, chartPre
   if (controls) {
     controls.appendChild(makeSelect(
       'form-select form-select-sm', '170px',
-      [['bar-horizontal', 'Barras (horizontal)'], ['bar', 'Barras (vertical)'], ['line', 'Linha']],
-      chartPreferences.get(prefKey) || 'bar-horizontal',
+      [['doughnut', 'Pizza'], ['bar-horizontal', 'Barras (horizontal)'], ['bar', 'Barras (vertical)']],
+      levelChartType(pergunta, chartPreferences),
       (e) => { chartPreferences.set(prefKey, e.target.value); rerender(); },
     ));
   }
 
-  const canvas = createCanvas(body);
+  const selected = levelChartType(pergunta, chartPreferences);
+  const isCircular = selected === 'doughnut';
+  const horizontal = selected === 'bar-horizontal';
+
+  const layout = isCircular ? buildCircularChartLayout(body) : null;
+  const canvas = createCanvas(layout ? layout.canvasBox : body, isCircular ? 290 : 120);
   destroyChart(chartInstances, chartKey);
 
-  const selected = chartPreferences.get(prefKey) || 'bar-horizontal';
-  const base = selected === 'bar-horizontal' ? 'bar' : selected;
-  chartInstances.set(chartKey, new Chart(canvas, {
-    type: base,
+  // A legenda textual "1 — Semanal, 2 — Quinzenal..." era necessária quando o eixo
+  // mostrava o código numérico; agora os próprios rótulos são as classificações.
+  const options = {
+    responsive: true,
+    maintainAspectRatio: !isCircular,
+    plugins: {
+      legend: { display: false },
+      title: { display: !isCircular, text: 'Municípios por classificação' },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const total = isCircular ? ctx.parsed : (horizontal ? ctx.parsed.x : ctx.parsed.y);
+            return `${total} município(s)`;
+          },
+          afterLabel: (ctx) => {
+            const descricao = descricoes[ctx.dataIndex] || [];
+            const municipios = municipiosPorGrupo[ctx.dataIndex] || [];
+            return descricao.length ? [...descricao, '', ...municipios] : municipios;
+          },
+        },
+      },
+    },
+  };
+
+  if (!isCircular) {
+    options.scales = {
+      x: { ticks: { color: '#64748b', maxRotation: 50, minRotation: 25 } },
+      y: { ticks: { color: '#64748b', precision: 0 } },
+    };
+    options.indexAxis = horizontal ? 'y' : 'x';
+  }
+
+  const chart = new Chart(canvas, {
+    type: isCircular ? 'doughnut' : 'bar',
     data: {
       labels,
-      datasets: [{ label: 'Nível', data: values, backgroundColor: PALETTE[1], borderColor: PALETTE[1], tension: 0.25, fill: base === 'line' }],
+      datasets: [{
+        label: 'Municípios',
+        data: values,
+        backgroundColor: labels.map((_, i) => bg(i)),
+        borderColor: labels.map((_, i) => bg(i)),
+        borderWidth: isCircular ? 2 : 0,
+        hoverOffset: isCircular ? 8 : 0,
+      }],
     },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false }, title: { display: true, text: 'Nível de acompanhamento por município' } },
-      scales: {
-        x: { ticks: { color: '#64748b', maxRotation: 50, minRotation: 25 } },
-        y: { ticks: { color: '#64748b', precision: 0 } },
-      },
-      indexAxis: selected === 'bar-horizontal' ? 'y' : 'x',
-    },
-  }));
+    options,
+  });
+  chartInstances.set(chartKey, chart);
 
-  renderNivelLegend(body, pergunta.opcoes_nivel);
+  if (layout) {
+    fillChartLegend(
+      layout.legend,
+      labels.map((label, i) => ({ label, value: values[i], color: bg(i) })),
+      chart,
+    );
+  }
 }
 
 function renderMunicipioMultiselect(body, controls, pergunta, chartInstances, chartPreferences, rerender) {
@@ -382,6 +519,13 @@ function renderMunicipioMultiselect(body, controls, pergunta, chartInstances, ch
   destroyChart(chartInstances, totalsKey);
   destroyChart(chartInstances, munKey);
 
+  // Cada série traz 1/0 por município (mesma ordem de municipioLabels), então dá para
+  // derivar quais municípios marcaram cada opção sem pedir nada a mais ao backend.
+  const municipiosPorOpcao = orderedSeries.map((s) => {
+    const data = Array.isArray(s.data) ? s.data : [];
+    return municipioLabels.filter((_, idx) => Number(data[idx] || 0) > 0);
+  });
+
   chartInstances.set(totalsKey, new Chart(totalsCanvas, {
     type: 'bar',
     data: {
@@ -394,7 +538,15 @@ function renderMunicipioMultiselect(body, controls, pergunta, chartInstances, ch
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.parsed.y} município(s)`,
+            afterLabel: (ctx) => municipiosPorOpcao[ctx.dataIndex] || [],
+          },
+        },
+      },
       scales: {
         x: { ticks: { color: '#64748b', maxRotation: 50, minRotation: 25 } },
         y: { ticks: { color: '#64748b', precision: 0 } },
@@ -479,12 +631,14 @@ function renderSimpleQuestionCard(pergunta, titleOverride, ctx) {
     const labels = (pergunta.labels || []).map(cleanText);
     const type = resolveChartType(pergunta, labels, ctx.prefs.get(pergunta.id));
     if (type === 'doughnut' || type === 'polarArea') wrapper.className = 'col-12 col-lg-6';
+  } else if (pergunta.tipo === 'municipio_level' && levelChartType(pergunta, ctx.prefs) === 'doughnut') {
+    wrapper.className = 'col-12 col-lg-6';
   }
 
   const respostas = Array.isArray(pergunta.respostas) ? pergunta.respostas : [];
   const exemplos = Array.isArray(pergunta.exemplos) ? pergunta.exemplos : [];
 
-  if (pergunta.tipo === 'municipio_level' && Array.isArray(pergunta.municipio_labels)) {
+  if (pergunta.tipo === 'municipio_level' && Array.isArray(pergunta.grupos_nivel)) {
     renderMunicipioLevel(body, controls, pergunta, ctx.charts, ctx.prefs, rerender);
   } else if (pergunta.tipo === 'municipio_multiselect' && Array.isArray(pergunta.municipio_series)) {
     renderMunicipioMultiselect(body, controls, pergunta, ctx.charts, ctx.prefs, rerender);
@@ -509,7 +663,7 @@ function renderMatrixBlockCard(block, ctx) {
 
   const titulo = cleanText(block.title || matriz.texto || block.id);
   const { wrapper, body, controls } = buildCardShell(titulo, 0, '');
-  body.closest('.card-body').querySelector('.text-muted').textContent = 'Questão matriz';
+  body.closest('.card-body').querySelector('.question-count').textContent = 'Questão matriz';
 
   const linhaSelect = makeSelect('form-select form-select-sm', '220px',
     [['__ALL__', 'Todas as subquestões'], ...(matriz.linhas || []).map((l) => [l.codigo, cleanText(l.label || l.codigo)])],
