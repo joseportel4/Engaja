@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Support\SistemaContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -36,9 +37,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        $redirectTo = $request->user()?->isCartasUser()
-            ? route('cartas.login')
-            : '/';
+        $redirectTo = SistemaContext::afterLogoutRoute($request->user());
 
         Auth::guard('web')->logout();
 

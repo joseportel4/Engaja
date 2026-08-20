@@ -3,6 +3,7 @@
 namespace Tests\Feature\Cartas;
 
 use App\Models\User;
+use App\Notifications\Cartas\CadastroRealizadoComSucessoNotification;
 use App\Notifications\Cartas\CartasVerifyEmailNotification;
 use App\Notifications\CartasResetPasswordNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,7 +31,7 @@ class CartasEmailVerificationTest extends TestCase
         $response = $this->actingAs($user)->get(route('cartas.verification.notice'));
 
         $response->assertStatus(200);
-        $response->assertSee(route('verification.send'), false);
+        $response->assertSee(route('cartas.verification.send'), false);
         $response->assertSee(route('logout'), false);
     }
 
@@ -39,7 +40,7 @@ class CartasEmailVerificationTest extends TestCase
         $user = $this->cartasUser();
 
         $verificationUrl = URL::temporarySignedRoute(
-            'verification.verify',
+            'cartas.verification.verify',
             now()->addMinutes(60),
             ['id' => $user->id, 'hash' => sha1($user->email)]
         );
@@ -54,7 +55,7 @@ class CartasEmailVerificationTest extends TestCase
     {
         $user = $this->cartasUser(['email_verified_at' => now()]);
 
-        $response = $this->actingAs($user)->post(route('verification.send'));
+        $response = $this->actingAs($user)->post(route('cartas.verification.send'));
 
         $response->assertRedirect(route('cartas.dashboard'));
     }
@@ -100,16 +101,16 @@ class CartasEmailVerificationTest extends TestCase
         $user = $this->cartasUser();
 
         $verificationUrl = URL::temporarySignedRoute(
-            'verification.verify',
+            'cartas.verification.verify',
             now()->addMinutes(60),
             ['id' => $user->id, 'hash' => sha1($user->email)]
         );
 
         $this->actingAs($user)->get($verificationUrl);
 
-        Notification::assertSentTo($user, \App\Notifications\Cartas\CadastroRealizadoComSucessoNotification::class);
+        Notification::assertSentTo($user, CadastroRealizadoComSucessoNotification::class);
 
-        $mail = (new \App\Notifications\Cartas\CadastroRealizadoComSucessoNotification)->toMail($user);
+        $mail = (new CadastroRealizadoComSucessoNotification)->toMail($user);
         $html = $mail->render();
 
         $this->assertStringContainsString('Seu cadastro no Cartas para Esperançar está confirmado', $html);

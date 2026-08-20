@@ -6,6 +6,7 @@ use App\Http\Controllers\AgendamentoNotificacaoController;
 use App\Http\Controllers\AgendamentoParticipanteController;
 use App\Http\Controllers\AtividadeAcaoController;
 use App\Http\Controllers\AtividadeController;
+use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\AutorizacaoImagemImportController;
 use App\Http\Controllers\AvaliacaoAtividadeController;
 use App\Http\Controllers\AvaliacaoConsolidadaController;
@@ -61,8 +62,20 @@ Route::prefix('cartas')->name('cartas.')->group(function () {
         Route::post('/resetar-senha', [CartasAuthController::class, 'storeNewPassword'])->name('password.store');
     });
 
+    /*
+     * Fora dos grupos 'guest' e 'auth': o link enviado por e-mail costuma ser
+     * aberto em outro navegador/celular, sem sessão. A identidade vem da URL
+     * assinada (id + sha1 do e-mail), validada pelo middleware 'signed'.
+     */
+    Route::get('/verificar-email/{id}/{hash}', VerifyEmailController::class)
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
+
     Route::middleware('auth')->group(function () {
         Route::get('/verificar-email', [CartasAuthController::class, 'verificationNotice'])->name('verification.notice');
+        Route::post('/verificar-email/reenviar', [CartasAuthController::class, 'resendVerification'])
+            ->middleware('throttle:6,1')
+            ->name('verification.send');
 
         Route::middleware('cartas.verified')->group(function () {
             Route::post('/welcome-seen', [CartasAuthController::class, 'markWelcomeSeen'])->name('welcome.seen');
