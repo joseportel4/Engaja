@@ -253,6 +253,7 @@
             <button type="button" class="cartas-button" id="closeTermsModal" style="margin-top:12px;">Fechar</button>
         </div>
     </div>
+    @include('cartas.shared._help_fab')
 @endsection
 
 @push('styles')

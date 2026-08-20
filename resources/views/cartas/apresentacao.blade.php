@@ -522,6 +522,42 @@
             display: none;
         }
     }
+
+    /* Help Tutorial Tooltip */
+    .help-tutorial-tooltip {
+        position: fixed;
+        bottom: 96px;
+        right: 28px;
+        background-color: var(--land-purple);
+        color: #fff;
+        padding: 12px 18px;
+        border-radius: 8px;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 4px 14px rgba(169, 0, 217, 0.32);
+        z-index: 2400;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(10px);
+        transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s ease;
+        pointer-events: none;
+        text-align: center;
+    }
+    .help-tutorial-tooltip.is-visible {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    .help-tutorial-tooltip__arrow {
+        position: absolute;
+        bottom: -6px;
+        right: 22px;
+        width: 12px;
+        height: 12px;
+        background-color: var(--land-purple);
+        transform: rotate(45deg);
+    }
 </style>
 @endpush
 
@@ -688,6 +724,11 @@
     </section>
 
 </div>
+    <div id="helpTutorialTooltip" class="help-tutorial-tooltip">
+        Precisa de ajuda? Clique aqui!
+        <div class="help-tutorial-tooltip__arrow"></div>
+    </div>
+    @include('cartas.shared._help_fab')
 @endsection
 
 @push('scripts')
@@ -712,6 +753,28 @@
                 root.style.setProperty('--land-scale', scale.toFixed(2));
             });
         });
+
+        // Help Tutorial Logic
+        const tooltip = document.getElementById('helpTutorialTooltip');
+        const fabToggle = document.getElementById('helpFabToggle');
+        
+        if (tooltip && fabToggle) {
+            // Show after a small delay
+            setTimeout(() => {
+                tooltip.classList.add('is-visible');
+            }, 800);
+
+            // Hide after 7 seconds
+            const hideTimeout = setTimeout(() => {
+                tooltip.classList.remove('is-visible');
+            }, 7000);
+
+            // Hide when clicked
+            fabToggle.addEventListener('click', () => {
+                tooltip.classList.remove('is-visible');
+                clearTimeout(hideTimeout);
+            });
+        }
     })();
 </script>
 @endpush
