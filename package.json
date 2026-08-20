@@ -17,6 +17,7 @@
   "dependencies": {
     "ag-grid-community": "^36.0.0",
     "apexcharts": "^5.3.6",
+    "chart.js": "^4.5.1",
     "fabric": "^7.4.0",
     "pdfjs-dist": "^6.1.200",
     "puppeteer": "^25.0.4",

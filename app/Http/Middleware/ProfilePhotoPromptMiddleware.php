@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\SistemaContext;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -20,7 +21,7 @@ class ProfilePhotoPromptMiddleware
 
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->routeIs('cartas.*') || $request->is('cartas/*') || $request->is('cartas')) {
+        if (SistemaContext::isCartasRequest($request)) {
             return $next($request);
         }
 

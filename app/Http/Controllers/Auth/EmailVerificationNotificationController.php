@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\SistemaContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -14,11 +15,9 @@ class EmailVerificationNotificationController extends Controller
     public function store(Request $request): RedirectResponse
     {
         if ($request->user()->hasVerifiedEmail()) {
-            $redirectTo = $request->user()->isCartasUser()
-                ? route('cartas.dashboard')
-                : '/';
-
-            return redirect()->intended($redirectTo);
+            return redirect()->intended($request->user()->isCartasUser()
+                ? SistemaContext::homeRoute($request->user())
+                : '/');
         }
 
         $request->user()->sendEmailVerificationNotification();

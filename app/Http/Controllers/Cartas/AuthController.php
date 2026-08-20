@@ -184,6 +184,17 @@ class AuthController extends Controller
             : view('cartas.auth.verify-email');
     }
 
+    public function resendVerification(Request $request): RedirectResponse
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return redirect()->route('cartas.dashboard');
+        }
+
+        $request->user()->sendEmailVerificationNotification();
+
+        return back()->with('status', 'verification-link-sent');
+    }
+
     public function forgotPassword(): View
     {
         return view('cartas.auth.forgot-password');

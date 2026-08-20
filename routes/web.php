@@ -6,14 +6,16 @@ use App\Http\Controllers\AgendamentoNotificacaoController;
 use App\Http\Controllers\AgendamentoParticipanteController;
 use App\Http\Controllers\AtividadeAcaoController;
 use App\Http\Controllers\AtividadeController;
+use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\AutorizacaoImagemImportController;
 use App\Http\Controllers\AvaliacaoAtividadeController;
 use App\Http\Controllers\AvaliacaoConsolidadaController;
 use App\Http\Controllers\AvaliacaoController;
-use App\Http\Controllers\CertificadoController;
 use App\Http\Controllers\Cartas\AuthController as CartasAuthController;
 use App\Http\Controllers\Cartas\CartaController as CartasCartaController;
+use App\Http\Controllers\Cartas\CartaViewerDiagnosticController as CartasViewerDiagnosticController;
 use App\Http\Controllers\Cartas\UserManagementController as CartasUserManagementController;
+use App\Http\Controllers\CertificadoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DimensaoController;
 use App\Http\Controllers\EscalaController;
@@ -60,8 +62,20 @@ Route::prefix('cartas')->name('cartas.')->group(function () {
         Route::post('/resetar-senha', [CartasAuthController::class, 'storeNewPassword'])->name('password.store');
     });
 
+    /*
+     * Fora dos grupos 'guest' e 'auth': o link enviado por e-mail costuma ser
+     * aberto em outro navegador/celular, sem sessão. A identidade vem da URL
+     * assinada (id + sha1 do e-mail), validada pelo middleware 'signed'.
+     */
+    Route::get('/verificar-email/{id}/{hash}', VerifyEmailController::class)
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
+
     Route::middleware('auth')->group(function () {
         Route::get('/verificar-email', [CartasAuthController::class, 'verificationNotice'])->name('verification.notice');
+        Route::post('/verificar-email/reenviar', [CartasAuthController::class, 'resendVerification'])
+            ->middleware('throttle:6,1')
+            ->name('verification.send');
 
         Route::middleware('cartas.verified')->group(function () {
             Route::post('/welcome-seen', [CartasAuthController::class, 'markWelcomeSeen'])->name('welcome.seen');
@@ -81,6 +95,7 @@ Route::prefix('cartas')->name('cartas.')->group(function () {
             Route::put('/mensagens/{mensagem}/ajustar', [CartasCartaController::class, 'updateAdjustedMessage'])->name('mensagens.update-adjustment');
             Route::get('/mensagens/{mensagem}/preview', [CartasCartaController::class, 'preview'])->name('mensagens.preview');
             Route::get('/mensagens/{mensagem}/download', [CartasCartaController::class, 'download'])->name('mensagens.download');
+            Route::post('/diagnostico/visualizador', [CartasViewerDiagnosticController::class, 'store'])->name('diagnostico.visualizador');
         });
     });
 });
@@ -94,6 +109,9 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
     Route::get('/dashboards/avaliacoes', [DashboardController::class, 'avaliacoes'])->middleware(['auth', 'verified'])->name('dashboards.avaliacoes');
     Route::get('/dashboards/avaliacoes/dados', [DashboardController::class, 'avaliacoesData'])->middleware(['auth', 'verified'])->name('dashboards.avaliacoes.data');
     Route::get('/dashboards/avaliacoes/pdf', [DashboardController::class, 'avaliacoesPdf'])->middleware(['auth', 'verified'])->name('dashboards.avaliacoes.pdf');
+    Route::get('/dashboards/avaliacoes/dados/limesurvey/list-questions', [DashboardController::class, 'limesurveyListQuestions'])->middleware(['auth', 'verified'])->name('dashboards.avaliacoes.limesurvey.list-questions');
+    Route::get('/dashboards/avaliacoes/dados/limesurvey/list-participants', [DashboardController::class, 'limesurveyListParticipants'])->middleware(['auth', 'verified'])->name('dashboards.avaliacoes.limesurvey.list-participants');
+    Route::get('/dashboards/leitura-mundo', [DashboardController::class, 'leituraMundo'])->middleware(['auth', 'verified'])->name('dashboards.leitura-mundo');
     Route::get('/dashboards/bi', [DashboardController::class, 'bi'])->middleware(['auth', 'verified'])->name('dashboards.bi');
 });
 
@@ -355,6 +373,7 @@ Route::middleware(['auth', 'role:administrador|gerente|eq_pedagogica|articulador
     Route::resource('eventos', EventoController::class);
     Route::get('eventos/{evento}', [EventoController::class, 'show'])->name('eventos.show');
     Route::get('eventos/{evento}/planejamento/pdf', [EventoController::class, 'gerarPdfPlanejamento'])->name('eventos.planejamento.pdf');
+    Route::get('eventos/{evento}/cronograma/pdf', [EventoController::class, 'gerarPdfCronograma'])->name('eventos.cronograma.pdf');
     Route::post('eventos/{evento}/duplicate', [EventoController::class, 'duplicate'])->name('eventos.duplicate');
 });
 

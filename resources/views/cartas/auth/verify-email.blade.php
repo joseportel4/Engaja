@@ -45,7 +45,7 @@
         <div class="cartas-alert">Um novo link de confirmação foi enviado para o e-mail informado no cadastro.</div>
     @endif
 
-    <form method="POST" action="{{ route('verification.send') }}" class="cartas-form">
+    <form method="POST" action="{{ route('cartas.verification.send') }}" class="cartas-form">
         @csrf
         <button type="submit" class="cartas-button">Reenviar e-mail de confirmação</button>
     </form>

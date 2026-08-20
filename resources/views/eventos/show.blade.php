@@ -204,7 +204,7 @@
         @endif
 
         <a href="{{ route('eventos.planejamento.pdf', $evento) }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary">
-          <i class="fas fa-file-pdf"></i> Ver Planejamento da Ação
+          <i class="fas fa-file-pdf"></i> Ver planejamento da ação
         </a>
 
         <a href="{{ route('eventos.planejamento.pdf', ['evento' => $evento, 'formato' => 'docx']) }}" class="btn btn-outline-secondary">
@@ -219,7 +219,7 @@
           <a href="{{ route('inscricoes.inscritos', $evento) }}" class="btn btn-outline-secondary">Ver inscritos</a>
         @endcan
 
-        @if($mostrarMenuGerenciar)
+          @if($mostrarMenuGerenciar)
           <div class="dropdown">
             <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="dropdownGerenciarEvento"
               data-bs-toggle="dropdown" aria-expanded="false">
@@ -239,7 +239,7 @@
                 <li><hr class="dropdown-divider"></li>
                 <li>
                   <a class="dropdown-item" href="{{ route('dashboards.presencas', ['evento_id' => $evento->id]) }}">
-                    Relação de Presentes/Ausentes na Ação
+                    Relação de presentes/ausentes na ação
                   </a>
                 </li>
                 <li>
@@ -252,10 +252,9 @@
                 <li>
                   <button type="button" class="dropdown-item" data-bs-toggle="modal"
                     data-bs-target="#modalRelatoriosEvento">
-                    Relatórios
+                    Relatórios de participantes
                   </button>
                 </li>
-              @endrole
 
               @hasanyrole('administrador|gerente')
                 <li>
@@ -264,6 +263,14 @@
                   </a>
                 </li>
               @endhasanyrole
+
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a class="dropdown-item" href="{{ route('eventos.cronograma.pdf', $evento) }}">
+                  <i class="fas fa-file-pdf text-danger me-1"></i> Baixar cronograma da ação
+                </a>
+              </li>
+              @endrole
 
               @can('update', $evento)
                 <li><hr class="dropdown-divider"></li>

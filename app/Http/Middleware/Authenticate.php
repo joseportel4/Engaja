@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\SistemaContext;
 use Illuminate\Auth\Middleware\Authenticate as Middleware;
 use Illuminate\Http\Request;
 
@@ -13,10 +14,6 @@ class Authenticate extends Middleware
             return null;
         }
 
-        if ($request->is('cartas') || $request->is('cartas/*')) {
-            return route('cartas.login');
-        }
-
-        return route('login');
+        return SistemaContext::loginRoute($request);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\SistemaContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -16,7 +17,7 @@ class EmailVerificationPromptController extends Controller
     {
         if ($request->user()->isCartasUser()) {
             return $request->user()->hasVerifiedEmail()
-                ? redirect()->route('cartas.dashboard')
+                ? redirect()->to(SistemaContext::homeRoute($request->user()))
                 : view('cartas.auth.verify-email');
         }
 

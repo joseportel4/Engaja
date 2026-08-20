@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container py-4" id="avaliacoes-dashboard" data-endpoint="{{ route('dashboards.avaliacoes.data') }}">
+<div class="container py-4" id="avaliacoes-dashboard" data-endpoint="{{ route('dashboards.avaliacoes.data', request()->only(['fonte', 'survey_id'])) }}">
   <div class="mb-4">
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
       <div>
@@ -16,6 +16,24 @@
       </div>
     </div>
   </div>
+
+  @if(request('fonte') === 'limesurvey')
+    <div class="alert alert-info border-0 shadow-sm py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <span>
+        Fonte ativa: <strong>LimeSurvey</strong>
+        @if(request('survey_id'))
+          (survey_id={{ request('survey_id') }})
+        @endif
+      </span>
+      @if(!empty($cachedAt))
+        <span class="text-muted small">
+          Dados atualizados em: <strong>{{ $cachedAt }}</strong>
+        </span>
+      @else
+        <span class="text-muted small">Dados ao vivo (sem cache)</span>
+      @endif
+    </div>
+  @endif
 
   <div class="card shadow-sm border-0 mb-3">
     <div class="card-body">
@@ -90,44 +108,50 @@
 
   <div id="dashboard-avaliacoes-notice" class="alert alert-info border-0 shadow-sm py-2 px-3 small mb-3 d-none" role="alert" aria-live="polite"></div>
 
-  <div class="row g-3 mb-3" id="cards-totais">
-    <div class="col-lg-3 col-sm-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1">Submissões</p>
-          <div class="h3 fw-bold mb-0" data-total="submissoes">-</div>
-          <small class="text-muted">Respostas completas registradas</small>
+  @if(request('fonte') === 'limesurvey')
+    @include('dashboards.avaliacoes._filtros')
+    @include('dashboards.avaliacoes._cards-totais')
+    @include('dashboards.avaliacoes._bi-matriz')
+  @else
+    <div class="row g-3 mb-3" id="cards-totais">
+      <div class="col-lg-3 col-sm-6">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body">
+            <p class="text-uppercase small text-muted mb-1">Submissões</p>
+            <div class="h3 fw-bold mb-0" data-total="submissoes">-</div>
+            <small class="text-muted">Respostas completas registradas</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-sm-6">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body">
+            <p class="text-uppercase small text-muted mb-1">Questões</p>
+            <div class="h3 fw-bold mb-0" data-total="questoes">-</div>
+            <small class="text-muted">Com alguma resposta</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-sm-6">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body">
+            <p class="text-uppercase small text-muted mb-1" data-total-label="eventos">Ações Pedagógicas</p>
+            <div class="h3 fw-bold mb-0" data-total="eventos">-</div>
+            <small class="text-muted" data-total-help="eventos">Com respostas vinculadas</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-sm-6">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body">
+            <p class="text-uppercase small text-muted mb-1">Última resposta</p>
+            <div class="h3 fw-bold mb-0" data-total="ultima">-</div>
+            <small class="text-muted">Horário da última entrada</small>
+          </div>
         </div>
       </div>
     </div>
-    <div class="col-lg-3 col-sm-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1">Questões</p>
-          <div class="h3 fw-bold mb-0" data-total="questoes">-</div>
-          <small class="text-muted">Com alguma resposta</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-3 col-sm-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1" data-total-label="eventos">Ações Pedagógicas</p>
-          <div class="h3 fw-bold mb-0" data-total="eventos">-</div>
-          <small class="text-muted" data-total-help="eventos">Com respostas vinculadas</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-3 col-sm-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <p class="text-uppercase small text-muted mb-1">Última resposta</p>
-          <div class="h3 fw-bold mb-0" data-total="ultima">-</div>
-          <small class="text-muted">Horário da última entrada</small>
-        </div>
-      </div>
-    </div>
-  </div>
+  @endif
 
   <div class="row g-3">
     <div class="col-12">
@@ -155,20 +179,7 @@
   </div>
 </div>
 
-<div class="modal fade" id="textAnswersModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title js-text-modal-title">Respostas</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="text-muted small mb-2 js-text-modal-count"></div>
-        <div class="vstack gap-2 js-text-modal-list" style="max-height: 60vh; overflow: auto;"></div>
-      </div>
-    </div>
-  </div>
-</div>
+@include('dashboards.avaliacoes._modal-respostas')
 
 @push('styles')
 <style>
@@ -190,6 +201,160 @@
   }
   #paginacao-questoes .page-item.disabled .page-link {
     color: #adb5bd;
+  }
+
+  /* ── Card de questão ─────────────────────────────────────── */
+  .question-card {
+    border: 1px solid rgba(66, 25, 68, .08);
+    border-radius: 14px;
+    transition: box-shadow .2s ease, transform .2s ease;
+  }
+  .question-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .75rem 1.75rem rgba(66, 25, 68, .12) !important;
+  }
+  .question-card .card-body {
+    padding: 1.25rem 1.35rem;
+  }
+
+  .question-head {
+    display: flex;
+    align-items: baseline;
+    gap: .6rem;
+  }
+  .question-num {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.15rem;
+    padding: .18rem .45rem;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #421944, #6C345E);
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 700;
+  }
+  /* min-width:0 é o que permite o título usar toda a largura restante e quebrar */
+  .question-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #2c2130;
+  }
+
+  .question-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    margin-top: .8rem;
+    padding-top: .7rem;
+    border-top: 1px solid rgba(66, 25, 68, .07);
+  }
+  .question-count {
+    font-size: .8rem;
+    color: #6b7280;
+  }
+  .question-tag {
+    font-size: .68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: .22rem .6rem;
+    border-radius: 999px;
+    background: rgba(66, 25, 68, .07);
+    color: #421944;
+  }
+  .question-card .question-controls {
+    margin-left: auto;
+  }
+  .question-card .question-controls .form-select {
+    border-radius: 8px;
+  }
+  .question-card .question-body {
+    margin-top: 1rem;
+  }
+
+  /* ── Gráfico circular + legenda própria ──────────────────── */
+  .chart-layout {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.1rem;
+  }
+  .chart-canvas {
+    flex: 1 1 250px;
+    min-width: 0;
+    height: 290px;
+    position: relative;
+  }
+  .chart-legend {
+    flex: 1 1 230px;
+    min-width: 0;
+    max-height: 290px;
+    overflow-y: auto;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+  }
+  .chart-legend li {
+    display: flex;
+    align-items: flex-start;
+    gap: .55rem;
+    padding: .32rem .45rem;
+    border-radius: 7px;
+    font-size: .82rem;
+    line-height: 1.35;
+    transition: background .15s ease;
+  }
+  .chart-legend li:hover {
+    background: rgba(66, 25, 68, .05);
+  }
+  .chart-legend li.is-empty {
+    opacity: .45;
+  }
+  .chart-legend .dot {
+    flex: 0 0 auto;
+    width: .7rem;
+    height: .7rem;
+    border-radius: 3px;
+    margin-top: .28rem;
+  }
+  .chart-legend .lbl {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: #374151;
+  }
+  .chart-legend .val {
+    flex: 0 0 auto;
+    font-weight: 700;
+    color: #421944;
+    white-space: nowrap;
+  }
+  .chart-legend .val em {
+    font-style: normal;
+    font-weight: 500;
+    font-size: .9em;
+    color: #9ca3af;
+    margin-left: .25rem;
+  }
+
+  @media (max-width: 576px) {
+    .question-card .question-controls {
+      margin-left: 0;
+      width: 100%;
+    }
+    .question-card .question-controls .form-select {
+      width: 100%;
+      max-width: none;
+    }
   }
   @media (max-width: 576px) {
     #cards-questoes .question-header,
@@ -213,7 +378,7 @@
 @endpush
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+@vite('resources/js/dashboards/avaliacoes.js')
 @endpush
 
 <script>
@@ -541,24 +706,30 @@
       const titulo = cleanText(pergunta.texto);
       const resumo = cleanText(pergunta.resumo || '');
 
+      const numeroMatch = /^(\d+(?:\.\d+)*)\s+([\s\S]+)$/.exec(String(titulo).trim());
+      const numero = numeroMatch ? numeroMatch[1] : '';
+      const tituloTexto = numeroMatch ? numeroMatch[2] : titulo;
+
       const wrapper = document.createElement('div');
       wrapper.className = 'col-12 col-lg-6';
       const card = document.createElement('div');
-      card.className = 'card border-0 shadow-sm h-100';
+      card.className = 'card border-0 shadow-sm h-100 question-card';
       card.innerHTML = `
         <div class="card-body d-flex flex-column">
-          <div class="d-flex justify-content-between align-items-start mb-2 question-header">
-            <div>
-              <div class="fw-bold">${titulo}</div>
-              <small class="text-muted">${totalRespostas} resposta(s)</small>
-            </div>
-            <div class="d-flex align-items-start gap-2 controls-slot question-controls">
-              ${resumo ? `<span class="badge bg-primary-subtle text-primary">${resumo}</span>` : ''}
-            </div>
+          <div class="question-head">
+            ${numero ? `<span class="question-num">${numero}</span>` : ''}
+            <h3 class="question-title"></h3>
           </div>
-          <div class="question-body mt-2"></div>
+          <div class="question-meta">
+            <span class="question-count">${totalRespostas} resposta(s)</span>
+            ${resumo ? '<span class="question-tag"></span>' : ''}
+            <div class="d-flex align-items-center gap-2 controls-slot question-controls"></div>
+          </div>
+          <div class="question-body"></div>
         </div>
       `;
+      card.querySelector('.question-title').textContent = tituloTexto;
+      if (resumo) card.querySelector('.question-tag').textContent = resumo;
       const body = card.querySelector('.question-body');
       const controlsSlot = card.querySelector('.controls-slot');
 
