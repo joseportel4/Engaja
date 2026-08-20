@@ -90,11 +90,27 @@
             `;
             upload.appendChild(preview);
 
+            // Elemento de erro (criado uma vez por input)
+            let errorEl = upload.querySelector('.cpe-upload-error');
+            if (!errorEl) {
+                errorEl = document.createElement('span');
+                errorEl.className = 'cpe-upload-error';
+                errorEl.setAttribute('role', 'alert');
+                errorEl.style.cssText = 'display:none;color:#dc3545;font-size:.8rem;margin-top:.25rem;font-weight:500;';
+                upload.appendChild(errorEl);
+            }
+
+            const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
             input.addEventListener('change', () => {
                 const file = input.files?.[0];
                 const thumb = preview.querySelector('.cpe-upload-preview__thumb');
-                const name = preview.querySelector('.cpe-upload-preview__name');
-                const meta = preview.querySelector('.cpe-upload-preview__meta');
+                const name  = preview.querySelector('.cpe-upload-preview__name');
+                const meta  = preview.querySelector('.cpe-upload-preview__meta');
+
+                // Limpa estado de erro anterior
+                errorEl.style.display = 'none';
+                errorEl.textContent = '';
 
                 if (!file) {
                     upload.classList.remove('has-file');
@@ -104,20 +120,37 @@
                     return;
                 }
 
+                // Validação de tamanho no lado do cliente
+                if (file.size > MAX_BYTES) {
+                    // Reseta o input para não acumular arquivo inválido
+                    try {
+                        input.value = '';
+                        const dt = new DataTransfer();
+                        input.files = dt.files;
+                    } catch (_) { input.value = ''; }
+
+                    upload.classList.remove('has-file');
+                    thumb.textContent = 'ARQ';
+                    name.textContent = '';
+                    meta.textContent = '';
+
+                    errorEl.textContent = `⚠ Arquivo muito grande (${formatFileSize(file.size)}). O limite é 10 MB. Selecione outro PDF.`;
+                    errorEl.style.display = 'block';
+                    return;
+                }
+
+                // Garante que apenas 1 arquivo fica no input (substitui qualquer seleção anterior)
+                try {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    input.files = dt.files;
+                } catch (_) { /* fallback: navegador mais antigo, aceita como está */ }
+
                 upload.classList.add('has-file');
                 name.textContent = file.name;
-                meta.textContent = `${formatFileSize(file.size)} - clique para trocar`;
+                meta.textContent = `${formatFileSize(file.size)} · PDF selecionado ✓ — clique para trocar`;
                 thumb.innerHTML = '';
-
-                if (file.type.startsWith('image/')) {
-                    const image = document.createElement('img');
-                    image.alt = '';
-                    image.src = URL.createObjectURL(file);
-                    image.onload = () => URL.revokeObjectURL(image.src);
-                    thumb.appendChild(image);
-                } else {
-                    thumb.textContent = file.type === 'application/pdf' ? 'PDF' : 'ARQ';
-                }
+                thumb.textContent = 'PDF';
             });
         });
 

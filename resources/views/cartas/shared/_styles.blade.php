@@ -294,19 +294,32 @@
         margin-bottom: 4px;
     }
 
+    /* Garante que a coluna de texto no grid não expanda além do espaço disponível */
+    .cpe-upload-preview > span:last-child {
+        min-width: 0;
+        overflow: hidden;
+    }
+
     .cpe-upload-preview__name {
+        display: block;
         color: #222;
         font-size: 13px;
         font-weight: 800;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        max-width: 100%;
     }
 
     .cpe-upload-preview__meta {
+        display: block;
         color: #777;
         font-size: 11px;
         margin-top: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
     }
 
     .cpe-table-card {
