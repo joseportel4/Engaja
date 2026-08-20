@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\User;
 use App\Notifications\Cartas\CadastroRealizadoComSucessoNotification;
+use App\Support\SistemaContext;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
 use Illuminate\Pagination\Paginator;
@@ -44,9 +45,7 @@ class AppServiceProvider extends ServiceProvider
          * barrado com 403 pelo EnsureSistemaAccess, por estar fora do prefixo
          * /cartas. Redireciona para o dashboard correto conforme o sistema.
          */
-        RedirectIfAuthenticated::redirectUsing(fn ($request) => $request->user()?->isCartasUser()
-            ? route('cartas.dashboard')
-            : route('dashboard'));
+        RedirectIfAuthenticated::redirectUsing(fn ($request) => SistemaContext::homeRoute($request->user()));
 
         $this->registerPdfMacros();
         $this->configureRemotePdfRendering();
