@@ -277,6 +277,7 @@
     @yield('body')
     @include('cartas.layouts.footer')
     @include('cartas.shared._welcome_modal')
+    @stack('help_fab')
     @stack('scripts')
 </body>
 </html>
