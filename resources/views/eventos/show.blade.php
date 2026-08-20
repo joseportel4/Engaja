@@ -219,7 +219,7 @@
           <a href="{{ route('inscricoes.inscritos', $evento) }}" class="btn btn-outline-secondary">Ver inscritos</a>
         @endcan
 
-        @if($mostrarMenuGerenciar)
+          @if($mostrarMenuGerenciar)
           <div class="dropdown">
             <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="dropdownGerenciarEvento"
               data-bs-toggle="dropdown" aria-expanded="false">
@@ -264,6 +264,13 @@
                   </a>
                 </li>
               @endhasanyrole
+
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a class="dropdown-item" href="{{ route('eventos.cronograma.pdf', $evento) }}">
+                  <i class="fas fa-file-pdf text-danger me-1"></i> Baixar Cronograma da Ação
+                </a>
+              </li>
 
               @can('update', $evento)
                 <li><hr class="dropdown-divider"></li>

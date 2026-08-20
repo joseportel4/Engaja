@@ -349,6 +349,28 @@ class EventoController extends Controller
             ->inline('planejamento-'.Str::slug($evento->nome).'.pdf');
     }
 
+    public function gerarPdfCronograma(Evento $evento)
+    {
+        $this->authorize('view', $evento);
+
+        $evento->load([
+            'atividades' => fn ($q) => $q
+                ->with(['municipios.estado'])
+                ->orderBy('dia')
+                ->orderBy('hora_inicio'),
+        ]);
+
+        $nomeArquivo = 'cronograma-'.Str::slug($evento->nome).'.pdf';
+
+        return Pdf::view('eventos.cronograma_pdf', [
+            'evento'     => $evento,
+            'atividades' => $evento->atividades,
+        ])
+            ->format('a4')
+            ->withAlfaEjaBrand()
+            ->download($nomeArquivo);
+    }
+
     public function relatorioParticipantesUnicos(Request $request, Evento $evento)
     {
         $presencas = Presenca::with(['inscricao.participante.user', 'atividade'])
