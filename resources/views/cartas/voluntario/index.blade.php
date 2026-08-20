@@ -80,9 +80,7 @@
                 </div>
             </div>
         @endif
-        @push('help_fab')
-            @include('cartas.shared._help_fab')
-        @endpush
+        @include('cartas.shared._help_fab')
     </main>
 
     @include('cartas.shared._scripts')
