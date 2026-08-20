@@ -1,5 +1,9 @@
 @extends('cartas.layouts.app')
 
+@push('help_fab')
+    @include('cartas.shared._help_fab')
+@endpush
+
 @section('body')
     <main class="cartas-auth-shell">
         <aside class="cartas-auth-side" aria-hidden="true" style="@yield('auth-bg-style')">
