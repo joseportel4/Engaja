@@ -85,7 +85,7 @@
                     . '<button class="btn btn-sm btn-engaja dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">Gerenciar</button>'
                     . '<ul class="dropdown-menu dropdown-menu-end">'
                     . '<li><a class="dropdown-item" href="' . route('eventos.show', $ev) . '">Ver</a></li>'
-                    . '<li><a class="dropdown-item" href="' . route('eventos.planejamento.pdf', $ev) . '" target="_blank" rel="noopener noreferrer">Ver Planejamento da Ação</a></li>';
+                    . '<li><a class="dropdown-item" href="' . route('eventos.planejamento.pdf', $ev) . '" target="_blank" rel="noopener noreferrer">Ver planejamento da ação</a></li>';
 
                 if (auth()->user()->can('update', $ev) && auth()->user()->hasAnyRole(['administrador', 'gerente', 'eq_pedagogica'])) {
                     $acoesHtml .= '<li><a class="dropdown-item" href="' . route('eventos.edit', $ev) . '">Editar</a></li>';

@@ -109,9 +109,11 @@
               <a class="admin-nav-link {{ request()->routeIs('avaliacoes-universais.*') ? 'active' : '' }}" href="{{ route('avaliacoes-universais.index') }}">
                 Avaliações universais
               </a>
+              @hasanyrole('administrador|gerente|eq_pedagogica')
               <a class="admin-nav-link {{ request()->routeIs('avaliacoes-consolidadas.*') ? 'active' : '' }}" href="{{ route('avaliacoes-consolidadas.index') }}">
                 Consolidação de avaliações
               </a>
+              @endhasanyrole
               <div class="admin-subsection__label">Configurações</div>
               <a class="admin-nav-link {{ request()->routeIs('templates-avaliacao.*') ? 'active' : '' }}" href="{{ route('templates-avaliacao.index') }}">
                 Modelos de avaliação
