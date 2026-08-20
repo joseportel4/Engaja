@@ -263,7 +263,9 @@
         @include('cartas.shared._user-menu')
 
         @unless($gestor)
-            @include('cartas.shared._help_fab')
+            @push('help_fab')
+                @include('cartas.shared._help_fab')
+            @endpush
         @endunless
     </main>
 
