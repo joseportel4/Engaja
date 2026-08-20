@@ -46,4 +46,5 @@
         <a href="{{ route('cartas.register') }}" class="cartas-link">Criar conta</a>
         <a href="{{ route('cartas.password.request') }}" class="cartas-link">Esqueci minha senha</a>
     </div>
+    @include('cartas.shared._help_fab')
 @endsection
