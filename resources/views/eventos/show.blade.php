@@ -266,9 +266,10 @@
 
               <li><hr class="dropdown-divider"></li>
               <li>
-                <a class="dropdown-item" href="{{ route('eventos.cronograma.pdf', $evento) }}">
-                  <i class="fas fa-file-pdf text-danger me-1"></i> Baixar cronograma da ação
-                </a>
+                <button type="button" class="dropdown-item"
+                  data-bs-toggle="modal" data-bs-target="#modalCronogramaAgrupamento">
+                  <i class="fas fa-file-pdf text-danger me-1"></i>Cronograma da ação
+                </button>
               </li>
               @endrole
 
@@ -620,7 +621,43 @@
 </div>
 @endhasanyrole
 
+{{-- Modal: seleção de agrupamento do cronograma --}}
+@role('administrador|gerente|eq_pedagogica|articulador')
+<div class="modal fade" id="modalCronogramaAgrupamento" tabindex="-1"
+  aria-labelledby="modalCronogramaAgrupamentoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold" id="modalCronogramaAgrupamentoLabel">
+          <i class="fas fa-file-pdf text-danger me-2"></i>Cronograma da Ação
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3">
+          Escolha como os momentos devem ser organizados no cronograma:
+        </p>
+        <div class="d-grid gap-2">
+          <a href="{{ route('eventos.cronograma.pdf', ['evento' => $evento, 'agrupamento' => 'data']) }}"
+            class="btn btn-engaja">
+            <i class="fas fa-calendar-day me-2"></i>Agrupar por Data
+          </a>
+          <a href="{{ route('eventos.cronograma.pdf', ['evento' => $evento, 'agrupamento' => 'municipio']) }}"
+            class="btn btn-outline-engaja" style="border: 1px solid #dee2e6;">
+            <i class="fas fa-map-marker-alt me-2"></i>Agrupar por Município
+          </a>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+@endrole
+
 {{-- Instância do Modal de Pré-ação --}}
+
 <x-checklist-modal
     id="modalChecklistPreAcao"
     title="Checklist de Planejamento"

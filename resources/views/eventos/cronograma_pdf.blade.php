@@ -169,14 +169,56 @@
     use Carbon\Carbon;
     use App\Support\CargaHoraria;
 
-    $acoesGerais = \App\Models\Evento::ACOES_GERAIS;
+    $acoesGerais  = \App\Models\Evento::ACOES_GERAIS;
+    $agrupamento  = $agrupamento ?? 'data';
 
-    // Agrupa momentos por dia, ordenado por dia e hora de início
-    $porDia = $atividades
-        ->sortBy(fn ($a) => Carbon::parse($a->dia)->toDateString() . ' ' . Carbon::parse($a->hora_inicio)->format('H:i'))
-        ->groupBy(fn ($a) => Carbon::parse($a->dia)->toDateString());
+    if ($agrupamento === 'municipio') {
+        // ── Agrupa por município (nome) ──────────────────────────────────────
+        // Cada atividade pode ter múltiplos municípios; a estratégia adotada é:
+        // • Abrangência nacional  → grupo "Abrangência Nacional"
+        // • 1 ou mais municípios  → um grupo por município (atividade repete nos grupos)
+        // • Sem município         → grupo "Sem Município Definido"
+        $porGrupo = collect();
 
-    $totalDias     = $porDia->count();
+        foreach ($atividades as $at) {
+            if ($at->abrangencia_nacional) {
+                $keys = ['Abrangência Nacional'];
+            } elseif ($at->municipios->isNotEmpty()) {
+                $keys = $at->municipios->map(fn ($m) => $m->nome_com_estado ?? $m->nome)->toArray();
+            } else {
+                $keys = ['Sem Município Definido'];
+            }
+
+            foreach ($keys as $key) {
+                if (! isset($porGrupo[$key])) {
+                    $porGrupo[$key] = collect();
+                }
+                $porGrupo[$key]->push($at);
+            }
+        }
+
+        // Ordena: "Abrangência Nacional" primeiro, depois alfabético; cada grupo
+        // ordena internamente por dia e hora de início
+        $porGrupo = $porGrupo
+            ->sortKeys()
+            ->map(fn ($lista) =>
+                $lista->sortBy(fn ($a) =>
+                    Carbon::parse($a->dia)->toDateString() . ' ' . Carbon::parse($a->hora_inicio)->format('H:i')
+                )
+            );
+
+        $labelGrupo = 'Município';
+        $totalGrupos = $porGrupo->count();
+    } else {
+        // ── Agrupa por data (comportamento original) ─────────────────────────
+        $porGrupo = $atividades
+            ->sortBy(fn ($a) => Carbon::parse($a->dia)->toDateString() . ' ' . Carbon::parse($a->hora_inicio)->format('H:i'))
+            ->groupBy(fn ($a) => Carbon::parse($a->dia)->toDateString());
+
+        $labelGrupo  = 'Data';
+        $totalGrupos = $porGrupo->count();
+    }
+
     $totalMomentos = $atividades->count();
 
     // Carga horária total em minutos (soma dos momentos)
@@ -187,12 +229,13 @@
     $dataFim    = $evento->data_fim    ? Carbon::parse($evento->data_fim)    : null;
 @endphp
 
+
 <div class="content">
 
     {{-- Cabeçalho do documento --}}
     <x-pdf.header
         title="Cronograma da Ação Pedagógica"
-        subtitle="Projeto Engaja"
+        subtitle="Engaja"
     >
         <strong>{{ $evento->nome }}</strong>
     </x-pdf.header>
@@ -216,39 +259,49 @@
         @endif
     </div>
 
-    @if($porDia->isEmpty())
+    @if($porGrupo->isEmpty())
         <div class="sem-momentos">
             Nenhum momento cadastrado para esta ação pedagógica.
         </div>
     @else
 
-        {{-- Blocos por dia --}}
-        @foreach($porDia as $data => $lista)
+        {{-- Blocos por grupo (data ou município) --}}
+        @foreach($porGrupo as $chave => $lista)
         @php
-            $carbon           = Carbon::parse($data)->locale('pt_BR');
-            $dataFormatada    = $carbon->translatedFormat('d \d\e F \d\e Y');
-            $diaSemana        = $carbon->translatedFormat('l');
-            $totalMinsNoDia   = $lista->sum(fn ($a) => (int) ($a->carga_horaria ?? 0));
-            $chDiaLabel       = $totalMinsNoDia > 0 ? CargaHoraria::formatMinutos($totalMinsNoDia) : null;
+            $totalMinsNoGrupo = $lista->sum(fn ($a) => (int) ($a->carga_horaria ?? 0));
+            $chGrupoLabel     = $totalMinsNoGrupo > 0 ? CargaHoraria::formatMinutos($totalMinsNoGrupo) : null;
+
+            if ($agrupamento === 'data') {
+                $carbon        = Carbon::parse($chave)->locale('pt_BR');
+                $tituloGrupo   = $carbon->translatedFormat('d \d\e F \d\e Y');
+                $subtituloGrupo = $carbon->translatedFormat('l');
+            } else {
+                $tituloGrupo    = $chave; // nome do município
+                $subtituloGrupo = null;
+            }
         @endphp
 
         <div class="day-block">
 
-            {{-- Cabeçalho do dia --}}
+            {{-- Cabeçalho do grupo --}}
             <div class="day-header">
-                @if($chDiaLabel)
-                    <span class="day-header__total">&#9200; {{ $chDiaLabel }}</span>
+                @if($chGrupoLabel)
+                    <span class="day-header__total">&#9200; {{ $chGrupoLabel }}</span>
                 @endif
-                <div class="day-header__date">{{ $dataFormatada }}</div>
-                <div class="day-header__weekday">{{ $diaSemana }}</div>
+                <div class="day-header__date">{{ $tituloGrupo }}</div>
+                @if($subtituloGrupo)
+                    <div class="day-header__weekday">{{ $subtituloGrupo }}</div>
+                @endif
             </div>
 
-            {{-- Tabela de momentos do dia --}}
+            {{-- Tabela de momentos do grupo --}}
             <table class="moments-table">
                 <thead>
                     <tr>
                         <th class="col-index">#</th>
-                        <th class="col-time">Horário</th>
+                        <th class="col-time">
+                            @if($agrupamento === 'municipio') Data / @endif Horário
+                        </th>
                         <th>Momento / Descrição</th>
                         <th class="col-local">Local / Município</th>
                         <th class="col-ch text-center">Carga Horária</th>
@@ -269,8 +322,8 @@
                         $descricao = trim($at->descricao ?? '') !== '' ? $at->descricao : 'Momento sem descrição';
 
                         // Localização
-                        $isNacional    = (bool) $at->abrangencia_nacional;
-                        $municipios    = $at->municipios ?? collect();
+                        $isNacional     = (bool) $at->abrangencia_nacional;
+                        $municipios     = $at->municipios ?? collect();
                         $municipioLabel = null;
                         if ($isNacional) {
                             $municipioLabel = 'Abrangência nacional';
@@ -294,6 +347,11 @@
                     <tr>
                         <td class="col-index">{{ $idx + 1 }}</td>
                         <td class="col-time">
+                            @if($agrupamento === 'municipio')
+                                <span style="font-size:8px;color:#6b7280;display:block;">
+                                    {{ Carbon::parse($at->dia)->locale('pt_BR')->translatedFormat('d/m/Y') }}
+                                </span>
+                            @endif
                             {{ $iniStr }}
                             @if($fimStr)
                                 <br><span style="font-size:8px;font-weight:400;color:#6b7280;">até {{ $fimStr }}</span>
@@ -328,8 +386,8 @@
             <div class="totals-box__header">Resumo do Cronograma</div>
             <table class="totals-table">
                 <tr>
-                    <td class="label">Total de dias com atividades</td>
-                    <td class="value">{{ $totalDias }} {{ $totalDias === 1 ? 'dia' : 'dias' }}</td>
+                    <td class="label">Total de {{ strtolower($labelGrupo === 'Data' ? 'dias' : 'municípios') }} com atividades</td>
+                    <td class="value">{{ $totalGrupos }}</td>
                 </tr>
                 <tr>
                     <td class="label">Total de momentos cadastrados</td>
@@ -356,6 +414,7 @@
         </div>
 
     @endif
+
 
 </div>
 @endsection
