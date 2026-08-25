@@ -99,6 +99,38 @@
             </div>
         </div>
 
+        <div class="cartas-form-group">
+            <label class="cartas-label">Você é funcionário da Petrobrás?</label>
+            <div class="cartas-radio-group">
+                <label class="cartas-radio">
+                    <input type="radio" name="cartas_tipo_vinculo" value="{{ \App\Models\User::VINCULO_PETROBRAS }}" @checked(old('cartas_tipo_vinculo') === \App\Models\User::VINCULO_PETROBRAS) required>
+                    <span>Sim</span>
+                </label>
+                <label class="cartas-radio">
+                    <input type="radio" name="cartas_tipo_vinculo" value="{{ \App\Models\User::VINCULO_COMUNIDADE }}" @checked(old('cartas_tipo_vinculo') === \App\Models\User::VINCULO_COMUNIDADE)>
+                    <span>Não</span>
+                </label>
+            </div>
+            @error('cartas_tipo_vinculo')
+                <p class="cartas-field-error">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <div class="cartas-form-group">
+            <label class="cartas-label">Até quantas cartas você poderá escrever em resposta aos educandos participantes da ação Cartas para Esperançar?</label>
+            <div class="cartas-radio-group cartas-radio-group--inline">
+                @for ($i = 1; $i <= 5; $i++)
+                    <label class="cartas-radio">
+                        <input type="radio" name="cartas_limite_respostas" value="{{ $i }}" @checked(old('cartas_limite_respostas') == $i) required>
+                        <span>{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}</span>
+                    </label>
+                @endfor
+            </div>
+            @error('cartas_limite_respostas')
+                <p class="cartas-field-error">{{ $message }}</p>
+            @enderror
+        </div>
+
         <div class="cartas-terms-check @error('termos_aceitos') cartas-terms-check--invalid @enderror">
             <label class="cartas-terms-check__label">
                 <input type="checkbox" name="termos_aceitos" id="termosCheckbox" value="1" {{ old('termos_aceitos') ? 'checked' : '' }} required>
@@ -333,6 +365,32 @@
         .cartas-field-light.is-invalid {
             border-color: #c62828;
             box-shadow: 0 0 0 3px rgba(198, 40, 40, .14);
+        }
+
+        .cartas-radio-group {
+            display: flex;
+            gap: 24px;
+        }
+
+        .cartas-radio-group--inline {
+            flex-wrap: wrap;
+        }
+
+        .cartas-radio {
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 15px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .cartas-radio input[type="radio"] {
+            margin: 0 8px 0 0;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--cartas-purple);
+            cursor: pointer;
         }
 
         .cartas-field-error {

@@ -112,6 +112,8 @@ class AuthController extends Controller
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
                 'sistema_origem' => User::SISTEMA_CARTAS,
+                'cartas_tipo_vinculo' => $data['cartas_tipo_vinculo'],
+                'cartas_limite_respostas' => $data['cartas_limite_respostas'],
                 'cartas_terms_accepted_at' => now(),
             ]);
 
@@ -269,6 +271,22 @@ class AuthController extends Controller
         return redirect()->route('cartas.login')->with('status', 'Sua senha foi redefinida com sucesso.');
     }
 
+    private function prepareRegistrationData(Request $request): array
+    {
+        $toNull = fn ($value) => $value === '' || $value === null ? null : $value;
+
+        return array_merge($request->all(), [
+            'name' => trim((string) $request->input('name')),
+            'email' => trim((string) $request->input('email')),
+            'cpf' => $toNull(preg_replace('/\D+/', '', (string) $request->input('cpf'))),
+            'telefone' => $toNull(preg_replace('/\D+/', '', (string) $request->input('telefone'))),
+            'estado_id' => $toNull($request->input('estado_id')),
+            'municipio_id' => $toNull($request->input('municipio_id')),
+            'cartas_tipo_vinculo' => $toNull($request->input('cartas_tipo_vinculo')),
+            'cartas_limite_respostas' => $toNull($request->input('cartas_limite_respostas')),
+        ]);
+    }
+
     private function validatedRegistrationData(Request $request): array
     {
         $data = $this->prepareRegistrationData($request);
@@ -280,6 +298,8 @@ class AuthController extends Controller
             'telefone' => ['required', 'regex:/^\d{10,11}$/'],
             'estado_id' => ['required', 'integer', Rule::exists('estados', 'id')],
             'municipio_id' => ['required', 'integer', Rule::exists('municipios', 'id')],
+            'cartas_tipo_vinculo' => ['required', 'string', Rule::in([User::VINCULO_PETROBRAS, User::VINCULO_COMUNIDADE])],
+            'cartas_limite_respostas' => ['required', 'integer', 'min:1', 'max:5'],
             'termos_aceitos' => ['accepted'],
         ], [
             'cpf.required' => 'Informe seu CPF.',
@@ -288,6 +308,12 @@ class AuthController extends Controller
             'telefone.regex' => 'Telefone deve ter DDD e 10 ou 11 dígitos.',
             'estado_id.required' => 'Selecione seu estado.',
             'municipio_id.required' => 'Selecione seu município.',
+            'cartas_tipo_vinculo.required' => 'Informe se você é funcionário da Petrobrás.',
+            'cartas_tipo_vinculo.in' => 'Opção inválida para o vínculo com a Petrobrás.',
+            'cartas_limite_respostas.required' => 'Informe o limite de respostas.',
+            'cartas_limite_respostas.integer' => 'O limite de respostas deve ser um número.',
+            'cartas_limite_respostas.min' => 'O limite mínimo de respostas é 1.',
+            'cartas_limite_respostas.max' => 'O limite máximo de respostas é 5.',
             'termos_aceitos.accepted' => 'Você precisa aceitar os termos de uso para continuar.',
         ]);
 
@@ -320,9 +346,17 @@ class AuthController extends Controller
             'telefone' => ['required', 'regex:/^\d{10,11}$/'],
             'estado_id' => ['required', 'integer', Rule::exists('estados', 'id')],
             'municipio_id' => ['required', 'integer', Rule::exists('municipios', 'id')],
+            'cartas_tipo_vinculo' => ['required', 'string', Rule::in([User::VINCULO_PETROBRAS, User::VINCULO_COMUNIDADE])],
+            'cartas_limite_respostas' => ['required', 'integer', 'min:1', 'max:5'],
         ], [
             'telefone.required' => 'Informe seu telefone.',
             'telefone.regex' => 'Telefone deve ter DDD e 10 ou 11 dígitos.',
+            'cartas_tipo_vinculo.required' => 'Informe se você é funcionário da Petrobrás.',
+            'cartas_tipo_vinculo.in' => 'Opção inválida para o vínculo com a Petrobrás.',
+            'cartas_limite_respostas.required' => 'Informe o limite de respostas.',
+            'cartas_limite_respostas.integer' => 'O limite de respostas deve ser um número.',
+            'cartas_limite_respostas.min' => 'O limite mínimo de respostas é 1.',
+            'cartas_limite_respostas.max' => 'O limite máximo de respostas é 5.',
         ])->after(function ($validator) use ($pendingRegistration) {
             if (isset($pendingRegistration['estado_id'], $pendingRegistration['municipio_id']) && ! Municipio::query()
                 ->whereKey($pendingRegistration['municipio_id'])
@@ -350,6 +384,8 @@ class AuthController extends Controller
                 'email' => $data['email'],
                 'password' => $data['password'],
                 'sistema_origem' => User::SISTEMA_CARTAS,
+                'cartas_tipo_vinculo' => $data['cartas_tipo_vinculo'],
+                'cartas_limite_respostas' => $data['cartas_limite_respostas'],
                 'cartas_terms_accepted_at' => now(),
             ]);
 
@@ -374,23 +410,11 @@ class AuthController extends Controller
         return redirect()->route('cartas.verification.notice');
     }
 
-    private function prepareRegistrationData(Request $request): array
-    {
-        $toNull = fn ($value) => $value === '' || $value === null ? null : $value;
-
-        return array_merge($request->all(), [
-            'name' => trim((string) $request->input('name')),
-            'email' => trim((string) $request->input('email')),
-            'cpf' => $toNull(preg_replace('/\D+/', '', (string) $request->input('cpf'))),
-            'telefone' => $toNull(preg_replace('/\D+/', '', (string) $request->input('telefone'))),
-            'estado_id' => $toNull($request->input('estado_id')),
-            'municipio_id' => $toNull($request->input('municipio_id')),
-        ]);
-    }
 
     private function cpfDuplicado(string $cpf): bool
     {
         return Participante::query()->whereNotNull('cpf')
+            ->whereHas('user', fn ($query) => $query->where('sistema_origem', User::SISTEMA_CARTAS))
             ->whereRaw("regexp_replace(cpf, '[^0-9]', '', 'g') = ?", [$cpf])
             ->exists();
     }

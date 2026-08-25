@@ -89,6 +89,7 @@ class CadastroParticipanteStoreRequest extends FormRequest
 
         return Participante::query()
             ->whereNotNull('cpf')
+            ->whereHas('user', fn ($query) => $query->where('sistema_origem', User::SISTEMA_ENGAJA))
             ->whereRaw("regexp_replace(cpf, '[^0-9]', '', 'g') = ?", [$cpf])
             ->exists();
     }

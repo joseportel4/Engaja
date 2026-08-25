@@ -25,7 +25,7 @@ class UserManagementController extends Controller
 
         $users = User::query()
             ->where('sistema_origem', User::SISTEMA_CARTAS)
-            ->with('roles')
+            ->with(['roles', 'participante.municipio.estado'])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($nested) use ($search) {
                     $nested->where('name', 'like', "%{$search}%")
@@ -70,6 +70,8 @@ class UserManagementController extends Controller
                     ->ignore($managedUser->id),
             ],
             'role' => ['required', Rule::in(array_keys(self::ROLES))],
+            'cartas_limite_respostas' => ['required', 'integer', 'min:1', 'max:5'],
+            'cartas_tipo_vinculo' => ['nullable', Rule::in(array_keys(User::VINCULOS_CARTAS))],
         ], [
             'name.required' => 'Informe o nome do usuário.',
             'email.required' => 'Informe o e-mail.',
@@ -77,6 +79,10 @@ class UserManagementController extends Controller
             'email.unique' => 'Este e-mail já está em uso no Cartas.',
             'role.required' => 'Selecione o perfil de acesso.',
             'role.in' => 'Selecione um perfil válido.',
+            'cartas_limite_respostas.required' => 'Informe o limite de cartas.',
+            'cartas_limite_respostas.min' => 'O limite mínimo é 1.',
+            'cartas_limite_respostas.max' => 'O limite máximo é 5.',
+            'cartas_tipo_vinculo.in' => 'Selecione um tipo de vínculo válido.',
         ]);
 
         if ($request->user()->is($managedUser) && $data['role'] !== 'cartas_admin') {
@@ -88,6 +94,8 @@ class UserManagementController extends Controller
         $managedUser->update([
             'name' => $data['name'],
             'email' => $data['email'],
+            'cartas_limite_respostas' => $data['cartas_limite_respostas'],
+            'cartas_tipo_vinculo' => $data['cartas_tipo_vinculo'],
         ]);
 
         $managedUser->syncRoles([$data['role']]);
