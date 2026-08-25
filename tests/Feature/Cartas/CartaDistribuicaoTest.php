@@ -84,11 +84,11 @@ class CartaDistribuicaoTest extends CartasBaseTest
      */
     public function test_distribuicao_balanceada_entre_voluntarios(): void
     {
-        // Criar um terceiro voluntário
         $voluntario3 = User::factory()->create([
             'sistema_origem' => User::SISTEMA_CARTAS,
             'email_verified_at' => now(),
             'cartas_terms_accepted_at' => now(),
+            'cartas_limite_respostas' => 10,
         ]);
         $voluntario3->assignRole('cartas_voluntario');
 

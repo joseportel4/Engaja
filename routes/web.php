@@ -76,7 +76,6 @@ Route::prefix('cartas')->name('cartas.')->group(function () {
         Route::post('/verificar-email/reenviar', [CartasAuthController::class, 'resendVerification'])
             ->middleware('throttle:6,1')
             ->name('verification.send');
-
         Route::middleware('cartas.verified')->group(function () {
             Route::post('/welcome-seen', [CartasAuthController::class, 'markWelcomeSeen'])->name('welcome.seen');
             Route::get('/dashboard', [CartasCartaController::class, 'dashboard'])->name('dashboard');

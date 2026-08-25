@@ -49,7 +49,7 @@ class MunicipiosPrioritariosTest extends CartasBaseTest
 
         $response = $this->actingAs($this->gestor)
             ->get(route('cartas.dashboard'));
-
+        
         $response->assertOk();
         $response->assertSee('★ Prioritário');
 

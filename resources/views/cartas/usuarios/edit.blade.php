@@ -1,4 +1,4 @@
-﻿@extends('cartas.layouts.app')
+@extends('cartas.layouts.app')
 
 @section('title', 'Editar usuário - Cartas para Esperançar')
 
@@ -36,6 +36,25 @@
                     <select name="role" class="cpe-select" required>
                         @foreach($roles as $role => $label)
                             <option value="{{ $role }}" @selected(old('role', $currentRole) === $role)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </label>
+
+                <label>
+                    <span>Limite de cartas</span>
+                    <select name="cartas_limite_respostas" class="cpe-select" required>
+                        @for ($i = 1; $i <= 5; $i++)
+                            <option value="{{ $i }}" @selected(old('cartas_limite_respostas', $managedUser->cartas_limite_respostas) == $i)>{{ $i }}</option>
+                        @endfor
+                    </select>
+                </label>
+
+                <label>
+                    <span>Tipo de vínculo</span>
+                    <select name="cartas_tipo_vinculo" class="cpe-select">
+                        <option value="">Não informado</option>
+                        @foreach (\App\Models\User::VINCULOS_CARTAS as $value => $label)
+                            <option value="{{ $value }}" @selected(old('cartas_tipo_vinculo', $managedUser->cartas_tipo_vinculo) === $value)>{{ $label }}</option>
                         @endforeach
                     </select>
                 </label>

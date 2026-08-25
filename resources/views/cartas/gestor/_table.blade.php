@@ -9,6 +9,7 @@
                 <th>Remetente</th>
                 <th>Município do remetente</th>
                 <th>Destinatário</th>
+                <th>Cartas</th>
                 <th>Município do destinatário</th>
                 <th>Data</th>
                 <th>Ações</th>
@@ -45,12 +46,26 @@
                         <td>{{ $carta->educando?->nome ?? 'Remetente' }}</td>
                         <td>
                             @if($carta->educando?->municipio)
-                                <span>{{ collect([$carta->educando->municipio->nome, $carta->educando->municipio->estado?->sigla])->filter()->implode(' - ') }}</span>
+                                <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <span>{{ collect([$carta->educando->municipio->nome, $carta->educando->municipio->estado?->sigla])->filter()->implode(' - ') }}</span>
+                                    @if($carta->educando->municipio->isPrioritario())
+                                        <span class="cpe-pill cpe-pill--priority" title="Município Prioritário ({{ $carta->educando->municipio->estado?->regiao?->nome }})">
+                                            ★ Prioritário
+                                        </span>
+                                    @endif
+                                </div>
                             @else
                                 Não informado
                             @endif
                         </td>
                         <td>{{ $carta->voluntario?->nome ?? 'Sem voluntário' }}</td>
+                        <td>
+                            @if($carta->voluntario)
+                                {{ $carta->voluntario->cartas_como_voluntario_count ?? 0 }} / {{ $carta->voluntario->cartas_limite_respostas ?? 1 }}
+                            @else
+                                -
+                            @endif
+                        </td>
                         <td>
                             @if($carta->voluntario?->participante?->municipio)
                                 <span>{{ collect([$carta->voluntario->participante->municipio->nome, $carta->voluntario->participante->municipio->estado?->sigla])->filter()->implode(' - ') }}</span>
@@ -81,7 +96,7 @@
                 @endforeach
             @else
                 <tr>
-                    <td colspan="9" class="cpe-empty">Nenhuma carta cadastrada.</td>
+                    <td colspan="10" class="cpe-empty">Nenhuma carta cadastrada.</td>
                 </tr>
             @endif
         </tbody>
