@@ -117,7 +117,7 @@
         </div>
 
         <div class="cartas-form-group">
-            <label class="cartas-label">Até quantas cartas você poderá escrever em resposta aos educandos participantes da ação Cartas para Esperançar?</label>
+            <label class="cartas-label">Até quantas cartas você poderá escrever em resposta aos(às) educandos(as) participantes da ação Cartas para Esperançar?</label>
             <div class="cartas-radio-group cartas-radio-group--inline">
                 @for ($i = 1; $i <= 5; $i++)
                     <label class="cartas-radio">
