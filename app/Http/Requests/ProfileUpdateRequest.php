@@ -93,8 +93,11 @@ class ProfileUpdateRequest extends FormRequest
             return false;
         }
 
+        $sistemaOrigem = $this->user()?->sistema_origem ?? \App\Models\User::SISTEMA_ENGAJA;
+
         return Participante::query()
             ->whereNotNull('cpf')
+            ->whereHas('user', fn ($query) => $query->where('sistema_origem', $sistemaOrigem))
             ->when($ignorarId, fn($q) => $q->where('id', '!=', $ignorarId))
             ->whereRaw("regexp_replace(cpf, '[^0-9]', '', 'g') = ?", [$cpf])
             ->exists();

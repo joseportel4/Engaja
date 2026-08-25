@@ -71,6 +71,7 @@ abstract class CartasBaseTest extends TestCase
             'sistema_origem' => User::SISTEMA_CARTAS,
             'email_verified_at' => now(),
             'cartas_terms_accepted_at' => now(),
+            'cartas_limite_respostas' => 10,
         ]);
         $this->voluntario->assignRole('cartas_voluntario');
 
@@ -78,6 +79,7 @@ abstract class CartasBaseTest extends TestCase
             'sistema_origem' => User::SISTEMA_CARTAS,
             'email_verified_at' => now(),
             'cartas_terms_accepted_at' => now(),
+            'cartas_limite_respostas' => 10,
         ]);
         $this->voluntario2->assignRole('cartas_voluntario');
 

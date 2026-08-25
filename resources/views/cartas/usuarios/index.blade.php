@@ -1,4 +1,4 @@
-﻿@extends('cartas.layouts.app')
+@extends('cartas.layouts.app')
 
 @section('title', 'Gerenciar usuários - Cartas para Esperançar')
 
@@ -32,6 +32,7 @@
                             <th>Nome</th>
                             <th>E-mail</th>
                             <th>Perfil</th>
+                            <th>Vínculo</th>
                             <th>Verificado</th>
                             <th></th>
                         </tr>
@@ -47,12 +48,13 @@
                                         {{ $roles[$roleName] ?? 'Sem perfil' }}
                                     </span>
                                 </td>
+                                <td>{{ \App\Models\User::VINCULOS_CARTAS[$user->cartas_tipo_vinculo] ?? 'Não informado' }}</td>
                                 <td>{{ $user->email_verified_at ? 'Sim' : 'Não' }}</td>
                                 <td><a href="{{ route('cartas.usuarios.edit', $user) }}" class="cpe-link">Editar</a></td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="cpe-empty">Nenhum usuário encontrado.</td>
+                                <td colspan="6" class="cpe-empty">Nenhum usuário encontrado.</td>
                             </tr>
                         @endforelse
                     </tbody>
