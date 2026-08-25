@@ -92,16 +92,16 @@ class CartaController extends Controller
         }
 
         $eventosCartas = Evento::where('is_cartas', true)->get();
-        abort_if($eventosCartas->count() > 1, 500, 'Configuracao invalida: mais de uma acao de cartas esta marcada como ativa.');
+        abort_if($eventosCartas->count() > 1, 500, 'Configuração inválida: mais de uma ação de cartas está marcada como ativa.');
         $eventoCartas = $eventosCartas->first();
 
         if (! $eventoCartas) {
-            return back()->withErrors(['remetente_user_id' => 'Nenhuma acao de cartas esta configurada.'])->withInput();
+            return back()->withErrors(['remetente_user_id' => 'Nenhuma ação de cartas está configurada.'])->withInput();
         }
 
-        $voluntario = $this->selectVoluntario($remetente->id);
+        $voluntario = $this->selectVoluntario($remetente);
         if (! $voluntario) {
-            return back()->withErrors(['destinatario' => 'Nao ha voluntarios disponiveis para receber a carta.'])->withInput();
+            return back()->withErrors(['destinatario' => 'Não há voluntários disponíveis para receber a carta.'])->withInput();
         }
 
         $file = $request->file('arquivo');
@@ -322,7 +322,14 @@ class CartaController extends Controller
 
         $destinatario = User::with('participante')->findOrFail($data['destinatario_user_id']);
         if (! $destinatario->participante) {
-            return back()->withErrors(['destinatario_user_id' => 'O destinatario selecionado nao possui participante vinculado.'])->withInput();
+            return back()->withErrors(['destinatario_user_id' => 'O destinatário selecionado não possui participante vinculado.'])->withInput();
+        }
+
+        $remetenteCpf = $user->participante?->cpf ? preg_replace('/\D+/', '', $user->participante->cpf) : null;
+        $destinatarioCpf = $destinatario->participante?->cpf ? preg_replace('/\D+/', '', $destinatario->participante->cpf) : null;
+        
+        if ($remetenteCpf && $destinatarioCpf && $remetenteCpf === $destinatarioCpf) {
+            return back()->withErrors(['destinatario_user_id' => 'Você não pode enviar uma carta para si mesmo.'])->withInput();
         }
 
         $file = $request->file('arquivo');
@@ -434,7 +441,7 @@ class CartaController extends Controller
         $data = $request->validate([
             'parecer_verificacao' => ['nullable', 'string', 'max:2000'],
         ], [
-            'parecer_verificacao.max' => 'O parecer deve ter no maximo 2000 caracteres.',
+            'parecer_verificacao.max' => 'O parecer deve ter no máximo 2000 caracteres.',
         ]);
 
         DB::transaction(function () use ($request, $mensagem, $data) {
@@ -715,7 +722,12 @@ class CartaController extends Controller
         $statusFilter = $request->query('status');
 
         $cartas = Carta::query()
-            ->with(['educando.user', 'educando.municipio.estado.regiao', 'voluntario.participante.municipio.estado.regiao', 'ultimaMensagem'])
+            ->with([
+                'educando.user', 
+                'educando.municipio.estado.regiao', 
+                'voluntario' => fn($q) => $q->withCount('cartasComoVoluntario')->with('participante.municipio.estado.regiao'), 
+                'ultimaMensagem'
+            ])
             ->when($search !== '', function ($query) use ($search) {
                 $this->applySearchFilter($query, $search);
             })
@@ -849,14 +861,22 @@ class CartaController extends Controller
             ->orderBy('name');
     }
 
-    private function selectVoluntario(?int $excludeUserId = null): ?User
+    private function selectVoluntario(?User $remetente = null): ?User
     {
         $randomFn = DB::getDriverName() === 'mysql' ? 'RAND()' : 'RANDOM()';
+        $remetenteCpf = $remetente?->participante?->cpf ? preg_replace('/\D+/', '', $remetente->participante->cpf) : null;
 
         return $this->voluntariosQuery()
-            ->when($excludeUserId, fn ($query) => $query->where('users.id', '!=', $excludeUserId))
+            ->when($remetente, fn ($query) => $query->where('users.id', '!=', $remetente->id))
+            ->when($remetenteCpf, function ($query) use ($remetenteCpf) {
+                $query->whereDoesntHave('participante', function ($sub) use ($remetenteCpf) {
+                    $sub->whereRaw("regexp_replace(cpf, '[^0-9]', '', 'g') = ?", [$remetenteCpf]);
+                });
+            })
             ->withCount('cartasComoVoluntario as cartas_atribuidas_count')
+            ->whereRaw('(SELECT COUNT(*) FROM "cartas" WHERE "cartas"."voluntario_user_id" = "users"."id" AND "cartas"."deleted_at" IS NULL) < "users"."cartas_limite_respostas"')
             ->reorder()
+            ->orderByRaw("CASE WHEN \"users\".\"cartas_tipo_vinculo\" = 'petrobras' THEN 0 ELSE 1 END ASC")
             ->orderByRaw("cartas_atribuidas_count ASC, {$randomFn}")
             ->first();
     }

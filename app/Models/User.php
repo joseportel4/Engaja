@@ -26,6 +26,15 @@ class User extends Authenticatable
 
     public const SISTEMA_CARTAS = 'cartas';
 
+    public const VINCULO_PETROBRAS = 'petrobras';
+
+    public const VINCULO_COMUNIDADE = 'comunidade_freiriana';
+
+    public const VINCULOS_CARTAS = [
+        self::VINCULO_PETROBRAS => 'Funcionário Petrobrás',
+        self::VINCULO_COMUNIDADE => 'Comunidade Freiriana',
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -38,6 +47,8 @@ class User extends Authenticatable
         'sistema_origem',
         'cartas_terms_accepted_at',
         'cartas_welcome_seen_at',
+        'cartas_limite_respostas',
+        'cartas_tipo_vinculo',
         'force_password_change',
         'profile_photo_path',
         'identidade_genero',
@@ -72,6 +83,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'cartas_terms_accepted_at' => 'datetime',
             'cartas_welcome_seen_at' => 'datetime',
+            'cartas_limite_respostas' => 'integer',
             'password' => 'hashed',
             'force_password_change' => 'boolean',
         ];
@@ -205,7 +217,7 @@ class User extends Authenticatable
         ];
 
         return ! collect($camposObrigatorios)
-            ->some(fn($campo) => empty($this->$campo));
+            ->some(fn ($campo) => empty($this->$campo));
     }
 
     protected static function booted(): void

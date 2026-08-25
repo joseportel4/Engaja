@@ -28,8 +28,8 @@ class CartaDownloadBatchTest extends CartasBaseTest
             ->get(route('cartas.dashboard'));
 
         $response->assertOk();
-        $response->assertSee('0 selecionadas');
-        $response->assertDontSee('checked style="width: 18px;', false);
+        $response->assertSee('1 de 1 selecionadas');
+        $response->assertSee('checked style="width: 18px;', false);
     }
 
     public function test_gestor_dashboard_with_municipio_filter_checks_boxes_by_default(): void

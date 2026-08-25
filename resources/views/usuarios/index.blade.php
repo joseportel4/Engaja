@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('content')
 <div class="mb-4">
@@ -102,6 +102,7 @@
             ['field' => 'email', 'headerName' => 'E-mail', 'flex' => 2],
             ['field' => 'cpf', 'headerName' => 'CPF', 'flex' => 1],
             ['field' => 'telefone', 'headerName' => 'Telefone', 'flex' => 1],
+            ['field' => 'papel', 'headerName' => 'Papel / Acesso no Sistema', 'flex' => 1.5],
             ['field' => 'acoes', 'headerName' => 'Ação', 'flex' => 1, 'html' => true],
         ];
 
@@ -112,6 +113,21 @@
             $telFmt = $telRaw
                 ? preg_replace('/(\d{2})(\d{4,5})(\d{4})/', '($1) $2-$3', $telRaw)
                 : '--';
+
+            $roleNames = [
+                'administrador' => 'Administrador',
+                'gerente' => 'Gerente',
+                'eq_pedagogica' => 'Equipe Pedagógica',
+                'articulador' => 'Articulador',
+                'participante' => 'Participante',
+                'SME' => 'SME',
+                'cartas_admin' => 'Admin. Cartas',
+                'cartas_gestao' => 'Gestor Cartas',
+                'cartas_voluntario' => 'Voluntário Cartas',
+            ];
+
+            $roles = $u->roles->pluck('name')->map(fn($r) => $roleNames[$r] ?? ucwords(str_replace('_', ' ', $r)))->implode(', ');
+            $papelFmt = $roles ?: 'Participante';
 
             $acoesHtml = '<div class="dropdown d-inline-block">'
                 . '<button class="btn btn-sm btn-engaja dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">Gerenciar</button>'
@@ -137,6 +153,7 @@
                 'email' => $u->email,
                 'cpf' => $cpfFmt,
                 'telefone' => $telFmt,
+                'papel' => $papelFmt,
                 'acoes' => $acoesHtml,
             ];
         })->values();

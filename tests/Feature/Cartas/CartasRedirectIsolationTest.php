@@ -169,6 +169,8 @@ class CartasRedirectIsolationTest extends TestCase
             'estado_id' => $estado->id,
             'municipio_id' => $municipio->id,
             'termos_aceitos' => '1',
+            'cartas_tipo_vinculo' => \App\Models\User::VINCULO_PETROBRAS,
+            'cartas_limite_respostas' => 3,
         ])->assertRedirect(route('cartas.verification.notice'));
 
         $user = User::where('email', 'voluntaria@example.test')->firstOrFail();
