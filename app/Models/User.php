@@ -31,7 +31,7 @@ class User extends Authenticatable
     public const VINCULO_COMUNIDADE = 'comunidade_freiriana';
 
     public const VINCULOS_CARTAS = [
-        self::VINCULO_PETROBRAS => 'Funcionário Petrobrás',
+        self::VINCULO_PETROBRAS => 'Funcionário Petrobras',
         self::VINCULO_COMUNIDADE => 'Comunidade Freiriana',
     ];
 

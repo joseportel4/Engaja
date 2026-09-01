@@ -48,11 +48,6 @@
                             @if($carta->educando?->municipio)
                                 <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                     <span>{{ collect([$carta->educando->municipio->nome, $carta->educando->municipio->estado?->sigla])->filter()->implode(' - ') }}</span>
-                                    @if($carta->educando->municipio->isPrioritario())
-                                        <span class="cpe-pill cpe-pill--priority" title="Município Prioritário ({{ $carta->educando->municipio->estado?->regiao?->nome }})">
-                                            ★ Prioritário
-                                        </span>
-                                    @endif
                                 </div>
                             @else
                                 Não informado

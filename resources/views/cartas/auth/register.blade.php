@@ -100,7 +100,7 @@
         </div>
 
         <div class="cartas-form-group">
-            <label class="cartas-label">Você é funcionário da Petrobrás?</label>
+            <label class="cartas-label">Você é funcionário da Petrobras?</label>
             <div class="cartas-radio-group">
                 <label class="cartas-radio">
                     <input type="radio" name="cartas_tipo_vinculo" value="{{ \App\Models\User::VINCULO_PETROBRAS }}" @checked(old('cartas_tipo_vinculo') === \App\Models\User::VINCULO_PETROBRAS) required>

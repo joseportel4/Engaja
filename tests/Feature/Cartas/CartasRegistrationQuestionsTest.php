@@ -182,7 +182,7 @@ class CartasRegistrationQuestionsTest extends TestCase
     }
 
     /**
-     * Distribuição prioriza voluntários Petrobrás.
+     * Distribuição prioriza voluntários Petrobras.
      */
     public function test_distribuicao_prioriza_petrobras(): void
     {
@@ -234,7 +234,7 @@ class CartasRegistrationQuestionsTest extends TestCase
 
         $carta = Carta::latest('id')->first();
 
-        // A carta deve ir para o voluntário Petrobrás primeiro
+        // A carta deve ir para o voluntário Petrobras primeiro
         $this->assertEquals($petroUser->id, $carta->voluntario_user_id);
     }
 
@@ -358,7 +358,7 @@ class CartasRegistrationQuestionsTest extends TestCase
         $response = $this->actingAs($admin)->get(route('cartas.usuarios.index'));
 
         $response->assertOk();
-        $response->assertSee('Funcionário Petrobrás');
+        $response->assertSee('Funcionário Petrobras');
     }
     
     /**
