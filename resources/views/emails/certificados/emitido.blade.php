@@ -124,13 +124,10 @@
         </div>
 
         <div class="info-box">
-            <div class="info-box-title">📌 Instruções importantes de acesso</div>
-            <p>
-                Caso ainda não tenha se conectado a plataforma, utilize este seu e-mail cadastrado e a senha temporária <span class="password-highlight">alfaeja2025</span> para entrar.
-            </p>
+            <div class="info-box-title">📌 Instrução importante de acesso</div>
 
             <p style="margin-top: 12px;">
-                Se a senha temporária não funcionar, clique na opção <strong>"Esqueceu a senha?"</strong>, na tela de login, e informe este seu endereço de e-mail para cadastrar uma nova senha.
+                Caso ainda não tenha se conectado a plataforma, clique na opção <strong>"Esqueceu a senha?"</strong>, na tela de login, e informe este seu endereço de e-mail para cadastrar uma senha.
             </p>
         </div>
 
