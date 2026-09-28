@@ -36,6 +36,7 @@ class AtividadeController extends Controller
             ->exists();
 
         $atividades = $evento->atividades()
+            ->withCount('presencas')
             ->with([
                 'municipios.estado',
                 'avaliacaoAtividades' => fn ($rel) => $rel->when($userId, fn ($query) => $query->where('user_id', $userId)),
@@ -247,9 +248,19 @@ class AtividadeController extends Controller
     {
         $this->authorize('atividade.excluir');
 
+        $totalPresencas = $atividade->presencas()->count();
+
+        if ($totalPresencas > 0) {
+            $msg = $totalPresencas === 1
+                ? 'Não é possível excluir este momento porque ele possui 1 presença associada. Remova a presença antes de excluir.'
+                : "Não é possível excluir este momento porque ele possui {$totalPresencas} presenças associadas. Remova as presenças antes de excluir.";
+
+            return back()->with('error', $msg);
+        }
+
         $atividade->delete();
 
-        return back()->with('success', 'Momento removida.');
+        return back()->with('success', 'Momento removido com sucesso.');
     }
 
     /**
