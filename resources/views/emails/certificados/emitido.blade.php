@@ -127,7 +127,7 @@
             <div class="info-box-title">📌 Instrução importante de acesso</div>
 
             <p style="margin-top: 12px;">
-                Caso ainda não tenha se conectado a plataforma, clique na opção <strong>"Esqueceu a senha?"</strong>, na tela de login, e informe este seu endereço de e-mail para cadastrar uma senha.
+                Caso ainda não tenha se conectado à plataforma, clique na opção <strong>"Esqueceu a senha?"</strong>, na tela de login, e informe este seu endereço de e-mail para cadastrar uma senha.
             </p>
         </div>
 
