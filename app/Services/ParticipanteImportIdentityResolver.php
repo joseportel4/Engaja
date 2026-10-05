@@ -125,6 +125,8 @@ class ParticipanteImportIdentityResolver
             $this->fail($row, 'O e-mail foi cadastrado durante a importação. Tente novamente.');
         }
 
+        $user->assignRole('participante');
+
         $this->usersByEmail[mb_strtolower($email)][] = $user;
         $this->reservedEmails[mb_strtolower($email)] = true;
 

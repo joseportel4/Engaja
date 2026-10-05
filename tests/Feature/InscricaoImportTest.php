@@ -368,6 +368,7 @@ class InscricaoImportTest extends TestCase
     public function test_falha_durante_gravacao_reverte_perfis_e_mantem_previa(): void
     {
         $counts = [User::count(), Participante::count()];
+        $roleCount = DB::table('model_has_roles')->count();
         $resolver = new class extends ParticipanteImportIdentityResolver
         {
             private int $calls = 0;
@@ -386,6 +387,7 @@ class InscricaoImportTest extends TestCase
         $this->confirm($key)->assertSessionHasErrors('rows');
         $this->assertSame($counts, [User::count(), Participante::count()]);
         $this->assertSame(0, Inscricao::count());
+        $this->assertSame($roleCount, DB::table('model_has_roles')->count());
         $this->assertNotNull(session($key));
     }
 
@@ -437,6 +439,61 @@ class InscricaoImportTest extends TestCase
             'tipo_organizacao' => '', 'tipo_organizacao_ok' => true, 'escola_unidade' => '',
             'tag' => null, 'tag_ok' => true, 'data_entrada' => '',
         ], $extra);
+    }
+
+    public function test_criacao_atribui_role_de_participante_e_libera_meus_certificados(): void
+    {
+        $roleCount = DB::table('model_has_roles')->count();
+        $key = $this->preview([
+            $this->row(['nome' => 'Ana Silva', 'email' => 'ana@example.com']),
+            $this->row(['nome' => 'Maria Ana Alves', 'email' => '', 'cpf' => '01234567890']),
+        ]);
+        $this->get($this->previewUrl($key))->assertOk();
+        $this->assertSame($roleCount, DB::table('model_has_roles')->count());
+        $this->confirm($key)->assertSessionHasNoErrors();
+
+        $users = User::whereIn('email', ['ana@example.com', 'maria.ana.alves@ficticio.org.br'])->get();
+        $this->assertCount(2, $users);
+        foreach ($users as $user) {
+            $this->assertSame(['participante'], $user->getRoleNames()->all());
+            $this->assertDatabaseHas('model_has_roles', [
+                'model_type' => $user->getMorphClass(),
+                'model_id' => $user->id,
+                'role_id' => $user->roles->sole()->id,
+            ]);
+            $this->actingAs($user);
+            $this->assertStringContainsString('Meus certificados', view('layouts.partials.admin-sidebar')->render());
+        }
+    }
+
+    #[DataProvider('existingRoles')]
+    public function test_reimportacao_preserva_roles_de_perfis_existentes(array $roles): void
+    {
+        $byEmail = $this->profile('email@example.com', '11111111111');
+        $byCpf = $this->profile('cpf@example.com', '22222222222');
+        if ($roles !== []) {
+            $byEmail->assignRole($roles);
+            $byCpf->assignRole($roles);
+        }
+        $roleCount = DB::table('model_has_roles')->count();
+
+        $this->confirm($this->preview([
+            $this->row(['email' => $byEmail->email]),
+            $this->row(['email' => '', 'cpf' => '22222222222']),
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertEqualsCanonicalizing($roles, $byEmail->fresh()->getRoleNames()->all());
+        $this->assertEqualsCanonicalizing($roles, $byCpf->fresh()->getRoleNames()->all());
+        $this->assertSame($roleCount, DB::table('model_has_roles')->count());
+    }
+
+    public static function existingRoles(): array
+    {
+        return [
+            'sem role' => [[]],
+            'participante' => [['participante']],
+            'multiplas roles' => [['administrador', 'gerente']],
+        ];
     }
 
     private function profile(string $email, string $cpf, array $extra = []): User

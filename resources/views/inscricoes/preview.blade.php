@@ -58,7 +58,7 @@
   </div>
   @endif
 
-  <p class="text-muted">Nome é obrigatório. Informe e-mail ou CPF em cada registro. Salve as alterações da página antes de confirmar.</p>
+  <p class="text-muted"><strong>Nome é obrigatório. Informe e-mail ou CPF em cada registro. Salve as alterações da página antes de confirmar.</strong> </p>
 
   <div class="d-flex align-items-center justify-content-between mb-3">
     <div class="text-muted">
