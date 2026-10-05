@@ -9,7 +9,7 @@ use App\Models\Inscricao;
 use App\Models\Participante;
 use App\Models\Presenca;
 use App\Models\User;
-use App\Services\PresencaImportIdentityResolver;
+use App\Services\ParticipanteImportIdentityResolver;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -325,7 +325,7 @@ class PresencaImportTest extends TestCase
     public function test_falha_durante_gravacao_reverte_todo_lote_e_mantem_previa(): void
     {
         $counts = [User::count(), Participante::count()];
-        $resolver = new class extends PresencaImportIdentityResolver
+        $resolver = new class extends ParticipanteImportIdentityResolver
         {
             private int $calls = 0;
 
@@ -338,7 +338,7 @@ class PresencaImportTest extends TestCase
                 return parent::resolve($row);
             }
         };
-        $this->app->instance(PresencaImportIdentityResolver::class, $resolver);
+        $this->app->instance(ParticipanteImportIdentityResolver::class, $resolver);
         $key = $this->preview([$this->row(), $this->row(['email' => 'segunda@example.com'])]);
         $this->confirm($key)->assertSessionHasErrors('rows');
         $this->assertSame($counts, [User::count(), Participante::count()]);
@@ -495,7 +495,7 @@ class PresencaImportTest extends TestCase
         $this->assertTrue($invalid->hasAttribute('required'));
         $this->assertStringNotContainsString('is-invalid', $valid->getAttribute('class'));
         $this->assertSame(
-            'Selecione Presente, Ausente ou Justificado.',
+            'Selecione o status da presença.',
             trim($xpath->query('//*[@id="status-error-0"]')->item(0)->textContent)
         );
     }

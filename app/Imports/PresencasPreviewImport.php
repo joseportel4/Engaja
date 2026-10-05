@@ -4,7 +4,7 @@ namespace App\Imports;
 
 use App\Models\Municipio;
 use App\Models\Participante;
-use App\Services\PresencaImportValidator;
+use App\Services\ParticipanteImportValidator;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\OnEachRow;
@@ -100,7 +100,7 @@ class PresencasPreviewImport implements OnEachRow, SkipsEmptyRows, WithHeadingRo
         $row = $source->toArray(null, false, false);
 
         // Os mesmos identificadores são normalizados na edição e confirmação.
-        $identity = PresencaImportValidator::normalize($row);
+        $identity = ParticipanteImportValidator::normalize($row);
         $nome = $identity['nome'];
         $email = $identity['email'];
         $cpf = $identity['cpf'];

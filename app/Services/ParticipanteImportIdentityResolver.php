@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-class PresencaImportIdentityResolver
+class ParticipanteImportIdentityResolver
 {
     private array $usersByEmail = [];
 
@@ -65,7 +65,7 @@ class PresencaImportIdentityResolver
         }
     }
 
-    public function resolve(array $row): Participante
+    public function findUser(array $row): ?User
     {
         if ($row['email'] !== '') {
             $matches = $this->usersByEmail[$row['email']] ?? [];
@@ -77,7 +77,9 @@ class PresencaImportIdentityResolver
 
             $user = $active[0] ?? $matches[0] ?? null;
             if ($user) {
-                return $this->participantFor($user, $row);
+                $this->assertActive($user, $user->participante, $row);
+
+                return $user;
             }
         } else {
             $matches = collect($this->participantsByCpf[$row['cpf']] ?? [])
@@ -94,8 +96,20 @@ class PresencaImportIdentityResolver
             if ($participant) {
                 $this->assertActive($participant->user, $participant, $row);
 
-                return $participant;
+                $participant->user->setRelation('participante', $participant);
+
+                return $participant->user;
             }
+        }
+
+        return null;
+    }
+
+    public function resolve(array $row): Participante
+    {
+        $user = $this->findUser($row);
+        if ($user) {
+            return $this->participantFor($user, $row);
         }
 
         $email = $row['email'] !== '' ? $row['email'] : $this->fictitiousEmail($row);
@@ -115,6 +129,47 @@ class PresencaImportIdentityResolver
         $this->reservedEmails[mb_strtolower($email)] = true;
 
         return $this->participantFor($user, $row);
+    }
+
+    public function summarize(array $rows): array
+    {
+        $rows = array_map(ParticipanteImportValidator::normalize(...), $rows);
+        $this->prepare($rows);
+        $existing = [];
+        $new = [];
+        $errors = [];
+
+        foreach ($rows as $row) {
+            try {
+                $user = $this->findUser($row);
+                if ($user) {
+                    $existing[$user->id] = true;
+                } else {
+                    $key = $row['email'] !== '' ? 'email:'.$row['email'] : 'cpf:'.$row['cpf'];
+                    $new[$key] = true;
+                }
+            } catch (ValidationException $exception) {
+                foreach ($exception->errors() as $messages) {
+                    $errors = array_merge($errors, $messages);
+                }
+            }
+        }
+
+        return [
+            'usuariosExistentesCount' => count($existing),
+            'usuariosNovosCount' => count($new),
+            'identityErrors' => $errors,
+        ];
+    }
+
+    public function lock(): void
+    {
+        $lock = DB::selectOne('SELECT pg_try_advisory_xact_lock(?, ?) AS acquired', [17012026, 1]);
+        if (! $lock->acquired) {
+            throw ValidationException::withMessages([
+                'rows' => 'Outra importação de participantes está sendo confirmada. Aguarde e tente novamente.',
+            ]);
+        }
     }
 
     public function remember(Participante $participant): void
@@ -174,7 +229,7 @@ class PresencaImportIdentityResolver
     private function fail(array $row, string $message): never
     {
         throw ValidationException::withMessages([
-            'rows' => PresencaImportValidator::location($row).': '.$message,
+            'rows' => ParticipanteImportValidator::location($row).': '.$message,
         ]);
     }
 }

@@ -8,7 +8,7 @@ use App\Models\Inscricao;
 use App\Models\Municipio;
 use App\Models\Participante;
 use App\Models\Presenca;
-use App\Services\PresencaImportIdentityResolver;
+use App\Services\ParticipanteImportIdentityResolver;
 use App\Services\PresencaImportValidator;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -150,7 +150,7 @@ class PresencaImportController extends Controller
         return back()->with('success', 'Alterações desta página salvas.');
     }
 
-    public function confirmar(Request $request, Atividade $atividade, PresencaImportValidator $validator, PresencaImportIdentityResolver $resolver)
+    public function confirmar(Request $request, Atividade $atividade, PresencaImportValidator $validator, ParticipanteImportIdentityResolver $resolver)
     {
         $evento = $atividade->evento;
         // $this->authorize('update', $evento);
@@ -170,13 +170,7 @@ class PresencaImportController extends Controller
         $rows = $validator->validate($rows->all(), requireStatus: true);
 
         DB::transaction(function () use ($rows, $evento, $atividade, $resolver) {
-            // A trava dura toda a transação, inclusive em importações grandes.
-            $lock = DB::selectOne('SELECT pg_try_advisory_xact_lock(?, ?) AS acquired', [17012026, 1]);
-            if (! $lock->acquired) {
-                throw ValidationException::withMessages([
-                    'rows' => 'Outra importação de presenças está sendo confirmada. Aguarde e tente novamente.',
-                ]);
-            }
+            $resolver->lock();
 
             $resolver->prepare($rows);
             $munCache = Municipio::pluck('id', 'nome')
