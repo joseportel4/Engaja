@@ -59,13 +59,14 @@ class InscricaoImportTest extends TestCase
         ]);
         $response->assertSessionHasErrors(['rows.1.nome', 'rows.2.identificacao', 'rows.3.nome']);
         $errors = implode(' ', session('errors')->all());
-        $this->assertStringContainsString('Aba "Participantes", linha 4', $errors);
-        $this->assertStringContainsString('Aba "Participantes", linha 5', $errors);
-        $this->assertStringContainsString('Aba "Outra aba", linha 2', $errors);
+        $this->assertStringContainsString('Linha 4', $errors);
+        $this->assertStringContainsString('Linha 5', $errors);
+        $this->assertStringContainsString('Linha 2', $errors);
         $this->assertStringNotContainsString('_valid', $errors);
+        $this->assertStringNotContainsString('Aba "', $errors);
         $this->assertSame($counts, [User::count(), Participante::count()]);
         $this->get(route('inscricoes.import', $this->evento))
-            ->assertOk()->assertSee('linha 4')->assertSee('linha 5');
+            ->assertOk()->assertSee('Linha 4')->assertSee('Linha 5');
     }
 
     #[DataProvider('formats')]
@@ -136,7 +137,7 @@ class InscricaoImportTest extends TestCase
         $sheet->setCellValue('A1', 'Lista de inscrições');
         $sheet->fromArray([['nome', 'email', 'cpf'], ['Sem identificação', '', '']], null, 'A5');
         $this->uploadWorkbook($workbook)->assertSessionHasErrors('rows.0.identificacao');
-        $this->assertStringContainsString('linha 6', session('errors')->first('rows.0.identificacao'));
+        $this->assertStringContainsString('Linha 6', session('errors')->first('rows.0.identificacao'));
     }
 
     public function test_modelo_real_de_inscricoes_pode_ser_lido(): void
@@ -210,8 +211,8 @@ class InscricaoImportTest extends TestCase
         $this->confirm($key)->assertSessionHasErrors(['rows.0.'.$field, 'rows.1.'.$field]);
         $message = session('errors')->first('rows.0.'.$field);
         $this->assertStringContainsString('repetido na planilha', $message);
-        $this->assertStringContainsString('linha 2', $message);
-        $this->assertStringContainsString('linha 8', $message);
+        $this->assertStringContainsString('Linha 2', $message);
+        $this->assertStringContainsString('Linha 8', $message);
         $this->assertSame($counts, [User::count(), Participante::count()]);
         $this->assertSame(0, Inscricao::count());
         $this->assertNotNull(session($key));
@@ -236,7 +237,7 @@ class InscricaoImportTest extends TestCase
         ]]);
         $response->assertSessionHasErrors(['rows.0.email', 'rows.1.email']);
         $this->get(route('inscricoes.import', $this->evento))->assertOk()
-            ->assertSee('E-mail repetido na planilha')->assertSee('linha 2')->assertSee('linha 4');
+            ->assertSee('E-mail repetido na planilha')->assertSee('Linha 2')->assertSee('Linha 4');
         $this->assertSame(0, Inscricao::count());
     }
 
@@ -395,7 +396,7 @@ class InscricaoImportTest extends TestCase
             ['Segunda pessoa', 'segunda@example.com', '12345678901', ''],
         ]])->assertSessionHasErrors(['rows.0.cpf', 'rows.1.cpf']);
         $this->get(route('inscricoes.import', $this->evento))->assertOk()
-            ->assertSee('CPF repetido na planilha')->assertSee('linha 2')->assertSee('linha 3');
+            ->assertSee('CPF repetido na planilha')->assertSee('Linha 2')->assertSee('Linha 3');
         $this->assertSame(0, Inscricao::count());
     }
 

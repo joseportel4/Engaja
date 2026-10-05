@@ -33,7 +33,6 @@
       <table class="table table-sm table-bordered align-middle bg-white">
         <thead class="table-light">
           <tr>
-            <th>Origem</th>
             <th>Nome</th>
             <th>Email</th>
             <th>CPF</th>
@@ -51,7 +50,6 @@
           @foreach($rows as $i => $r)
           @php $gi = $globalOffset + $i; @endphp
           <tr>
-            <td class="text-nowrap">{{ $r['aba_original'] }} — linha {{ $r['linha_original'] }}</td>
             <td><input name="rows[{{ $gi }}][nome]" class="form-control form-control-sm" value="{{ old('rows.'.$gi.'.nome', $r['nome']) }}" required maxlength="255"></td>
             <td><input name="rows[{{ $gi }}][email]" class="form-control form-control-sm" value="{{ old('rows.'.$gi.'.email', $r['email']) }}" type="email" maxlength="255"></td>
             <td><input name="rows[{{ $gi }}][cpf]" class="form-control form-control-sm" value="{{ old('rows.'.$gi.'.cpf', $r['cpf']) }}" maxlength="255"></td>

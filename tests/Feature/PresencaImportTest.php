@@ -60,14 +60,14 @@ class PresencaImportTest extends TestCase
 
         $response->assertSessionHasErrors(['rows.1.nome', 'rows.2.identificacao', 'rows.3.nome']);
         $errors = session('errors')->all();
-        $this->assertStringContainsString('linha 4', implode(' ', $errors));
-        $this->assertStringContainsString('linha 5', implode(' ', $errors));
-        $this->assertStringContainsString('Outra aba', implode(' ', $errors));
+        $this->assertStringContainsString('Linha 4', implode(' ', $errors));
+        $this->assertStringContainsString('Linha 5', implode(' ', $errors));
+        $this->assertStringNotContainsString('Aba "', implode(' ', $errors));
         $this->assertSame($counts, [User::count(), Participante::count()]);
         $this->assertSame(0, Inscricao::count());
         $this->assertSame(0, Presenca::count());
         $this->get(route('atividades.presencas.import', $this->atividade))
-            ->assertOk()->assertSee('linha 4')->assertSee('linha 5')->assertSee('Outra aba');
+            ->assertOk()->assertSee('Linha 4')->assertSee('Linha 5')->assertDontSee('Outra aba');
     }
 
     public function test_upload_preserva_metadados_e_cpf_com_zero_inicial(): void
@@ -84,7 +84,7 @@ class PresencaImportTest extends TestCase
         $this->assertSame('outro@example.com', $preview['rows'][1]['email']);
         $this->assertSame(4, $preview['rows'][1]['linha_original']);
         $this->assertSame($this->admin->id, $preview['user_id']);
-        $this->get($response->headers->get('Location'))->assertOk()->assertSee('linha 4');
+        $this->get($response->headers->get('Location'))->assertOk()->assertSee('Outro Nome');
     }
 
     public function test_confirmacao_sem_nome_bloqueia_todos_os_cenarios_sem_gravar(): void
@@ -468,7 +468,7 @@ class PresencaImportTest extends TestCase
         $messages = session('errors')->all();
         $this->assertCount(4, $messages);
         foreach ($messages as $message) {
-            $this->assertMatchesRegularExpression('/^Aba "Participantes", linha [23]:/', $message);
+            $this->assertMatchesRegularExpression('/^Linha [23]:/', $message);
         }
         $this->assertSame($counts, [User::count(), Participante::count()]);
         $this->assertSame(0, Inscricao::count());

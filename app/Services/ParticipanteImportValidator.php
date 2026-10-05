@@ -91,8 +91,6 @@ class ParticipanteImportValidator
     {
         $line = $row['linha_original'] ?? $index + 2;
 
-        return isset($row['aba_original'])
-            ? 'Aba "'.$row['aba_original'].'", linha '.$line
-            : 'Linha '.$line;
+        return 'Linha '.$line;
     }
 }
