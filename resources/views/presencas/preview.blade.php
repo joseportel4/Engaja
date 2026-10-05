@@ -11,6 +11,19 @@
     </small>
   </h1>
 
+  @if($errors->any())
+  <div class="alert alert-danger" role="alert">
+    <strong>Importação bloqueada. Corrija os problemas abaixo.</strong>
+    <ul class="mb-0 mt-2">
+      @foreach($errors->all() as $message)
+      <li>{{ $message }}</li>
+      @endforeach
+    </ul>
+  </div>
+  @endif
+
+  <p class="text-muted">Nome é obrigatório. Informe e-mail ou CPF em cada registro. Salve as alterações da página antes de confirmar.</p>
+
   <form method="POST" action="{{ route('atividades.presencas.savepage', $atividade) }}" class="mb-3">
     @csrf
     <input type="hidden" name="session_key" value="{{ $sessionKey }}">
@@ -20,6 +33,7 @@
       <table class="table table-sm table-bordered align-middle bg-white">
         <thead class="table-light">
           <tr>
+            <th>Origem</th>
             <th>Nome</th>
             <th>Email</th>
             <th>CPF</th>
@@ -37,10 +51,11 @@
           @foreach($rows as $i => $r)
           @php $gi = $globalOffset + $i; @endphp
           <tr>
-            <td><input name="rows[{{ $gi }}][nome]" class="form-control form-control-sm" value="{{ $r['nome'] }}"></td>
-            <td><input name="rows[{{ $gi }}][email]" class="form-control form-control-sm" value="{{ $r['email'] }}"></td>
-            <td><input name="rows[{{ $gi }}][cpf]" class="form-control form-control-sm" value="{{ $r['cpf'] }}"></td>
-            <td><input name="rows[{{ $gi }}][telefone]" class="form-control form-control-sm" value="{{ $r['telefone'] }}"></td>
+            <td class="text-nowrap">{{ $r['aba_original'] }} — linha {{ $r['linha_original'] }}</td>
+            <td><input name="rows[{{ $gi }}][nome]" class="form-control form-control-sm" value="{{ old('rows.'.$gi.'.nome', $r['nome']) }}" required maxlength="255"></td>
+            <td><input name="rows[{{ $gi }}][email]" class="form-control form-control-sm" value="{{ old('rows.'.$gi.'.email', $r['email']) }}" type="email" maxlength="255"></td>
+            <td><input name="rows[{{ $gi }}][cpf]" class="form-control form-control-sm" value="{{ old('rows.'.$gi.'.cpf', $r['cpf']) }}" maxlength="255"></td>
+            <td><input name="rows[{{ $gi }}][telefone]" class="form-control form-control-sm" value="{{ old('rows.'.$gi.'.telefone', $r['telefone']) }}" maxlength="255"></td>
             <td>
               <select name="rows[{{ $gi }}][municipio_id]"
                 class="form-select form-select-sm">
