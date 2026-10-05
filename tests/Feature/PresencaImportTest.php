@@ -475,6 +475,94 @@ class PresencaImportTest extends TestCase
         $this->assertSame(0, Presenca::count());
     }
 
+    #[DataProvider('missingStatuses')]
+    public function test_status_ausente_ou_desconhecido_e_aceito_no_upload_e_destacado_na_previa(string $status): void
+    {
+        $response = $this->upload(['Participantes' => [
+            ['Pessoa sem status', 'sem.status@example.com', '', $status],
+            ['Pessoa com status', 'com.status@example.com', '', 'presente'],
+        ]]);
+        $response->assertRedirect()->assertSessionHasNoErrors();
+        $preview = $this->get($response->headers->get('Location'))->assertOk();
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($preview->getContent());
+        $xpath = new \DOMXPath($dom);
+        $invalid = $xpath->query('//select[@name="rows[0][status]"]')->item(0);
+        $valid = $xpath->query('//select[@name="rows[1][status]"]')->item(0);
+
+        $this->assertStringContainsString('is-invalid', $invalid->getAttribute('class'));
+        $this->assertSame('true', $invalid->getAttribute('aria-invalid'));
+        $this->assertTrue($invalid->hasAttribute('required'));
+        $this->assertStringNotContainsString('is-invalid', $valid->getAttribute('class'));
+        $this->assertSame(
+            'Selecione Presente, Ausente ou Justificado.',
+            trim($xpath->query('//*[@id="status-error-0"]')->item(0)->textContent)
+        );
+    }
+
+    public static function missingStatuses(): array
+    {
+        return [[''], ['desconhecido']];
+    }
+
+    public function test_confirmacao_exige_status_valido_em_todas_as_linhas_antes_de_gravar(): void
+    {
+        $counts = [User::count(), Participante::count()];
+        $withoutStatus = $this->row(['email' => 'sem.status@example.com']);
+        unset($withoutStatus['status']);
+        $key = $this->preview([
+            $this->row(['email' => 'valido@example.com']),
+            $withoutStatus,
+            $this->row(['email' => 'invalido@example.com', 'status' => 'invalido', 'linha_original' => 8]),
+        ]);
+        $url = route('atividades.presencas.preview', ['atividade' => $this->atividade, 'session_key' => $key]);
+
+        $this->from($url)->confirm($key)->assertRedirect($url)
+            ->assertSessionHasErrors(['rows.1.status', 'rows.2.status']);
+        $this->assertSame($counts, [User::count(), Participante::count()]);
+        $this->assertSame(0, Inscricao::count());
+        $this->assertSame(0, Presenca::count());
+        $this->assertNotNull(session($key));
+        $this->get($url)->assertOk()->assertSee('status-error-1')->assertSee('status-error-2');
+    }
+
+    public function test_status_pode_ser_corrigido_por_pagina_antes_de_confirmar(): void
+    {
+        $key = $this->preview([
+            $this->row(['email' => 'primeira@example.com', 'status' => null]),
+            $this->row(['email' => 'segunda@example.com', 'status' => null]),
+            $this->row(['email' => 'terceira@example.com', 'status' => null]),
+        ]);
+        foreach (['presente', 'ausente', 'justificado'] as $index => $status) {
+            $this->post(route('atividades.presencas.savepage', $this->atividade), [
+                'session_key' => $key,
+                'rows' => [$index => ['status' => $status]],
+            ])->assertSessionHasNoErrors();
+            $this->assertSame($status, session($key)['rows'][$index]['status']);
+        }
+
+        $this->confirm($key)->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame(['presente', 'ausente', 'justificado'], Presenca::orderBy('id')->pluck('status')->all());
+    }
+
+    public function test_previa_preserva_status_escolhido_quando_outro_campo_da_edicao_falha(): void
+    {
+        $key = $this->preview([$this->row(['status' => null])]);
+        $url = route('atividades.presencas.preview', ['atividade' => $this->atividade, 'session_key' => $key]);
+        $this->from($url)->post(route('atividades.presencas.savepage', $this->atividade), [
+            'session_key' => $key,
+            'rows' => [0 => ['nome' => '', 'status' => 'justificado']],
+        ])->assertRedirect($url)->assertSessionHasErrors('rows.0.nome');
+        $preview = $this->get($url)->assertOk();
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($preview->getContent());
+        $xpath = new \DOMXPath($dom);
+        $selected = $xpath->query('//select[@name="rows[0][status]"]/option[@selected]')->item(0);
+
+        $this->assertSame('justificado', $selected->getAttribute('value'));
+        $this->assertNull(session($key)['rows'][0]['status']);
+    }
+
     private function profile(string $email, string $cpf, array $extra = []): User
     {
         $user = User::factory()->create(array_merge(['email' => $email], $extra));
@@ -494,6 +582,8 @@ class PresencaImportTest extends TestCase
             'telefone' => null,
             'municipio' => '',
             'status' => 'presente',
+            'justificativa' => null,
+            'data_entrada' => null,
         ], $extra);
     }
 

@@ -13,7 +13,7 @@
 
   @if($errors->any())
   <div class="alert alert-danger" role="alert">
-    <strong>Importação bloqueada. Corrija os problemas abaixo.</strong>
+    <strong>Importação bloqueada. Corrija os problemas abaixo e salve cada página antes de continuar.</strong>
     <ul class="mb-0 mt-2">
       @foreach($errors->all() as $message)
       <li>{{ $message }}</li>
@@ -22,7 +22,7 @@
   </div>
   @endif
 
-  <p class="text-muted">Nome é obrigatório. Informe e-mail ou CPF em cada registro. Salve as alterações da página antes de confirmar.</p>
+  <p class="text-muted"><strong>Nome e status são obrigatórios. Informe e-mail ou CPF em cada registro. Salve as alterações da página antes de confirmar.</strong></p>
 
   <form method="POST" action="{{ route('atividades.presencas.savepage', $atividade) }}" class="mb-3">
     @csrf
@@ -105,12 +105,26 @@
               @endif
             </td>
             <td>
-              <select name="rows[{{ $gi }}][status]" class="form-select form-select-sm">
+              @php
+                $statusKey = 'rows.'.$gi.'.status';
+                $statusValue = old($statusKey, $r['status'] ?? null);
+                $statusHasError = !in_array($statusValue, ['presente', 'ausente', 'justificado'], true) || $errors->has($statusKey);
+              @endphp
+              <select name="rows[{{ $gi }}][status]"
+                class="form-select form-select-sm {{ $statusHasError ? 'is-invalid' : '' }}"
+                aria-invalid="{{ $statusHasError ? 'true' : 'false' }}"
+                @if($statusHasError) aria-describedby="status-error-{{ $gi }}" @endif
+                required>
                 <option value="">— Selecionar —</option>
-                <option value="presente" @selected($r['status']==='presente' )>Presente</option>
-                <option value="ausente" @selected($r['status']==='ausente' )>Ausente</option>
-                <option value="justificado" @selected($r['status']==='justificado' )>Justificado</option>
+                <option value="presente" @selected($statusValue==='presente')>Presente</option>
+                <option value="ausente" @selected($statusValue==='ausente')>Ausente</option>
+                <option value="justificado" @selected($statusValue==='justificado')>Justificado</option>
               </select>
+              @if($statusHasError)
+              <div class="invalid-feedback" id="status-error-{{ $gi }}">
+                {{ $errors->first($statusKey) ?: 'Selecione o status da presença.' }}
+              </div>
+              @endif
             </td>
             <!-- <td><input name="rows[{{ $gi }}][justificativa]" class="form-control form-control-sm" value="{{ $r['justificativa'] }}"></td> -->
             <!-- <td><input type="date" name="rows[{{ $gi }}][data_entrada]" class="form-control form-control-sm" value="{{ $r['data_entrada'] }}"></td> -->

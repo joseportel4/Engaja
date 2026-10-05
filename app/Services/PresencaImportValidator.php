@@ -34,18 +34,23 @@ class PresencaImportValidator
         return $row;
     }
 
-    public function validate(array $rows): array
+    public function validate(array $rows, bool $requireStatus = false): array
     {
         $errors = [];
 
+        $rules = [
+            'nome' => 'required|string|max:255',
+            'email' => 'nullable|string|email:rfc|max:255',
+            'cpf' => 'nullable|string|max:255',
+            'telefone' => 'nullable|string|max:255',
+        ];
+        if ($requireStatus) {
+            $rules['status'] = 'required|string|in:presente,ausente,justificado';
+        }
+
         foreach ($rows as $index => &$row) {
             $row = self::normalize($row);
-            $validator = Validator::make($row, [
-                'nome' => 'required|string|max:255',
-                'email' => 'nullable|string|email:rfc|max:255',
-                'cpf' => 'nullable|string|max:255',
-                'telefone' => 'nullable|string|max:255',
-            ], [
+            $validator = Validator::make($row, $rules, [
                 'nome.required' => 'Informe o nome.',
                 'nome.string' => 'Informe um nome válido.',
                 'nome.max' => 'O nome deve ter no máximo 255 caracteres.',
@@ -56,6 +61,9 @@ class PresencaImportValidator
                 'cpf.max' => 'O CPF excede o tamanho permitido.',
                 'telefone.string' => 'Informe um telefone em formato de texto.',
                 'telefone.max' => 'O telefone excede o tamanho permitido.',
+                'status.required' => 'Selecione o status da presença.',
+                'status.string' => 'Selecione o status da presença.',
+                'status.in' => 'Selecione o status da presença.',
             ]);
 
             foreach ($validator->errors()->messages() as $field => $messages) {

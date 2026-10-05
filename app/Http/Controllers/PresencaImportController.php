@@ -167,7 +167,7 @@ class PresencaImportController extends Controller
             return back()->withErrors(['rows' => 'Sessão vazia/expirada. Reenvie o arquivo.']);
         }
 
-        $rows = $validator->validate($rows->all());
+        $rows = $validator->validate($rows->all(), requireStatus: true);
 
         DB::transaction(function () use ($rows, $evento, $atividade, $resolver) {
             // A trava dura toda a transação, inclusive em importações grandes.
