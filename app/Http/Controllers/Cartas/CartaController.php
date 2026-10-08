@@ -262,6 +262,10 @@ class CartaController extends Controller
                 $path = $file->store("cartas/{$carta->id}/originais", 'local');
             }
 
+            $textoLimpo = isset($data['texto'])
+                ? $this->timbrado->normalizarTexto($data['texto'])
+                : null;
+
             $mensagem = CartaMensagem::create([
                 'carta_id' => $carta->id,
                 'rodada' => $rodada,
@@ -270,8 +274,8 @@ class CartaController extends Controller
                 'tipo_remetente' => CartaMensagem::TIPO_REMETENTE_VOLUNTARIO,
                 'canal_entrada' => $data['modo_resposta'] === 'digitada' ? CartaMensagem::CANAL_DIGITADA : CartaMensagem::CANAL_ANEXO_MANUSCRITO,
                 'status' => CartaMensagem::STATUS_AGUARDANDO_VERIFICACAO,
-                'texto' => $data['texto'] ?? null,
-                'texto_resumo' => isset($data['texto']) ? str($data['texto'])->limit(500)->toString() : null,
+                'texto' => $textoLimpo,
+                'texto_resumo' => $textoLimpo ? str($textoLimpo)->limit(500)->toString() : null,
                 'anexo_original_path' => $path,
                 'anexo_original_nome' => $file?->getClientOriginalName(),
                 'anexo_original_mime' => $file?->getClientMimeType(),
