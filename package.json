@@ -21,7 +21,7 @@
     "fabric": "^7.4.0",
     "pdfjs-dist": "^6.1.200",
     "puppeteer": "^25.0.4",
-    "quill": "^2.0.3",
+    "quill": "2.0.2",
     "tom-select": "^2.6.1"
   }
 }
