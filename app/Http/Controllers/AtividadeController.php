@@ -280,7 +280,16 @@ class AtividadeController extends Controller
      */
     private function regrasAgendamentoFormulario(Request $request): array
     {
-        return $request->user()?->can('presenca.abrir') ? AgendamentoPresenca::regras() : [];
+        if (! $request->user()?->can('presenca.abrir')) {
+            return [];
+        }
+
+        $regras = ['agendamento_presenca_ativo' => ['sometimes', 'boolean']];
+        foreach (AgendamentoPresenca::regras() as $campo => $validacoes) {
+            $regras[$campo] = ['exclude_if:agendamento_presenca_ativo,0', ...$validacoes];
+        }
+
+        return $regras;
     }
 
     /**
@@ -289,8 +298,17 @@ class AtividadeController extends Controller
      */
     private function converterAgendamentoFormulario(Request $request, array $dados): array
     {
+        unset($dados['agendamento_presenca_ativo']);
+
         if (! $request->user()?->can('presenca.abrir')) {
             unset($dados['presenca_abre_em'], $dados['presenca_fecha_em']);
+
+            return $dados;
+        }
+
+        if ($request->exists('agendamento_presenca_ativo') && ! $request->boolean('agendamento_presenca_ativo')) {
+            $dados['presenca_abre_em'] = null;
+            $dados['presenca_fecha_em'] = null;
 
             return $dados;
         }

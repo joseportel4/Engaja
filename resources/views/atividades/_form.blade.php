@@ -802,17 +802,22 @@
 
 @can('presenca.abrir')
   @php
-    $sugestaoAgendamento = isset($atividade) ? \App\Support\AgendamentoPresenca::sugestao($atividade) : ['abre' => null, 'fecha' => null];
-    $temAgendamentoGravado = isset($atividade) && ($atividade->presenca_abre_em || $atividade->presenca_fecha_em);
-    $valorAbreEm = old('presenca_abre_em', $temAgendamentoGravado ? \App\Support\AgendamentoPresenca::paraInput($atividade->presenca_abre_em) : ($sugestaoAgendamento['abre'] ?? null));
-    $valorFechaEm = old('presenca_fecha_em', $temAgendamentoGravado ? \App\Support\AgendamentoPresenca::paraInput($atividade->presenca_fecha_em) : ($sugestaoAgendamento['fecha'] ?? null));
+    $valorAbreEm = old('presenca_abre_em', isset($atividade) ? \App\Support\AgendamentoPresenca::paraInput($atividade->presenca_abre_em) : null);
+    $valorFechaEm = old('presenca_fecha_em', isset($atividade) ? \App\Support\AgendamentoPresenca::paraInput($atividade->presenca_fecha_em) : null);
+    $agendamentoAtivo = (bool) old('agendamento_presenca_ativo', $valorAbreEm || $valorFechaEm);
+    if (! $agendamentoAtivo) {
+      $valorAbreEm = null;
+      $valorFechaEm = null;
+    }
   @endphp
   <div class="border rounded p-3 mt-3 bg-light">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
       <label class="form-label fw-bold mb-0 text-engaja">
         <i class="bi bi-clock-history me-1"></i> Confirmação de presença — Agendamento de abertura/fechamento
       </label>
-      <div class="btn-group btn-group-sm">
+    </div>
+    <x-agendamento-presenca id="agendamento_presenca_ativo" :ativo="$agendamentoAtivo">
+      <div class="btn-group btn-group-sm mb-3">
         <button type="button" class="btn btn-outline-secondary" id="btn-preencher-agendamento-sugestao" title="Preenche os campos com a data e horários do momento">
           Preencher com dia/horário do momento
         </button>
@@ -820,10 +825,6 @@
           Limpar agendamento
         </button>
       </div>
-    </div>
-    <div class="form-text mb-3">
-      Se configurado, a confirmação de presença abrirá e/ou fechará automaticamente nos dias e horários determinados (horário de Brasília). Deixe em branco para que o momento inicie com a presença aberta.
-    </div>
 
     <div class="row g-3">
       <div class="col-md-6">
@@ -842,6 +843,7 @@
         @error('presenca_fecha_em') <div class="invalid-feedback">{{ $message }}</div> @enderror
       </div>
     </div>
+    </x-agendamento-presenca>
   </div>
 
   <script>
@@ -854,12 +856,6 @@
       const inputAbre = document.getElementById('presenca_abre_em');
       const inputFecha = document.getElementById('presenca_fecha_em');
 
-      let editouAbreManualmente = Boolean(inputAbre && inputAbre.value);
-      let editouFechaManualmente = Boolean(inputFecha && inputFecha.value);
-
-      inputAbre?.addEventListener('input', () => { editouAbreManualmente = true; });
-      inputFecha?.addEventListener('input', () => { editouFechaManualmente = true; });
-
       function formatarDateTime(dia, hora) {
         if (!dia || !hora) return '';
         const h = hora.length >= 5 ? hora.substring(0, 5) : hora;
@@ -869,34 +865,22 @@
         return `${dia}T${h}`;
       }
 
-      function aplicarSugestao(forcar = false) {
+      function aplicarSugestao() {
         if (!inputDia || !inputAbre || !inputFecha) return;
         const dia = inputDia.value;
         const hIni = inputHoraInicio?.value;
         const hFim = inputHoraFim?.value;
 
-        if (dia && hIni && (forcar || !editouAbreManualmente || !inputAbre.value)) {
-          const v = formatarDateTime(dia, hIni);
-          if (v || forcar) inputAbre.value = v;
-        }
-        if (dia && hFim && (forcar || !editouFechaManualmente || !inputFecha.value)) {
-          const v = formatarDateTime(dia, hFim);
-          if (v || forcar) inputFecha.value = v;
-        }
+        inputAbre.value = formatarDateTime(dia, hIni);
+        inputFecha.value = formatarDateTime(dia, hFim);
       }
 
-      // A sugestão de agendamento é aplicada explicitamente quando o usuário clica no botão:
-      btnSugestao?.addEventListener('click', function () {
-        aplicarSugestao(true);
-        editouAbreManualmente = true;
-        editouFechaManualmente = true;
-      });
+      btnSugestao?.addEventListener('click', aplicarSugestao);
 
       btnLimpar?.addEventListener('click', function () {
-        if (inputAbre) inputAbre.value = '';
-        if (inputFecha) inputFecha.value = '';
-        editouAbreManualmente = true;
-        editouFechaManualmente = true;
+        const toggle = document.getElementById('agendamento_presenca_ativo');
+        toggle.checked = false;
+        toggle.dispatchEvent(new Event('change'));
       });
     });
   </script>
