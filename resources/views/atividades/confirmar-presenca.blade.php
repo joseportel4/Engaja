@@ -57,7 +57,7 @@
                 </div>
                 <div id="autorizacao-presenca" class="mb-3" hidden>
                   <fieldset>
-                    <legend class="fs-6">Você autoriza o uso de imagem, voz e nome nesta ação?</legend>
+                    <legend class="fs-6"><strong>Você autoriza o uso de imagem, voz e nome nesta ação?</strong> </legend>
                     <button type="button" class="btn btn-link p-0 mb-2" data-bs-toggle="modal" data-bs-target="#termoAutorizacaoImagemModal">Ler o termo de autorização</button>
                     <div class="form-check mb-2">
                       <input class="form-check-input" type="radio" name="autorizado" value="1" id="autorizacaoPresencaSim" disabled @checked(in_array(old('autorizado'), [true, 1, '1'], true))>
@@ -409,7 +409,7 @@
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
           <div class="modal-header">
-            <h2 class="modal-title fs-5" id="termoAutorizacaoImagemTitulo">Termo de autorização de uso de imagem, voz e nome</h2>
+            <h2 class="modal-title fs-5" id="termoAutorizacaoImagemTitulo"><strong>Termo de autorização de uso de imagem, voz e nome</strong></h2>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
           </div>
           <div class="modal-body" style="white-space: pre-line">{{ config('autorizacao_imagem.texto') }}</div>
