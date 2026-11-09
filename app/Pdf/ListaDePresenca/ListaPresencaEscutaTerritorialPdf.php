@@ -39,10 +39,10 @@ class ListaPresencaEscutaTerritorialPdf extends Fpdi
             $this->useTemplate($this->templatePage1, 0, 0, null, null, true);
             $this->SetFont('Helvetica', 'B', 11);
 
-            $this->Text(30, 46.9, $this->ajustarTexto($this->municipioLabel, 90));
-            $this->Text(137, 46.9, $this->ajustarTexto($this->dataLabel, 59));
-            $this->Text(29, 54.8, $this->ajustarTexto($this->atividadeLabel, 90));
-            $this->Text(143, 54.8, $this->ajustarTexto($this->periodoLabel, 54));
+            $this->Text(30, 47.2, $this->ajustarTexto($this->municipioLabel, 90));
+            $this->Text(137, 47.2, $this->ajustarTexto($this->dataLabel, 59));
+            $this->Text(29, 55.1, $this->ajustarTexto($this->atividadeLabel, 90));
+            $this->Text(143, 55.1, $this->ajustarTexto($this->periodoLabel, 54));
 
             $this->SetY(65);
         } else {

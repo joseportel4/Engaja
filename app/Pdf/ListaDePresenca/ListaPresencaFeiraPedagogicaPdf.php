@@ -39,10 +39,10 @@ class ListaPresencaFeiraPedagogicaPdf extends Fpdi
             $this->useTemplate($this->templatePage1, 0, 0, null, null, true);
             $this->SetFont('Helvetica', 'B', 11);
 
-            $this->Text(34, 52.1, $this->ajustarTexto($this->municipioLabel, 141));
-            $this->Text(190.5, 52.1, $this->ajustarTexto($this->dataLabel, 94));
-            $this->Text(33, 60, $this->ajustarTexto($this->atividadeLabel, 141));
-            $this->Text(196.5, 60, $this->ajustarTexto($this->periodoLabel, 88));
+            $this->Text(34, 52.4, $this->ajustarTexto($this->municipioLabel, 141));
+            $this->Text(190.5, 52.4, $this->ajustarTexto($this->dataLabel, 94));
+            $this->Text(33, 60.2, $this->ajustarTexto($this->atividadeLabel, 141));
+            $this->Text(196.5, 60.2, $this->ajustarTexto($this->periodoLabel, 88));
 
             $this->SetY(70);
         } else {
