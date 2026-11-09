@@ -51,47 +51,58 @@ class ListaPresencaPdfTest extends TestCase
 
     public static function modelos(): array
     {
-        return [[null], ['assessoria'], ['oficina'], ['escuta_territorial']];
+        return [[null], ['assessoria'], ['oficina'], ['escuta_territorial'], ['feira_pedagogica']];
     }
 
     #[DataProvider('perfisPermitidos')]
-    public function test_mesmos_perfis_autorizados_podem_baixar_escuta(string $perfil): void
+    public function test_mesmos_perfis_autorizados_podem_baixar_modelos(string $perfil, string $tipo): void
     {
         $user = User::factory()->create(['force_password_change' => false]);
         $user->assignRole($perfil);
-        $this->actingAs($user)->get($this->url())->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $this->actingAs($user)->get($this->url($tipo))->assertOk()->assertHeader('Content-Type', 'application/pdf');
     }
 
     public static function perfisPermitidos(): array
     {
-        return [['administrador'], ['gerente'], ['eq_pedagogica'], ['articulador']];
+        $casos = [];
+        foreach (['escuta_territorial', 'feira_pedagogica'] as $tipo) {
+            foreach (['administrador', 'gerente', 'eq_pedagogica', 'articulador'] as $perfil) {
+                $casos[] = [$perfil, $tipo];
+            }
+        }
+
+        return $casos;
     }
 
-    public function test_visitante_nao_recebe_pdf(): void
+    #[DataProvider('escutaEFeira')]
+    public function test_visitante_nao_recebe_pdf(string $tipo): void
     {
-        $this->get($this->url())->assertRedirect(route('login'));
+        $this->get($this->url($tipo))->assertRedirect(route('login'));
     }
 
-    public function test_perfil_sem_permissao_de_presenca_e_bloqueado(): void
+    #[DataProvider('escutaEFeira')]
+    public function test_perfil_sem_permissao_de_presenca_e_bloqueado(string $tipo): void
     {
         $user = User::factory()->create();
         $user->assignRole('gerente');
         $user->roles->first()->revokePermissionTo('presenca.abrir');
-        $this->actingAs($user)->get($this->url())->assertForbidden();
+        $this->actingAs($user)->get($this->url($tipo))->assertForbidden();
     }
 
-    public function test_permissao_isolada_nao_contorna_restricao_de_perfil_da_rota(): void
+    #[DataProvider('escutaEFeira')]
+    public function test_permissao_isolada_nao_contorna_restricao_de_perfil_da_rota(string $tipo): void
     {
         $user = User::factory()->create();
         $user->givePermissionTo('presenca.abrir');
-        $this->actingAs($user)->get($this->url())->assertForbidden();
+        $this->actingAs($user)->get($this->url($tipo))->assertForbidden();
     }
 
-    public function test_usuario_do_cartas_nao_acessa_lista_do_engaja(): void
+    #[DataProvider('escutaEFeira')]
+    public function test_usuario_do_cartas_nao_acessa_lista_do_engaja(string $tipo): void
     {
         $user = User::factory()->create(['sistema_origem' => User::SISTEMA_CARTAS]);
         $user->assignRole('administrador');
-        $this->actingAs($user)->get($this->url())->assertForbidden();
+        $this->actingAs($user)->get($this->url($tipo))->assertForbidden();
     }
 
     #[DataProvider('tiposInvalidos')]
@@ -101,20 +112,27 @@ class ListaPresencaPdfTest extends TestCase
             ->assertUnprocessable()->assertJsonValidationErrors('tipo');
     }
 
+    public static function escutaEFeira(): array
+    {
+        return [['escuta_territorial'], ['feira_pedagogica']];
+    }
+
     public static function tiposInvalidos(): array
     {
-        return [['../../.env'], ['/etc/passwd'], ['<script>alert(1)</script>'], [''], [['escuta_territorial']], ['desconhecido']];
+        return [['../../.env'], ['/etc/passwd'], ['<script>alert(1)</script>'], [''], [['escuta_territorial']], [['feira_pedagogica']], ['desconhecido']];
     }
 
-    public function test_momento_inexistente_ou_excluido_nao_gera_pdf(): void
+    #[DataProvider('escutaEFeira')]
+    public function test_momento_inexistente_ou_excluido_nao_gera_pdf(string $tipo): void
     {
-        $this->actingAs($this->admin)->get(route('atividades.lista-presenca.pdf', ['atividade' => 99999999, 'tipo' => 'escuta_territorial']))
+        $this->actingAs($this->admin)->get(route('atividades.lista-presenca.pdf', ['atividade' => 99999999, 'tipo' => $tipo]))
             ->assertNotFound();
         $this->atividade->delete();
-        $this->get($this->url())->assertNotFound();
+        $this->get($this->url($tipo))->assertNotFound();
     }
 
-    public function test_unifica_inscricoes_e_presencas_sem_duplicar_e_ordena_por_nome(): void
+    #[DataProvider('escutaEFeira')]
+    public function test_unifica_inscricoes_e_presencas_sem_duplicar_e_ordena_por_nome(string $tipo): void
     {
         $alvaro = User::factory()->create(['name' => 'Álvaro da Escuta', 'email' => 'alvaro@example.test']);
         $bruna = User::factory()->create(['name' => 'Bruna da Escuta', 'email' => 'bruna@example.test']);
@@ -137,7 +155,7 @@ class ListaPresencaPdfTest extends TestCase
             'evento_id' => $this->atividade->evento_id, 'atividade_id' => $outroMomento->id, 'participante_id' => $fora->participante->id,
         ]);
 
-        $response = $this->actingAs($this->admin)->get($this->url())->assertOk();
+        $response = $this->actingAs($this->admin)->get($this->url($tipo))->assertOk();
         $texto = $this->textoPdf($this->lerPdf($response->getContent()));
         $nomes = [$alvaro->name, $bruna->name, $zelia->name];
         foreach ($nomes as $nome) {
@@ -150,17 +168,18 @@ class ListaPresencaPdfTest extends TestCase
         $this->assertDatabaseCount('presencas', 3);
     }
 
-    public function test_download_nao_injeta_cabecalhos_por_meio_do_nome_do_momento(): void
+    #[DataProvider('escutaEFeira')]
+    public function test_download_nao_injeta_cabecalhos_por_meio_do_nome_do_momento(string $tipo): void
     {
         $this->atividade->update(['descricao' => "Escuta \"Teste\"\r\nX-Injetado: sim"]);
-        $response = $this->actingAs($this->admin)->get($this->url())->assertOk();
+        $response = $this->actingAs($this->admin)->get($this->url($tipo))->assertOk();
         $disposicao = $response->headers->get('Content-Disposition');
         $this->assertStringNotContainsString("\r", $disposicao);
         $this->assertStringNotContainsString("\n", $disposicao);
         $this->assertNull($response->headers->get('X-Injetado'));
     }
 
-    public function test_seletor_oferece_escuta_e_preserva_as_duas_opcoes_existentes(): void
+    public function test_seletor_oferece_os_quatro_modelos(): void
     {
         $qrCode = Mockery::mock(Generator::class);
         $qrCode->shouldReceive('format', 'style', 'color', 'eye', 'eyeColor', 'size', 'margin', 'merge', 'errorCorrection')->andReturnSelf();
@@ -168,11 +187,12 @@ class ListaPresencaPdfTest extends TestCase
         $this->app->instance(Generator::class, $qrCode);
         $this->actingAs($this->admin)->get(route('atividades.show', $this->atividade))->assertOk()
             ->assertSee('value="assessoria"', false)->assertSee('value="oficina"', false)
-            ->assertSee('value="escuta_territorial"', false)->assertSee('Escuta Territorial');
+            ->assertSee('value="escuta_territorial"', false)->assertSee('Escuta Territorial')
+            ->assertSee('value="feira_pedagogica"', false)->assertSee('Feira Pedagógica');
     }
 
-    private function url(): string
+    private function url(string $tipo): string
     {
-        return route('atividades.lista-presenca.pdf', [$this->atividade, 'tipo' => 'escuta_territorial']);
+        return route('atividades.lista-presenca.pdf', [$this->atividade, 'tipo' => $tipo]);
     }
 }

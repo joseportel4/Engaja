@@ -564,7 +564,7 @@ class AtividadeController extends Controller
         $this->authorize('presenca.abrir');
 
         $dados = $request->validate([
-            'tipo' => 'sometimes|string|in:assessoria,oficina,escuta_territorial',
+            'tipo' => 'sometimes|string|in:assessoria,oficina,escuta_territorial,feira_pedagogica',
         ]);
         $tipoTemplate = $dados['tipo'] ?? 'assessoria';
 

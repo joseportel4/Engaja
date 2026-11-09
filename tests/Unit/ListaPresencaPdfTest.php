@@ -11,6 +11,7 @@ use App\Pdf\ListaDePresenca\ListaPresencaEscutaTerritorialPdf;
 use App\Pdf\ListaDePresenca\ListaPresencaFactory;
 use App\Pdf\ListaDePresenca\Strategies\ListaPresencaAssessoriaStrategy;
 use App\Pdf\ListaDePresenca\Strategies\ListaPresencaEscutaTerritorialStrategy;
+use App\Pdf\ListaDePresenca\Strategies\ListaPresencaFeiraPedagogicaStrategy;
 use App\Pdf\ListaDePresenca\Strategies\ListaPresencaOficinaStrategy;
 use App\Pdf\ListaDePresenca\Strategies\ListaPresencaStrategyInterface;
 use Exception;
@@ -40,6 +41,7 @@ class ListaPresencaPdfTest extends TestCase
             ['assessoria', ListaPresencaAssessoriaStrategy::class],
             ['oficina', ListaPresencaOficinaStrategy::class],
             ['escuta_territorial', ListaPresencaEscutaTerritorialStrategy::class],
+            ['feira_pedagogica', ListaPresencaFeiraPedagogicaStrategy::class],
         ];
     }
 
